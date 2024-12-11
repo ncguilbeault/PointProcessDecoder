@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Plot", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Simulation", "src\PointProcessDecoder.Simulation\PointProcessDecoder.Simulation.csproj", "{2623A92C-CE8D-404F-8F2A-875979205883}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{C958FCC7-3B04-480D-B680-A9328403D791}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Test", "test\PointProcessDecoder.Test\PointProcessDecoder.Test.csproj", "{4A63D88F-FA29-4409-A628-DD105EF87C75}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,10 +36,15 @@ Global
 		{2623A92C-CE8D-404F-8F2A-875979205883}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2623A92C-CE8D-404F-8F2A-875979205883}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2623A92C-CE8D-404F-8F2A-875979205883}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A63D88F-FA29-4409-A628-DD105EF87C75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A63D88F-FA29-4409-A628-DD105EF87C75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A63D88F-FA29-4409-A628-DD105EF87C75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A63D88F-FA29-4409-A628-DD105EF87C75}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4669E91F-8F4E-426D-954C-08C79C706E86} = {B5921CB9-32C3-40F5-AF48-8FBC2CCBC6BB}
 		{FE94BD30-1034-4791-94F0-3603434729E4} = {B5921CB9-32C3-40F5-AF48-8FBC2CCBC6BB}
 		{2623A92C-CE8D-404F-8F2A-875979205883} = {B5921CB9-32C3-40F5-AF48-8FBC2CCBC6BB}
+		{4A63D88F-FA29-4409-A628-DD105EF87C75} = {C958FCC7-3B04-480D-B680-A9328403D791}
 	EndGlobalSection
 EndGlobal

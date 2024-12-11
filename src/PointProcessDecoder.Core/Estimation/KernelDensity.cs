@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using static TorchSharp.torch;
 using TorchSharp;
 
 namespace PointProcessDecoder.Core.Estimation;
 
 /// <summary>
-/// Online kernel density estimation.
+/// Kernel density estimation.
 /// </summary>
-public class OnlineKernelDensityEstimate : OnlineDensityEstimation
+public class KernelDensity : DensityEstimation
 {
     private readonly Device _device;
     /// <summary>
@@ -45,39 +45,35 @@ public class OnlineKernelDensityEstimate : OnlineDensityEstimation
     
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="OnlineKernelDensityEstimate"/> class.
-    /// </summary>
-    public OnlineKernelDensityEstimate()
-    {
-        _dimensions = 1;
-        _device = CPU;
-        _kernelBandwidth = tensor(1.0).to(_device);
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="OnlineKernelDensityEstimate"/> class.
+    /// Initializes a new instance of the <see cref="KernelDensity"/> class.
     /// </summary>
     /// <param name="bandwidth"></param>
     /// <param name="dimensions"></param>
     /// <param name="device"></param>
-    public OnlineKernelDensityEstimate(double bandwidth, int dimensions, Device? device = null)
+    public KernelDensity(double? bandwidth = null, int? dimensions = null, Device? device = null)
     {
+        _dimensions = dimensions ?? 1;
+        _device = device ?? CPU;
+        _kernelBandwidth = tensor(bandwidth ?? 1.0).repeat(_dimensions).to(_device);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="KernelDensity"/> class.
+    /// </summary>
+    /// <param name="bandwidth"></param>
+    /// <param name="dimensions"></param>
+    /// <param name="device"></param>
+    /// <exception cref="ArgumentException"></exception>
+    public KernelDensity(double[] bandwidth, int dimensions, Device? device = null)
+    {
+        if (bandwidth.Length != dimensions)
+        {
+            throw new ArgumentException("Bandwidth must be of the form (n_features) and match the number of dimensions");
+        }
+
         _dimensions = dimensions;
         _device = device ?? CPU;
         _kernelBandwidth = tensor(bandwidth).to(_device);
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="OnlineKernelDensityEstimate"/> class.
-    /// </summary>
-    /// <param name="bandwidth"></param>
-    /// <param name="dimensions"></param>
-    /// <param name="device"></param>
-    public OnlineKernelDensityEstimate(Tensor bandwidth, int dimensions, Device? device = null)
-    {
-        _dimensions = dimensions;
-        _device = device ?? CPU;
-        _kernelBandwidth = bandwidth.to(_device);
     }
 
     /// <summary>
@@ -85,18 +81,12 @@ public class OnlineKernelDensityEstimate : OnlineDensityEstimation
     /// </summary>
     /// <param name="data"></param>
     /// <exception cref="ArgumentException"></exception>
-    public override void Add(Tensor data) 
+    public override void Fit(Tensor data) 
     {
-        // Check if the data shape matches the bandwidth shape
-        if (data.shape[0] != _dimensions)
-        {
-            throw new ArgumentException("Data shape must match bandwidth shape");
-        }
-
         // Check if the kernels are empty
         if (_kernels.numel() == 0)
         {
-            _kernels = data.unsqueeze(0);
+            _kernels = data;
             return;      
         }
 

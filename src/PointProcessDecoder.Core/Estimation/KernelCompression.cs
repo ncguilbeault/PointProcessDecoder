@@ -6,19 +6,19 @@ using TorchSharp;
 namespace PointProcessDecoder.Core.Estimation;
 
 /// <summary>
-/// Online kernel density estimation with Gaussian kernel compression.
+/// Kernel density estimation with gaussian kernel compression.
 /// </summary>
-public class OnlineKernelCompression : OnlineDensityEstimation
+public class KernelCompression : DensityEstimation
 {
     private readonly Device _device;
     /// <inheritdoc/>
     public override Device Device => _device;
 
-    private List<Gaussian> _kernels = new();
+    private List<WeightedGaussian> _kernels = new();
     /// <summary>
-    /// The Gaussian components.
+    /// The weighted gaussian components.
     /// </summary>
-    public List<Gaussian> Kernels => _kernels;
+    public List<WeightedGaussian> Kernels => _kernels;
 
     private readonly Tensor _kernelBandwidth;
     /// <inheritdoc/>
@@ -35,73 +35,71 @@ public class OnlineKernelCompression : OnlineDensityEstimation
     public int Dimensions => _dimensions;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="OnlineKernelCompression"/> class.
-    /// </summary>
-    public OnlineKernelCompression()
-    {
-        _device = CPU;
-        _kernelBandwidth = tensor(1.0).to(_device);
-        _distanceThreshold = double.NaN;
-        _dimensions = 1;
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="OnlineKernelCompression"/> class.
+    /// Initializes a new instance of the <see cref="KernelCompression"/> class.
     /// </summary>
     /// <param name="bandwidth"></param>
     /// <param name="dimensions"></param>
     /// <param name="distanceThreshold"></param>
     /// <param name="device"></param>
-    public OnlineKernelCompression(double bandwidth, int dimensions, double distanceThreshold, Device? device = null)
+    public KernelCompression(double? bandwidth = null, int? dimensions = null, double? distanceThreshold = null, Device? device = null)
     {
         _device = device ?? CPU;
-        _kernelBandwidth = tensor(bandwidth).to(_device);
-        _distanceThreshold = distanceThreshold;
-        _dimensions = dimensions;
+        _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
+        _dimensions = dimensions ?? 1;
+        _kernelBandwidth = tensor(bandwidth ?? 1.0).repeat(_dimensions).to(_device);
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="OnlineKernelCompression"/> class.
+    /// Initializes a new instance of the <see cref="KernelCompression"/> class.
     /// </summary>
     /// <param name="bandwidth"></param>
     /// <param name="dimensions"></param>
     /// <param name="distanceThreshold"></param>
     /// <param name="device"></param>
-    public OnlineKernelCompression(Tensor bandwidth, int dimensions, double distanceThreshold, Device? device = null)
+    /// <exception cref="ArgumentException"></exception>
+    public KernelCompression(double[] bandwidth, int dimensions, double? distanceThreshold = null, Device? device = null)
     {
-        _device = CPU;
-        _kernelBandwidth = bandwidth;
-        _distanceThreshold = distanceThreshold;
+        if (bandwidth.Length != dimensions)
+        {
+            throw new ArgumentException("Bandwidth must be of the form (n_features) and match the number of dimensions");
+        }
+
+        _device = device ?? CPU;
+        _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _dimensions = dimensions;
+        _kernelBandwidth = tensor(bandwidth).to(_device);
     }
 
     /// <inheritdoc/>
-    public override void Add(Tensor data)
+    public override void Fit(Tensor data)
     {
-        if (data.shape[0] != _dimensions)
+        if (data.shape[1] != _dimensions)
         {
-            throw new ArgumentException("Data shape must match bandwidth shape");
+            throw new ArgumentException("Data shape must match expected dimensions");
         }
 
-        var kernel = new Gaussian(_weight, data, _kernelBandwidth);
-        if (_kernels is null)
+        for (int i = 0; i < data.shape[0]; i++)
         {
-            _kernels = [kernel];
-            return;
-        }
+            var kernel = new WeightedGaussian(_weight, data[i], _kernelBandwidth);
+            if (_kernels.Count == 0)
+            {
+                _kernels = [kernel];
+                continue;
+            }
 
-        var dist = CalculateMahalanobisDistance(data);
-        var minDist = dist.min().ReadCpuSingle(0);
-        if (minDist > _distanceThreshold)
-        {
-            _kernels.Add(kernel);
-            return;
+            var dist = CalculateMahalanobisDistance(data[i]);
+            var minDist = dist.min().ReadCpuSingle(0);
+            if (minDist > _distanceThreshold)
+            {
+                _kernels.Add(kernel);
+                continue;
+            }
+            var argminDist = (int)dist.argmin().item<long>();
+            var kernelToMerge = _kernels[argminDist];
+            _kernels.RemoveAt(argminDist);
+            var mergedKernel = MergeKernels(kernel, kernelToMerge);
+            _kernels.Add(mergedKernel);
         }
-        var argminDist = (int)dist.argmin().item<long>();
-        var kernelToMerge = _kernels[argminDist];
-        _kernels.RemoveAt(argminDist);
-        var mergedKernel = MergeKernels(kernel, kernelToMerge);
-        _kernels.Add(mergedKernel);
     }
 
     /// <inheritdoc/>
@@ -117,8 +115,9 @@ public class OnlineKernelCompression : OnlineDensityEstimation
             var dist = empty(_kernels.Count);
             for (int i = 0; i < _kernels.Count; i++)
             {
-                var mean = _kernels[i].Mean;
-                var diagonalCovariance = diag(_kernels[i].DiagonalCovariance);
+                var kernel = _kernels[i];
+                var mean = kernel.Mean;
+                var diagonalCovariance = diag(kernel.DiagonalCovariance);
                 var delta = data - mean;
                 var sigmaInv = diagonalCovariance.inverse();
                 var matMul = matmul(sigmaInv, delta);
@@ -130,13 +129,13 @@ public class OnlineKernelCompression : OnlineDensityEstimation
         }
     }
 
-    private Gaussian MergeKernels(Gaussian kernel1, Gaussian kernel2)
+    private WeightedGaussian MergeKernels(WeightedGaussian kernel1, WeightedGaussian kernel2)
     {
         var weightSum = kernel1.Weight + kernel2.Weight;
         var mean = (kernel1.Mean * kernel1.Weight + kernel2.Mean * kernel2.Weight) / weightSum;
         var variance = (kernel1.DiagonalCovariance + pow(kernel1.Mean, 2)) * kernel1.Weight + (kernel2.DiagonalCovariance + pow(kernel2.Mean, 2)) * kernel2.Weight;
         var diagonalCovariance = variance / weightSum - pow(mean, 2);
-        return new Gaussian(
+        return new WeightedGaussian(
             weightSum, 
             mean, 
             diagonalCovariance
@@ -180,7 +179,8 @@ public class OnlineKernelCompression : OnlineDensityEstimation
                 densities[i] = kernel.Weight * kernelDensity;
             }
             var density = sum(stack(densities), dim: 0);
-            return density.MoveToOuterDisposeScope();
+            var normed = density / density.sum();
+            return normed.MoveToOuterDisposeScope();
         }
     }
 }

@@ -1,11 +1,11 @@
 using static TorchSharp.torch;
 
-namespace PointProcessDecoder.Core;
+namespace PointProcessDecoder.Core.Estimation;
 
 /// <summary>
-/// Abstract class for online density estimation.
+/// Abstract class for density estimation.
 /// </summary>
-public abstract class OnlineDensityEstimation : IDensityEstimation
+public abstract class DensityEstimation : IDensityEstimation
 {
     /// <summary>
     /// The device on which the density estimation is performed.
@@ -34,10 +34,10 @@ public abstract class OnlineDensityEstimation : IDensityEstimation
     public abstract Tensor Evaluate(Tensor min, Tensor max, Tensor steps);
 
     /// <summary>
-    /// Add a new data point to the density estimation.
+    /// Fits new data points to the density estimation.
     /// </summary>
     /// <param name="data"></param>
-    public abstract void Add(Tensor data);
+    public abstract void Fit(Tensor data);
 
     /// <summary>
     /// Clear the density estimation kernels.
