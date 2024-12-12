@@ -42,7 +42,7 @@ public class PointProcessModel : IModel
         int? markChannels = null,
         int? nUnits = null,
         double? distanceThreshold = null,
-        double[]? sigmaLatentSpace = null,
+        double[]? sigmaRandomWalk = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -90,7 +90,7 @@ public class PointProcessModel : IModel
                 minLatentSpace,
                 maxLatentSpace,
                 stepsLatentSpace,
-                sigmaLatentSpace,
+                sigmaRandomWalk,
                 device: _device
             ),
             _ => throw new ArgumentException("Invalid decoder type.")

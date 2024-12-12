@@ -29,7 +29,7 @@ public class SortedSpikeDecoder : IDecoder
         double[] minLatentSpace,
         double[] maxLatentSpace,
         long[] stepsLatentSpace,
-        double[]? sigmaLatentSpace = null,
+        double[]? sigmaRandomWalk = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -53,7 +53,7 @@ public class SortedSpikeDecoder : IDecoder
                 minLatentSpace, 
                 maxLatentSpace, 
                 stepsLatentSpace, 
-                sigmaLatentSpace, 
+                sigmaRandomWalk, 
                 device: _device,
                 scalarType: _scalarType
             ),
@@ -80,18 +80,17 @@ public class SortedSpikeDecoder : IDecoder
     {
         inputs = inputs.to_type(_scalarType).to(_device);
 
-        using var conditionalIntensitiesTensor = vstack(conditionalIntensities.ToArray()).T
+        using var conditionalIntensitiesTensor = stack(conditionalIntensities.Select(t => t.flatten()), dim: -1)
             .to_type(_scalarType)
             .to(_device);
 
-        using var _logLikelihood = LogLikelihood(inputs, conditionalIntensitiesTensor);
-        _posterior = _stateTransitions.Transitions.matmul(_posterior);
-        _posterior = exp(_logLikelihood + _posterior.log());
+        using var logLikelihood = LogLikelihood(inputs, conditionalIntensitiesTensor);
+        _posterior = exp(logLikelihood + _stateTransitions.Transitions.matmul(_posterior).log());
         
         return _posterior / _posterior.sum(0, true);
     }
 
-    private Tensor LogLikelihood(Tensor inputs, Tensor conditionalIntensities)
+    private static Tensor LogLikelihood(Tensor inputs, Tensor conditionalIntensities)
     {
         using var _ = NewDisposeScope();
         var clippedConditionalIntensities = conditionalIntensities.clamp(1e-10);
