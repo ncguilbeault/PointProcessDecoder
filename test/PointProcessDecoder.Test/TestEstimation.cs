@@ -22,14 +22,14 @@ public class TestEstimation
     private double bandwidth = 5;
     private int numDimensions = 1;
     private long evaluationSteps = 50;
-    private double distanceThreshold = double.NegativeInfinity;
+    private double distanceThreshold = 1.5;
     private int heatmapPadding = 10;
     private string outputDirectory = "TestEstimation";
 
     [TestMethod]
-    public void TestKernelCompression()
+    public void TestKernelCompression1D()
     {
-        var kernelCompressionDirectory = Path.Combine(outputDirectory, "KernelCompression");
+        var kernelCompressionDirectory = Path.Combine(outputDirectory, "KernelCompression1D");
 
         var position1D = Simulate.Position(steps, cycles, yMin, yMax, scalarType);
         var position1DExpanded = concat([zeros_like(position1D), position1D], dim: 1);
@@ -40,7 +40,7 @@ public class TestEstimation
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
 
         var positionKC = new KernelCompression(bandwidth, numDimensions, distanceThreshold, device, scalarType);
-        positionKC.Fit(position1D);
+        positionKC.Fit(position1D.to_type(ScalarType.Float32));
         var positionKCDensity = positionKC.Evaluate(
             new double[] { yMin }, 
             new double[] { yMax }, 
@@ -65,7 +65,7 @@ public class TestEstimation
         {
             var neuronKDE = new KernelCompression(bandwidth, numDimensions, distanceThreshold, device, scalarType);
             var neuronPosition1D = position1D[spikingData[TensorIndex.Colon, i]];
-            neuronKDE.Fit(neuronPosition1D);
+            neuronKDE.Fit(neuronPosition1D.to_type(ScalarType.Float64));
             neuronKDEs.Add(neuronKDE);
 
             var neuronDensity = neuronKDE.Evaluate(
@@ -106,7 +106,7 @@ public class TestEstimation
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
         var positionKDE = new KernelDensity(bandwidth, numDimensions, device);
-        positionKDE.Fit(position1D);
+        positionKDE.Fit(position1D.to_type(ScalarType.Float64));
         var positionDensity = positionKDE.Evaluate(
             new double[] { yMin }, 
             new double[] { yMax }, 
@@ -131,7 +131,7 @@ public class TestEstimation
         {
             var neuronKDE = new KernelDensity(bandwidth, numDimensions);
             var neuronPosition1D = position1D[spikingData[TensorIndex.Colon, i]];
-            neuronKDE.Fit(neuronPosition1D);
+            neuronKDE.Fit(neuronPosition1D.to_type(ScalarType.Float64));
             neuronKDEs.Add(neuronKDE);
 
             var neuronDensity = neuronKDE.Evaluate(

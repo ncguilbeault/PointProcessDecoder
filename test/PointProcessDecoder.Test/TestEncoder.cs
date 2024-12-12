@@ -10,14 +10,10 @@ namespace PointProcessDecoder.Test;
 [TestClass]
 public class TestEncoder
 {
+    private int heatmapPadding = 10;
     private int seed = 0;
     private ScalarType scalarType = ScalarType.Float32;
     private Device device = CPU;
-    private double bandwidth = 5.0;
-    private int numDimensions = 1;
-    private long evaluationSteps = 50;
-    private int heatmapPadding = 10;
-    private double distanceThreshold = 1.5;
     private string outputDirectory = "TestEncoder";
 
     private (Tensor, Tensor) InitializeSimulation1D(
@@ -60,11 +56,12 @@ public class TestEncoder
         return (position2D, spikingData);
     }
 
-    private void RunSortedSpikeEncoder(
+    private void RunSortedSpikeEncoder1D(
         IEncoder encoder, 
         Tensor observations, 
         Tensor spikes,
         string encoderDirectory,
+        long evaluationSteps,
         double[] densityScatterPlotRange,
         double[] densityHeatmapRange
     )
@@ -107,9 +104,43 @@ public class TestEncoder
         }
     }
 
+    private void RunSortedSpikeEncoder2D(
+        IEncoder encoder, 
+        Tensor observations, 
+        Tensor spikes,
+        string encoderDirectory,
+        double[] densityHeatmapRange
+    )
+    {
+        encoder.Encode(observations, spikes);
+        var densities = encoder.Evaluate();
+
+        for (int i = 0; i < densities.Count(); i++)
+        {
+            var density = densities.ElementAt(i);
+
+            var directoryHeatmap2D = Path.Combine(encoderDirectory, "Heatmap2D");
+
+            Heatmap plotDensity2D = new(
+                densityHeatmapRange[0],
+                densityHeatmapRange[1],
+                densityHeatmapRange[2],
+                densityHeatmapRange[3],
+                title: $"SortedUnitDensity2D{i}"
+            );
+
+            plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, directoryHeatmap2D);
+            plotDensity2D.Show<float>(density);
+            plotDensity2D.Save(png: true);
+        }
+    }
+
     [TestMethod]
     public void TestSortedSpikeEncoderKernelDensity()
     {
+        double[] bandwidth = [5.0];
+        int numDimensions = 1;
+        long evaluationSteps = 50;
         int steps = 200;
         int cycles = 10;
         double min = 0.0;
@@ -131,7 +162,7 @@ public class TestEncoder
 
         var sortedSpikeEncoder = new SortedSpikeEncoder(
             EstimationMethod.KernelDensity, 
-            [bandwidth], 
+            bandwidth, 
             numDimensions,
             numNeurons,
             [min], 
@@ -141,11 +172,12 @@ public class TestEncoder
             scalarType: scalarType
         );
 
-        RunSortedSpikeEncoder(
+        RunSortedSpikeEncoder1D(
             sortedSpikeEncoder, 
             position1D, 
             spikingData, 
             sortedSpikeEncoderDirectory,
+            evaluationSteps,
             [ 0, evaluationSteps, 0, 1 ],
             [ 0, heatmapPadding, min, max ]
         );
@@ -156,6 +188,9 @@ public class TestEncoder
     [TestMethod]
     public void TestSortedSpikeEncoderKernelCompression()
     {
+        double[] bandwidth = [5.0];
+        int numDimensions = 1;
+        long evaluationSteps = 50;
         int steps = 200;
         int cycles = 10;
         double min = 0.0;
@@ -163,6 +198,7 @@ public class TestEncoder
         int numNeurons = 40;
         double placeFieldRadius = 8.0;
         double firingThreshold = 0.2;
+        double distanceThreshold = 1.5;
 
         var sortedSpikeEncoderDirectory = Path.Combine(outputDirectory, "SortedSpikeEncoderKernelCompression");
         var (position1D, spikingData) = InitializeSimulation1D(
@@ -177,7 +213,7 @@ public class TestEncoder
 
         var sortedSpikeEncoder = new SortedSpikeEncoder(
             EstimationMethod.KernelCompression, 
-            [bandwidth], 
+            bandwidth, 
             numDimensions,
             numNeurons,
             [min], 
@@ -187,13 +223,120 @@ public class TestEncoder
             device: device
         );
 
-        RunSortedSpikeEncoder(
+        RunSortedSpikeEncoder1D(
             sortedSpikeEncoder, 
             position1D, 
             spikingData, 
             sortedSpikeEncoderDirectory,
+            evaluationSteps,
             [ 0, evaluationSteps, 0, 1 ],
             [ 0, heatmapPadding, min, max ]
+        );
+
+        Assert.IsTrue(true);
+    }
+
+    [TestMethod]
+    public void TestSortedSpikeEncoderKernelCompression2D()
+    {
+        double[] bandwidth = [5.0, 5.0];
+        int numDimensions = 2;
+        long[] evaluationSteps = [50, 50];
+        var steps = 200;
+        var cycles = 10;
+        var xMin = 0.0;
+        var xMax = 100.0;
+        var yMin = 0.0;
+        var yMax = 100.0;
+
+        int numNeurons = 40;
+        double placeFieldRadius = 8.0;
+        double firingThreshold = 0.2;
+        double distanceThreshold = 1.5;
+
+        var sortedSpikeEncoderDirectory = Path.Combine(outputDirectory, "SortedSpikeEncoderKernelCompression2D");
+        var (position2D, spikingData) = InitializeSimulation2D(
+            steps,
+            cycles,
+            xMin,
+            xMax,
+            yMin,
+            yMax,
+            numNeurons,
+            placeFieldRadius,
+            firingThreshold
+        );
+
+        var sortedSpikeEncoder = new SortedSpikeEncoder(
+            EstimationMethod.KernelCompression, 
+            bandwidth, 
+            numDimensions,
+            numNeurons,
+            [xMin, yMin], 
+            [xMax, yMax], 
+            evaluationSteps,
+            distanceThreshold: distanceThreshold,
+            device: device
+        );
+
+        RunSortedSpikeEncoder2D(
+            sortedSpikeEncoder, 
+            position2D, 
+            spikingData, 
+            sortedSpikeEncoderDirectory,
+            [ xMin, xMax, yMin, yMax ]
+        );
+
+        Assert.IsTrue(true);
+    }
+
+    [TestMethod]
+    public void TestSortedSpikeEncoderKernelDensity2D()
+    {
+        double[] bandwidth = [5.0, 5.0];
+        int numDimensions = 2;
+        long[] evaluationSteps = [50, 50];
+        var steps = 200;
+        var cycles = 10;
+        var xMin = 0.0;
+        var xMax = 100.0;
+        var yMin = 0.0;
+        var yMax = 100.0;
+
+        int numNeurons = 40;
+        double placeFieldRadius = 8.0;
+        double firingThreshold = 0.2;
+
+        var sortedSpikeEncoderDirectory = Path.Combine(outputDirectory, "SortedSpikeEncoderKernelDensity2D");
+        var (position2D, spikingData) = InitializeSimulation2D(
+            steps,
+            cycles,
+            xMin,
+            xMax,
+            yMin,
+            yMax,
+            numNeurons,
+            placeFieldRadius,
+            firingThreshold
+        );
+
+        var sortedSpikeEncoder = new SortedSpikeEncoder(
+            EstimationMethod.KernelDensity, 
+            bandwidth, 
+            numDimensions,
+            numNeurons,
+            [xMin, yMin], 
+            [xMax, yMax], 
+            evaluationSteps,
+            device: device
+        );
+
+        RunSortedSpikeEncoder2D(
+            sortedSpikeEncoder, 
+            position2D, 
+            spikingData, 
+            sortedSpikeEncoderDirectory,
+            [ xMin, xMax, yMin, yMax ]
         );
 
         Assert.IsTrue(true);

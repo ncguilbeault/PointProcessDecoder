@@ -49,7 +49,7 @@ public class TestSimulation
         ScatterPlot plotSpikingNeurons = new(0, position1D.shape[0], min, max, title: "SpikingNeurons1D");
         plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, spikingNeuronsDirectory);
 
-        var colors = Utilities.GenerateRandomColors(numNeurons, seed);
+        var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
 
         for (int i = 0; i < numNeurons; i++)
         {
@@ -90,7 +90,7 @@ public class TestSimulation
         ScatterPlot plotSpikingNeurons = new(xMin, xMax, yMin, yMax, title: "SpikingNeurons");
         plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, spikingNeuronsDirectory);
 
-        var colors = Utilities.GenerateRandomColors(numNeurons, seed);
+        var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
 
         for (int i = 0; i < numNeurons; i++)
         {
@@ -98,5 +98,61 @@ public class TestSimulation
             plotSpikingNeurons.Show<float>(positionsAtSpikes, colors[i]);
         }
         plotSpikingNeurons.Save(png: true);
+    }
+
+    [TestMethod]
+    public void TestSpikingNeurons2DFirstAndLastSteps()
+    {
+        var steps = 200;
+        var cycles = 10;
+        var scale = 0.1;
+        var xMin = 0.0;
+        var xMax = 100.0;
+        var yMin = 0.0;
+        var yMax = 100.0;
+        var stepsToSeperate = 1800;
+
+        var spikingNeuronsDirectory = Path.Combine(outputDirectory, "SpikingNeurons2DFirstAndLastSteps");
+
+        var position2D = Simulate.Position(steps, cycles, xMin, xMax, yMin, yMax, scale: scale, scalarType: scalarType);
+        
+        ScatterPlot plotPositionFirst = new(xMin, xMax, yMin, yMax, "Position2DFirst");
+        plotPositionFirst.OutputDirectory = Path.Combine(plotPositionFirst.OutputDirectory, spikingNeuronsDirectory);
+        plotPositionFirst.Show<float>(position2D[TensorIndex.Slice(0, stepsToSeperate)]);
+        plotPositionFirst.Save(png: true);
+
+        ScatterPlot plotPositionLast = new(xMin, xMax, yMin, yMax, "Position2DLast");
+        plotPositionLast.OutputDirectory = Path.Combine(plotPositionLast.OutputDirectory, spikingNeuronsDirectory);
+        plotPositionLast.Show<float>(position2D[TensorIndex.Slice(stepsToSeperate)]);
+        plotPositionLast.Save(png: true);
+
+        var placeFieldCenters = Simulate.PlaceFieldCenters(xMin, xMax, yMin, yMax, numNeurons, seed, scalarType);
+
+        ScatterPlot plotPlaceFieldCenters = new(xMin, xMax, yMin, yMax, "PlaceFieldCenters");
+        plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, spikingNeuronsDirectory);
+        plotPlaceFieldCenters.Show<float>(placeFieldCenters);
+        plotPlaceFieldCenters.Save(png: true);
+
+        var spikingData = Simulate.SpikesAtPosition(position2D, placeFieldCenters, placeFieldRadius, firingThreshold, seed);
+
+        ScatterPlot plotSpikingNeuronsFirst = new(xMin, xMax, yMin, yMax, title: "SpikingNeuronsFirst");
+        plotSpikingNeuronsFirst.OutputDirectory = Path.Combine(plotSpikingNeuronsFirst.OutputDirectory, spikingNeuronsDirectory);
+
+        ScatterPlot plotSpikingNeuronsLast = new(xMin, xMax, yMin, yMax, title: "SpikingNeuronsLast");
+        plotSpikingNeuronsLast.OutputDirectory = Path.Combine(plotSpikingNeuronsLast.OutputDirectory, spikingNeuronsDirectory);
+
+        var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
+
+        for (int i = 0; i < numNeurons; i++)
+        {
+            var positionsAtSpikesFirst = position2D[TensorIndex.Slice(0, stepsToSeperate)][spikingData[TensorIndex.Slice(0, stepsToSeperate), i]];
+            plotSpikingNeuronsFirst.Show<float>(positionsAtSpikesFirst, colors[i]);
+
+            var positionsAtSpikesLast = position2D[TensorIndex.Slice(stepsToSeperate)][spikingData[TensorIndex.Slice(stepsToSeperate), i]];
+            plotSpikingNeuronsLast.Show<float>(positionsAtSpikesLast, colors[i]);
+        }
+
+        plotSpikingNeuronsFirst.Save(png: true);
+        plotSpikingNeuronsLast.Save(png: true);
     }
 }
