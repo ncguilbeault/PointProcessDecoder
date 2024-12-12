@@ -22,7 +22,7 @@ public class TestTransitions
         var uniformTransitions = new UniformTransitions(min, max, steps);
         Heatmap transitionsPlot = new(min, max, min, max, title: "UniformTransitions1D");
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<float>(uniformTransitions.Values);
+        transitionsPlot.Show<float>(uniformTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 
@@ -37,7 +37,7 @@ public class TestTransitions
         var uniformTransitions = new UniformTransitions(dimensions, min, max, steps);
         Heatmap transitionsPlot = new(min[0], max[0], min[1], max[1], title: "UniformTransitions2D");
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<float>(uniformTransitions.Values);
+        transitionsPlot.Show<float>(uniformTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 
@@ -51,7 +51,7 @@ public class TestTransitions
         var randomWalkTransitions = new RandomWalkTransitions(min, max, steps);
         Heatmap transitionsPlot = new(min, max, min, max, title: "RandomWalkTransitions1D");
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<float>(randomWalkTransitions.Values);
+        transitionsPlot.Show<float>(randomWalkTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 
@@ -66,7 +66,7 @@ public class TestTransitions
         var randomWalkTransitions = new RandomWalkTransitions(min, max, steps, sigma);
         Heatmap transitionsPlot = new(min, max, min, max, title: "RandomWalkTransitions1DWithSigma");
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<double>(randomWalkTransitions.Values);
+        transitionsPlot.Show<float>(randomWalkTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 
@@ -88,7 +88,7 @@ public class TestTransitions
             title: "RandomWalkTransitions2D"
         );
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<double>(randomWalkTransitions.Values);
+        transitionsPlot.Show<float>(randomWalkTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 }

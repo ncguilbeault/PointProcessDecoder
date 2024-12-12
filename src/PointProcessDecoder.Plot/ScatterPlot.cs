@@ -30,7 +30,14 @@ public class ScatterPlot : OxyPlotBase
         Initialize();
     }
 
-    public ScatterPlot(double? xMin = null, double? xMax = null, double? yMin = null, double? yMax = null, string? title = null, string? figureName = null)
+    public ScatterPlot(
+        double? xMin = null, 
+        double? xMax = null, 
+        double? yMin = null, 
+        double? yMax = null, 
+        string? title = null, 
+        string? figureName = null
+    )
     {
         XMin = xMin ?? XMin;
         XMax = xMax ?? XMax;
@@ -87,7 +94,10 @@ public class ScatterPlot : OxyPlotBase
         
         for (int i = 0; i < positionData.shape[0]; i++)
         {
-            scatterSeries.Points.Add(new ScatterPoint(positionData[i,0].item<double>(), positionData[i,1].item<double>()));
+            scatterSeries.Points.Add(new ScatterPoint(
+                positionData[i,0].item<double>(), 
+                positionData[i,1].item<double>()
+            ));
         }
 
         plot.Series.Add(scatterSeries);

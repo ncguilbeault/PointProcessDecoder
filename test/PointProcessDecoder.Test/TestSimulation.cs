@@ -8,45 +8,45 @@ namespace PointProcessDecoder.Test;
 [TestClass]
 public class TestSimulation
 {
+    private readonly int seed = 0;
+    private readonly ScalarType scalarType = ScalarType.Float32;
+    private readonly int numNeurons = 40;
+    private readonly double placeFieldRadius = 8.0;
+    private readonly double firingThreshold = 0.2;
+    private readonly string outputDirectory = "TestSimulation";
+
     [TestMethod]
-    public void TestSpikingNeurons()
+    public void TestSpikingNeurons1D()
     {
-        var seed = 0;
         var steps = 200;
         var cycles = 10;
-        var yMin = 0.0;
-        var yMax = 100.0;
-        var scalarType = ScalarType.Float64;
+        var min = 0.0;
+        var max = 100.0;
 
-        var spikingNeuronsDirectory = "TestSimulation";
+        var spikingNeuronsDirectory = Path.Combine(outputDirectory, "SpikingNeurons1D");
 
-        var position1D = Simulate.Position(steps, cycles, yMin, yMax, scalarType);
+        var position1D = Simulate.Position(steps, cycles, min, max, scalarType);
         var position1DExpanded = concat([zeros_like(position1D), position1D], dim: 1);
         var position1DExpandedTime = concat([arange(position1D.shape[0]).unsqueeze(1), position1D], dim: 1);
         var minPosition = 0;
         var maxPosition = position1D.shape[0];
         
-        ScatterPlot plotPosition1D = new(minPosition, maxPosition, yMin, yMax, "Position1D");
+        ScatterPlot plotPosition1D = new(minPosition, maxPosition, min, max, "Position1D");
         plotPosition1D.OutputDirectory = Path.Combine(plotPosition1D.OutputDirectory, spikingNeuronsDirectory);
-        plotPosition1D.Show(position1DExpandedTime);
+        plotPosition1D.Show<float>(position1DExpandedTime);
         plotPosition1D.Save(png: true);
 
-        var numNeurons = 40;
-
-        var placeFieldCenters = Simulate.PlaceFieldCenters(yMin, yMax, numNeurons, seed, scalarType);
+        var placeFieldCenters = Simulate.PlaceFieldCenters(min, max, numNeurons, seed, scalarType);
         var placeFieldCenters2D = vstack([zeros_like(placeFieldCenters), placeFieldCenters]).T;
 
-        ScatterPlot plotPlaceFieldCenters = new(-1, 1, yMin, yMax, "PlaceFieldCenters");
+        ScatterPlot plotPlaceFieldCenters = new(-1, 1, min, max, "PlaceFieldCenters1D");
         plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, spikingNeuronsDirectory);
-        plotPlaceFieldCenters.Show(placeFieldCenters2D);
+        plotPlaceFieldCenters.Show<float>(placeFieldCenters2D);
         plotPlaceFieldCenters.Save(png: true);
-
-        var placeFieldRadius = 8.0;
-        var firingThreshold = 0.2;
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
 
-        ScatterPlot plotSpikingNeurons = new(0, position1D.shape[0], yMin, yMax, title: "SpikingNeurons");
+        ScatterPlot plotSpikingNeurons = new(0, position1D.shape[0], min, max, title: "SpikingNeurons1D");
         plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, spikingNeuronsDirectory);
 
         var colors = Utilities.GenerateRandomColors(numNeurons);
@@ -54,10 +54,49 @@ public class TestSimulation
         for (int i = 0; i < numNeurons; i++)
         {
             var positionsAtSpikes = position1DExpandedTime[spikingData[TensorIndex.Colon, i]];
-            plotSpikingNeurons.Show(positionsAtSpikes, colors[i]);
+            plotSpikingNeurons.Show<float>(positionsAtSpikes, colors[i]);
         }
         plotSpikingNeurons.Save(png: true);
+    }
 
-        Assert.AreEqual(numNeurons, colors.Count);
+    [TestMethod]
+    public void TestSpikingNeurons2D()
+    {
+        var steps = 200;
+        var cycles = 10;
+        var xMin = 0.0;
+        var xMax = 100.0;
+        var yMin = 0.0;
+        var yMax = 100.0;
+
+        var spikingNeuronsDirectory = Path.Combine(outputDirectory, "SpikingNeurons2D");
+
+        var position2D = Simulate.Position(steps, cycles, xMin, xMax, yMin, yMax, scalarType: scalarType);
+        
+        ScatterPlot plotPosition2D = new(xMin, xMax, yMin, yMax, "Position2D");
+        plotPosition2D.OutputDirectory = Path.Combine(plotPosition2D.OutputDirectory, spikingNeuronsDirectory);
+        plotPosition2D.Show<float>(position2D);
+        plotPosition2D.Save(png: true);
+
+        var placeFieldCenters = Simulate.PlaceFieldCenters(xMin, xMax, yMin, yMax, numNeurons, seed, scalarType);
+
+        ScatterPlot plotPlaceFieldCenters = new(xMin, xMax, yMin, yMax, "PlaceFieldCenters");
+        plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, spikingNeuronsDirectory);
+        plotPlaceFieldCenters.Show<float>(placeFieldCenters);
+        plotPlaceFieldCenters.Save(png: true);
+
+        var spikingData = Simulate.SpikesAtPosition(position2D, placeFieldCenters, placeFieldRadius, firingThreshold, seed);
+
+        ScatterPlot plotSpikingNeurons = new(xMin, xMax, yMin, yMax, title: "SpikingNeurons");
+        plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, spikingNeuronsDirectory);
+
+        var colors = Utilities.GenerateRandomColors(numNeurons);
+
+        for (int i = 0; i < numNeurons; i++)
+        {
+            var positionsAtSpikes = position2D[spikingData[TensorIndex.Colon, i]];
+            plotSpikingNeurons.Show<float>(positionsAtSpikes, colors[i]);
+        }
+        plotSpikingNeurons.Save(png: true);
     }
 }

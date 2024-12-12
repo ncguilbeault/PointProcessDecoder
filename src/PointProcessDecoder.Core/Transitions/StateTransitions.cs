@@ -10,6 +10,11 @@ public abstract class StateTransitions : IStateTransitions
     public abstract Device Device { get; }
 
     /// <summary>
+    /// The scalar type of the tensor.
+    /// </summary>
+    public abstract ScalarType ScalarType { get; }
+
+    /// <summary>
     /// The number of dimensions in the latent space.
     /// </summary>
     public abstract int Dimensions { get; }
@@ -20,9 +25,9 @@ public abstract class StateTransitions : IStateTransitions
     public abstract Tensor Points { get; }
 
     /// <summary>
-    /// The values in the latent space.
+    /// The transitions in the latent space.
     /// </summary>
-    public abstract Tensor Values { get; }
+    public abstract Tensor Transitions { get; }
 
     /// <summary>
     /// Method to compute the latent space given the minimum, maximum, and steps.
@@ -32,20 +37,26 @@ public abstract class StateTransitions : IStateTransitions
     /// <param name="steps"></param>
     /// <param name="device"></param>
     /// <returns></returns>
-    public static Tensor ComputeLatentSpace(double[] min, double[] max, long[] steps, Device? device = null)
+    public static Tensor ComputeLatentSpace(
+        double[] min, 
+        double[] max, 
+        long[] steps,
+        Device device,
+        ScalarType scalarType
+    )
     {
-        var _device = device ?? CPU;
         var dims = min.Length;
-        using (var _ = NewDisposeScope())
+        using var _ = NewDisposeScope();
+        var arrays = new Tensor[dims];
+        for (int i = 0; i < dims; i++)
         {
-            var arrays = new Tensor[dims];
-            for (int i = 0; i < dims; i++)
-            {
-                arrays[i] = linspace(min[i], max[i], steps[i]).to(_device);
-            }
-            var grid = meshgrid(arrays);
-            var gridSpace = vstack(grid.Select(tensor => tensor.flatten()).ToList()).T;
-            return gridSpace.MoveToOuterDisposeScope();
+            arrays[i] = linspace(min[i], max[i], steps[i]);
         }
+        var grid = meshgrid(arrays);
+        var gridSpace = vstack(grid.Select(tensor => tensor.flatten()).ToList()).T;
+        return gridSpace
+            .to_type(scalarType)
+            .to(device)
+            .MoveToOuterDisposeScope();
     }
 }

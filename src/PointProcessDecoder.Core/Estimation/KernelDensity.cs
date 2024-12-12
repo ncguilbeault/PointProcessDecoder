@@ -7,19 +7,22 @@ namespace PointProcessDecoder.Core.Estimation;
 /// <summary>
 /// Kernel density estimation.
 /// </summary>
-public class KernelDensity : DensityEstimation
+public class KernelDensity : IEstimation
 {
     private readonly Device _device;
     /// <summary>
     /// The device on which the data is stored.
     /// </summary>
-    public override Device Device => _device;
+    public Device Device => _device;
+
+    private readonly ScalarType _scalarType;
+    public ScalarType ScalarType => _scalarType;
 
     private readonly Tensor _kernelBandwidth;
     /// <summary>
     /// The kernel bandwidth.
     /// </summary>
-    public override Tensor KernelBandwidth => _kernelBandwidth;
+    public Tensor KernelBandwidth => _kernelBandwidth;
 
     private double _tolerance = 1e-12;
     /// <summary>
@@ -50,10 +53,16 @@ public class KernelDensity : DensityEstimation
     /// <param name="bandwidth"></param>
     /// <param name="dimensions"></param>
     /// <param name="device"></param>
-    public KernelDensity(double? bandwidth = null, int? dimensions = null, Device? device = null)
+    public KernelDensity(
+        double? bandwidth = null, 
+        int? dimensions = null, 
+        Device? device = null,
+        ScalarType? scalarType = null
+    )
     {
         _dimensions = dimensions ?? 1;
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
         _kernelBandwidth = tensor(bandwidth ?? 1.0).repeat(_dimensions).to(_device);
     }
 
@@ -64,7 +73,12 @@ public class KernelDensity : DensityEstimation
     /// <param name="dimensions"></param>
     /// <param name="device"></param>
     /// <exception cref="ArgumentException"></exception>
-    public KernelDensity(double[] bandwidth, int dimensions, Device? device = null)
+    public KernelDensity(
+        double[] bandwidth, 
+        int dimensions, 
+        Device? device = null,
+        ScalarType? scalarType = null
+    )
     {
         if (bandwidth.Length != dimensions)
         {
@@ -73,6 +87,7 @@ public class KernelDensity : DensityEstimation
 
         _dimensions = dimensions;
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
         _kernelBandwidth = tensor(bandwidth).to(_device);
     }
 
@@ -81,8 +96,15 @@ public class KernelDensity : DensityEstimation
     /// </summary>
     /// <param name="data"></param>
     /// <exception cref="ArgumentException"></exception>
-    public override void Fit(Tensor data) 
+    public void Fit(Tensor data) 
     {
+        if (data.shape[1] != _dimensions)
+        {
+            throw new ArgumentException("The number of dimensions must match the shape of the data.");
+        }
+
+        data = data.to_type(_scalarType).to(_device);
+
         // Check if the kernels are empty
         if (_kernels.numel() == 0)
         {
@@ -97,7 +119,7 @@ public class KernelDensity : DensityEstimation
     /// <summary>
     /// Clear the density estimation kernels.
     /// </summary>
-    public override void Clear() 
+    public void Clear() 
     {
         _kernels.Dispose();
         _kernels = empty(0);
@@ -110,22 +132,38 @@ public class KernelDensity : DensityEstimation
     /// <param name="max"></param>
     /// <param name="steps"></param>
     /// <returns></returns>
-    public override Tensor Evaluate(Tensor min, Tensor max, Tensor steps)
+    public Tensor Evaluate(Tensor min, Tensor max, Tensor steps)
     {
-        using (var _ = NewDisposeScope())
+        if (min.shape[0] != _dimensions || max.shape[0] != _dimensions || steps.shape[0] != _dimensions)
         {
-            var arrays = new Tensor[min.shape[0]];
-            for (int i = 0; i < min.shape[0]; i++)
-            {
-                arrays[i] = linspace(min[i].item<double>(), max[i].item<double>(), steps[i].item<long>()).to(_device);
-            }
-            var grid = meshgrid(arrays);
-            var points = vstack(grid.Select(tensor => tensor.flatten()).ToList()).T;
-            var evaluatedPoints = Evaluate(points);
-            var dimensions = steps.data<long>().ToArray();
-            var reshaped = evaluatedPoints.reshape(dimensions);
-            return reshaped.MoveToOuterDisposeScope();
+            throw new ArgumentException("The lengths of min, max, and steps must be equal to the number of dimensions.");
         }
+
+        if (min.dtype != ScalarType.Float64)
+        {
+            throw new ArgumentException("The scalar type of min and max must be float64.");
+        }
+        
+        if (steps.dtype != ScalarType.Int64)
+        {
+            throw new ArgumentException("The scalar type of steps must be int64.");
+        }
+
+        using var _ = NewDisposeScope();
+        var arrays = new Tensor[min.shape[0]];
+        for (int i = 0; i < min.shape[0]; i++)
+        {
+            arrays[i] = linspace(min[i].item<double>(), max[i].item<double>(), steps[i].item<long>(), dtype: _scalarType, device: _device);
+        }
+        var grid = meshgrid(arrays);
+        var points = vstack(grid.Select(tensor => tensor.flatten()).ToList()).T;
+        var evaluatedPoints = Evaluate(points);
+        var dimensions = steps.data<long>().ToArray();
+        var reshaped = evaluatedPoints.reshape(dimensions);
+        return reshaped
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
     }
 
     /// <summary>
@@ -133,20 +171,26 @@ public class KernelDensity : DensityEstimation
     /// </summary>
     /// <param name="points"></param>
     /// <returns></returns>
-    public override Tensor Evaluate(Tensor points)
+    public Tensor Evaluate(Tensor points)
     {
-        using (var _ = NewDisposeScope())
+        if (points.shape[1] != _dimensions)
         {
-            var differences = _kernels.unsqueeze(0) - points.unsqueeze(1);
-            var distances = differences / _kernelBandwidth;
-            var squareDistances = pow(distances, 2);
-            var sumDistances = sum(squareDistances, dim: 2);
-            var values = exp(-0.5 * sumDistances);
-            var meanValues = mean(values, dimensions: [ 1 ]);
-            var kernelBandwidthProduct = prod(_kernelBandwidth);
-            var kdeValues = meanValues / kernelBandwidthProduct;
-            var normalizedKdeValues = kdeValues / sum(kdeValues) + _tolerance;
-            return normalizedKdeValues.MoveToOuterDisposeScope();
+            throw new ArgumentException("The number of dimensions must match the shape of the data.");
         }
+
+        using var _ = NewDisposeScope();
+        var differences = _kernels.unsqueeze(0) - points.unsqueeze(1);
+        var distances = differences / _kernelBandwidth;
+        var squareDistances = pow(distances, 2);
+        var sumDistances = sum(squareDistances, dim: 2);
+        var values = exp(-0.5 * sumDistances);
+        var meanValues = mean(values, dimensions: [ 1 ]);
+        var kernelBandwidthProduct = prod(_kernelBandwidth);
+        var kdeValues = meanValues / kernelBandwidthProduct;
+        var normalizedKdeValues = kdeValues / sum(kdeValues) + _tolerance;
+        return normalizedKdeValues
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
     }
 }

@@ -3,38 +3,36 @@ using static TorchSharp.torch;
 using PointProcessDecoder.Core.Estimation;
 using PointProcessDecoder.Core.Transitions;
 using PointProcessDecoder.Core.Encoder;
+using PointProcessDecoder.Core.Decoder;
 
 namespace PointProcessDecoder.Core;
 
-public class PointProcessDecoder : PointProcessDecoderBase
+public class PointProcessModel : IModel
 {
     private int _latentDimensions;
-    /// <inheritdoc/>
-    public override int LatentDimensions => _latentDimensions;
-
     private readonly int _markDimensions;
     private readonly int _markChannels;
     private readonly int _nUnits;
 
     private readonly Device _device;
     /// <inheritdoc/>
-    public override Device Device => _device;
+    public Device Device => _device;
 
-    private Tensor _posterior;
+    private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public override Tensor Posterior => _posterior;
+    public ScalarType ScalarType => _scalarType;
 
-    private readonly StateTransitions _stateTransitions;
-    /// <inheritdoc/>
-    public override StateTransitions Transitions => _stateTransitions;
+    private readonly IEncoder _encoderModel;
+    public IEncoder Encoder => _encoderModel;
 
-    private readonly EncoderModel _encoderModel;
-    public EncoderModel EncoderModel => _encoderModel;
+    private readonly IDecoder _decoderModel;
+    public IDecoder Decoder => _decoderModel;
 
-    public PointProcessDecoder(
+    public PointProcessModel(
         EstimationMethod estimationMethod,
         TransitionsType transitionsType,
         EncoderType encoderType,
+        DecoderType decoderType,
         double[] minLatentSpace,
         double[] maxLatentSpace,
         long[] stepsLatentSpace,
@@ -45,34 +43,16 @@ public class PointProcessDecoder : PointProcessDecoderBase
         int? nUnits = null,
         double? distanceThreshold = null,
         double[]? sigmaLatentSpace = null,
-        Device? device = null
+        Device? device = null,
+        ScalarType? scalarType = null
     )
     {
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
         _latentDimensions = latentDimensions;
         _markDimensions = markDimensions ?? 0;
         _markChannels = markChannels ?? 0;
         _nUnits = nUnits ?? 0;
-
-        _stateTransitions = transitionsType switch
-        {
-            TransitionsType.Uniform => new UniformTransitions(
-                _latentDimensions, 
-                minLatentSpace, 
-                maxLatentSpace, 
-                stepsLatentSpace, 
-                device: _device
-            ),
-            TransitionsType.RandomWalk => new RandomWalkTransitions(
-                _latentDimensions, 
-                minLatentSpace, 
-                maxLatentSpace, 
-                stepsLatentSpace, 
-                sigmaLatentSpace, 
-                device: _device
-            ),
-            _ => throw new ArgumentException("Invalid transitions type.")
-        };
 
         _encoderModel = encoderType switch
         {
@@ -88,7 +68,7 @@ public class PointProcessDecoder : PointProcessDecoderBase
                 distanceThreshold, 
                 device: _device
             ),
-            EncoderType.SortedUnitEncoder => new SortedUnitEncoder(
+            EncoderType.SortedSpikeEncoder => new SortedSpikeEncoder(
                 estimationMethod, 
                 bandwidth, 
                 _latentDimensions, 
@@ -101,39 +81,56 @@ public class PointProcessDecoder : PointProcessDecoderBase
             ),
             _ => throw new ArgumentException("Invalid encoder type.")
         };
-        
-        var points = _stateTransitions.Points;
-        var n = points.shape[0];
-        _posterior = ones(n, device: _device) / n;
+
+        _decoderModel = decoderType switch
+        {
+            DecoderType.SortedSpikeDecoder => new SortedSpikeDecoder(
+                transitionsType,
+                _latentDimensions,
+                minLatentSpace,
+                maxLatentSpace,
+                stepsLatentSpace,
+                sigmaLatentSpace,
+                device: _device
+            ),
+            _ => throw new ArgumentException("Invalid decoder type.")
+        };
     }
 
     /// <summary>
-    /// Encode the observations and data into the latent space.
+    /// Encodes the observations and data into the latent space.
     /// The observations are in the latent space and are of shape (n, latentDimensions).
     /// The data is in the mark space and is of shape (n, markDimensions, markChannels).
     /// </summary>
     /// <param name="observations"></param>
     /// <param name="data"></param>
-    public override void Encode(Tensor observations, Tensor data)
+    public void Encode(Tensor observations, Tensor inputs)
     {
         if (observations.shape[1] != _latentDimensions)
         {
             throw new ArgumentException("The number of latent dimensions must match the shape of the observations.");
         }
-        if (data.shape[1] != _markDimensions)
+        if (observations.shape[0] != inputs.shape[0])
         {
-            throw new ArgumentException("The number of mark dimensions must match the shape of the data.");
-        }
-        if (observations.shape[0] != data.shape[0])
-        {
-            throw new ArgumentException("The number of observations must match the number of data points.");
+            throw new ArgumentException("The number of observations must match the number of inputs.");
         }
 
-        _encoderModel.Encode(observations, data);
+        _encoderModel.Encode(observations, inputs);
     }
 
-    public override Tensor Decode(Tensor data)
+    /// <summary>
+    /// Decodes the inputs into the latent space.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public Tensor Decode(Tensor inputs)
     {
-        throw new NotImplementedException();
+        if (_encoderModel.ConditionalIntensities == null)
+        {
+            throw new InvalidOperationException("The encoder must be run before decoding.");
+        }
+
+        return _decoderModel.Decode(inputs, _encoderModel.ConditionalIntensities);
     }
 }

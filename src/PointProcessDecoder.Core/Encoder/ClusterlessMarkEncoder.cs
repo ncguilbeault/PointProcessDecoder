@@ -3,10 +3,13 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Encoder;
 
-public class ClusterlessMarkEncoder : EncoderModel
+public class ClusterlessMarkEncoder : IEncoder
 {
     private readonly Device _device;
-    public override Device Device => _device;
+    public Device Device => _device;
+
+    private readonly ScalarType _scalarType;
+    public ScalarType ScalarType => _scalarType;
 
     private readonly int _observationDimensions;
     public int ObservationDimensions => _observationDimensions;
@@ -17,9 +20,12 @@ public class ClusterlessMarkEncoder : EncoderModel
     private int _markChannels;
     public int MarkChannels => _markChannels;
 
-    private readonly DensityEstimation _observationEstimation;
-    private readonly DensityEstimation[] _observationAtMarkEstimation;
-    private readonly DensityEstimation[] _jointEstimation;
+    private IEnumerable<Tensor>? _conditionalIntensities = null;
+    public IEnumerable<Tensor>? ConditionalIntensities => _conditionalIntensities;
+
+    private readonly IEstimation _observationEstimation;
+    private readonly IEstimation[] _observationAtMarkEstimation;
+    private readonly IEstimation[] _jointEstimation;
 
     private readonly Tensor _minLatentSpace;
     private readonly Tensor _maxLatentSpace;
@@ -35,7 +41,8 @@ public class ClusterlessMarkEncoder : EncoderModel
         double[] maxLatentSpace,
         long[] stepsLatentSpace,
         double? distanceThreshold = null, 
-        Device? device = null
+        Device? device = null,
+        ScalarType? scalarType = null
     )
     {
         if (observationDimensions < 1)
@@ -61,49 +68,87 @@ public class ClusterlessMarkEncoder : EncoderModel
         _observationDimensions = observationDimensions;
         _markDimensions = markDimensions;
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
         _markChannels = markChannels;
 
         _minLatentSpace = tensor(minLatentSpace, device: _device);
         _maxLatentSpace = tensor(maxLatentSpace, device: _device);
         _stepsLatentSpace = tensor(stepsLatentSpace, device: _device);
 
-        _observationEstimation = GetEstimationMethod(estimationMethod, bandwidth, observationDimensions, distanceThreshold);
+        _observationEstimation = GetEstimationMethod(
+            estimationMethod, 
+            bandwidth, 
+            observationDimensions, 
+            distanceThreshold
+        );
 
-        _observationAtMarkEstimation = new DensityEstimation[_markChannels];
-        _jointEstimation = new DensityEstimation[_markChannels];
+        _observationAtMarkEstimation = new IEstimation[_markChannels];
+        _jointEstimation = new IEstimation[_markChannels];
 
         for (int i = 0; i < _markChannels; i++)
         {
-            _observationAtMarkEstimation[i] = GetEstimationMethod(estimationMethod, bandwidth, observationDimensions, distanceThreshold);
-            _jointEstimation[i] = GetEstimationMethod(estimationMethod, bandwidth, observationDimensions + markDimensions, distanceThreshold);
+            _observationAtMarkEstimation[i] = GetEstimationMethod(
+                estimationMethod, 
+                bandwidth, 
+                observationDimensions, 
+                distanceThreshold
+            );
+
+            _jointEstimation[i] = GetEstimationMethod(
+                estimationMethod, 
+                bandwidth,
+                observationDimensions + markDimensions, 
+                distanceThreshold
+            );
         }
     }
 
-    private DensityEstimation GetEstimationMethod(EstimationMethod estimationMethod, double[] bandwidth, int dimensions, double? distanceThreshold = null)
+    private IEstimation GetEstimationMethod(
+        EstimationMethod estimationMethod, 
+        double[] bandwidth, 
+        int dimensions, 
+        double? distanceThreshold = null
+    )
     {
         return estimationMethod switch
         {
-            EstimationMethod.KernelDensity => new KernelDensity(bandwidth, dimensions, device: _device),
-            EstimationMethod.KernelCompression => new KernelCompression(bandwidth, dimensions, distanceThreshold, device: _device),
+            EstimationMethod.KernelDensity => new KernelDensity(
+                bandwidth, 
+                dimensions, 
+                device: _device,
+                scalarType: _scalarType
+            ),
+            EstimationMethod.KernelCompression => new KernelCompression(
+                bandwidth, 
+                dimensions, 
+                distanceThreshold,
+                device: _device,
+                scalarType: _scalarType
+            ),
             _ => throw new ArgumentException("Invalid estimation method.")
         };
     }
 
     // mark is a tensor of shape (nSamples, markDimensions, markChannels)
     // observation is a tensor of shape (nSamples, observationDimensions)
-    public override void Encode(Tensor observations, Tensor marks)
+    public void Encode(Tensor observations, Tensor marks)
     {
-        observations.to(_device);
-        marks.to(_device);
+        if (marks.shape[1] != _markDimensions)
+        {
+            throw new ArgumentException("The number of mark dimensions must match the shape of the marks tensor on dimension 1.");
+        }
+
+        if (marks.shape[2] != _markChannels)
+        {
+            throw new ArgumentException("The number of mark channels must match the shape of the marks tensor on dimension 2.");
+        }
+
+        observations.to_type(_scalarType).to(_device);
+        marks.to_type(_scalarType).to(_device);
         
         _observationEstimation.Fit(observations);
+        var mask = marks.sum(dim: 1) > 0;
 
-        // mark is a tensor of shape (nSamples, markDimensions, markChannels)
-        // need to calculate the mask where mark is present for each channel
-        // mask should be calculated in one go
-        var mask = marks.sum(dim: 1) > 0; // mask is a tensor of shape (nSamples, markChannels)
-
-        // for each channel, fit the observations where a mark was present
         for (int i = 0; i < _markChannels; i++)
         {
             var observationAtMark = observations[mask[TensorIndex.Colon, i]];
@@ -111,9 +156,11 @@ public class ClusterlessMarkEncoder : EncoderModel
             _observationAtMarkEstimation[i].Fit(observationAtMark);
             _jointEstimation[i].Fit(cat([observationAtMark, markAtMark], dim: 1));
         }
+
+        _conditionalIntensities = Evaluate();
     }
 
-    public override IEnumerable<Tensor> Evaluate()
+    public IEnumerable<Tensor> Evaluate()
     {
         return Evaluate(_minLatentSpace, _maxLatentSpace, _stepsLatentSpace);
     }
@@ -140,7 +187,7 @@ public class ClusterlessMarkEncoder : EncoderModel
     /// <returns>
     /// A list of tensors containing the density estimation for the observations, the density estimation for the observations at each mark channel, and the joint density of the observations and marks.
     /// </returns>
-    public override IEnumerable<Tensor> Evaluate(Tensor min, Tensor max, Tensor steps)
+    public IEnumerable<Tensor> Evaluate(Tensor min, Tensor max, Tensor steps)
     {
         var observationDensity = _observationEstimation.Evaluate(min, max, steps);
         var observationAtMarkDensity = new Tensor[_markChannels];

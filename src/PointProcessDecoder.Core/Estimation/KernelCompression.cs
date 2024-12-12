@@ -8,25 +8,28 @@ namespace PointProcessDecoder.Core.Estimation;
 /// <summary>
 /// Kernel density estimation with gaussian kernel compression.
 /// </summary>
-public class KernelCompression : DensityEstimation
+public class KernelCompression : IEstimation
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public override Device Device => _device;
+    public Device Device => _device;
 
-    private List<WeightedGaussian> _kernels = new();
-    /// <summary>
-    /// The weighted gaussian components.
-    /// </summary>
-    public List<WeightedGaussian> Kernels => _kernels;
+    private readonly ScalarType _scalarType;
+    /// <inheritdoc/>
+    public ScalarType ScalarType => _scalarType;
 
     private readonly Tensor _kernelBandwidth;
     /// <inheritdoc/>
-    public override Tensor KernelBandwidth => _kernelBandwidth;
+    public Tensor KernelBandwidth => _kernelBandwidth;
+
+    private Tensor _kernels = empty(0);
+    /// <summary>
+    /// The kernels.
+    /// </summary>
+    public Tensor Kernels => _kernels;
 
     private readonly double _distanceThreshold;
-    private readonly Tensor _weight = ones(1);
-
+    private readonly Tensor _weight;
 
     private readonly int _dimensions;
     /// <summary>
@@ -41,12 +44,27 @@ public class KernelCompression : DensityEstimation
     /// <param name="dimensions"></param>
     /// <param name="distanceThreshold"></param>
     /// <param name="device"></param>
-    public KernelCompression(double? bandwidth = null, int? dimensions = null, double? distanceThreshold = null, Device? device = null)
+    public KernelCompression(
+        double? bandwidth = null,
+        int? dimensions = null, 
+        double? distanceThreshold = null,
+        Device? device = null,
+        ScalarType? scalarType = null
+    )
     {
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _dimensions = dimensions ?? 1;
-        _kernelBandwidth = tensor(bandwidth ?? 1.0).repeat(_dimensions).to(_device);
+
+        _weight = ones(_dimensions)
+            .to_type(_scalarType)
+            .to(_device);
+
+        _kernelBandwidth = tensor(bandwidth ?? 1.0)
+            .repeat(_dimensions)
+            .to_type(_scalarType)
+            .to(_device);
     }
 
     /// <summary>
@@ -57,7 +75,13 @@ public class KernelCompression : DensityEstimation
     /// <param name="distanceThreshold"></param>
     /// <param name="device"></param>
     /// <exception cref="ArgumentException"></exception>
-    public KernelCompression(double[] bandwidth, int dimensions, double? distanceThreshold = null, Device? device = null)
+    public KernelCompression(
+        double[] bandwidth, 
+        int dimensions, 
+        double? distanceThreshold = null, 
+        Device? device = null,
+        ScalarType? scalarType = null
+    )
     {
         if (bandwidth.Length != dimensions)
         {
@@ -65,122 +89,140 @@ public class KernelCompression : DensityEstimation
         }
 
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _dimensions = dimensions;
-        _kernelBandwidth = tensor(bandwidth).to(_device);
+
+        _weight = ones(_dimensions)
+            .to_type(_scalarType)
+            .to(_device);
+
+        _kernelBandwidth = tensor(bandwidth)
+            .to_type(_scalarType)
+            .to(_device);
     }
 
     /// <inheritdoc/>
-    public override void Fit(Tensor data)
+    public void Fit(Tensor data)
     {
         if (data.shape[1] != _dimensions)
         {
             throw new ArgumentException("Data shape must match expected dimensions");
         }
 
+        using var _ = NewDisposeScope();
+        var count = data.shape[0];
+        data = data.to_type(_scalarType).to(_device);
+        var kernel = concat([_weight.unsqueeze(1), data[0].unsqueeze(1), _kernelBandwidth.unsqueeze(1)], dim: 1);
+
+        if (_kernels.numel() == 0)
+        {
+            _kernels = kernel.unsqueeze(0);
+            if (count == 1) return;
+            data = data[TensorIndex.Slice(1)];
+        }
+
         for (int i = 0; i < data.shape[0]; i++)
         {
-            var kernel = new WeightedGaussian(_weight, data[i], _kernelBandwidth);
-            if (_kernels.Count == 0)
+            var mahalanobisDistance = CalculateMahalanobisDistance(data[i]);
+            var (minDist, argminDist) = mahalanobisDistance.min(0);
+
+            if ((minDist > _distanceThreshold).item<bool>())
             {
-                _kernels = [kernel];
+                _kernels = cat([_kernels, kernel.unsqueeze(0)], dim: 0);
                 continue;
             }
 
-            var dist = CalculateMahalanobisDistance(data[i]);
-            var minDist = dist.min().ReadCpuSingle(0);
-            if (minDist > _distanceThreshold)
-            {
-                _kernels.Add(kernel);
-                continue;
-            }
-            var argminDist = (int)dist.argmin().item<long>();
-            var kernelToMerge = _kernels[argminDist];
-            _kernels.RemoveAt(argminDist);
-            var mergedKernel = MergeKernels(kernel, kernelToMerge);
-            _kernels.Add(mergedKernel);
+            var mergedKernel = MergeKernels(kernel, _kernels[argminDist]);
+            _kernels[argminDist] = mergedKernel;
         }
+        _kernels.MoveToOuterDisposeScope();
     }
 
     /// <inheritdoc/>
-    public override void Clear()
+    public void Clear()
     {
-        _kernels = new();
+        _kernels.Dispose();
+        _kernels = empty(0);
     }
 
     private Tensor CalculateMahalanobisDistance(Tensor data)
     {
-        using (var _ = NewDisposeScope())
-        {
-            var dist = empty(_kernels.Count);
-            for (int i = 0; i < _kernels.Count; i++)
-            {
-                var kernel = _kernels[i];
-                var mean = kernel.Mean;
-                var diagonalCovariance = diag(kernel.DiagonalCovariance);
-                var delta = data - mean;
-                var sigmaInv = diagonalCovariance.inverse();
-                var matMul = matmul(sigmaInv, delta);
-                var temp = matmul(delta, matMul);
-                dist[i] = sqrt(temp);
-            }
-            var flattened = dist.flatten();
-            return flattened.MoveToOuterDisposeScope();
-        }
+        using var _ = NewDisposeScope();
+        var diff = pow(data.unsqueeze(0) - _kernels[TensorIndex.Ellipsis, 1], 2);
+        var mahalanobisDistance = sqrt(sum(diff / _kernels[TensorIndex.Ellipsis, 2], dim: -1));
+        return mahalanobisDistance.MoveToOuterDisposeScope();
     }
 
-    private WeightedGaussian MergeKernels(WeightedGaussian kernel1, WeightedGaussian kernel2)
+    private Tensor MergeKernels(Tensor kernel, Tensor previousKernel)
     {
-        var weightSum = kernel1.Weight + kernel2.Weight;
-        var mean = (kernel1.Mean * kernel1.Weight + kernel2.Mean * kernel2.Weight) / weightSum;
-        var variance = (kernel1.DiagonalCovariance + pow(kernel1.Mean, 2)) * kernel1.Weight + (kernel2.DiagonalCovariance + pow(kernel2.Mean, 2)) * kernel2.Weight;
-        var diagonalCovariance = variance / weightSum - pow(mean, 2);
-        return new WeightedGaussian(
-            weightSum, 
-            mean, 
-            diagonalCovariance
-        );
+        using var _ = NewDisposeScope();
+        var newWeight = previousKernel[TensorIndex.Ellipsis, 0] + kernel[TensorIndex.Ellipsis, 0];
+
+        var previousMean = previousKernel[TensorIndex.Ellipsis, 1] * previousKernel[TensorIndex.Ellipsis, 0];
+        var newMean = (previousMean + kernel[TensorIndex.Ellipsis, 1]) / newWeight;
+
+        var previousDiagonalCovariance = (previousKernel[TensorIndex.Ellipsis, 2] + pow(previousKernel[TensorIndex.Ellipsis, 1], 2)) * previousKernel[TensorIndex.Ellipsis, 0];
+        var variance = previousDiagonalCovariance + (kernel[TensorIndex.Ellipsis, 2] + pow(kernel[TensorIndex.Ellipsis, 1], 2));
+        var newDiagonalCovariance = variance / newWeight - pow(newMean, 2);
+
+        return concat([newWeight.unsqueeze(1), newMean.unsqueeze(1), newDiagonalCovariance.unsqueeze(1)], dim: 1)
+            .MoveToOuterDisposeScope();
     }
 
     /// <inheritdoc/>
-    public override Tensor Evaluate(Tensor min, Tensor max, Tensor steps)
+    public Tensor Evaluate(Tensor min, Tensor max, Tensor steps)
     {
-        using (var _ = NewDisposeScope())
+        if (min.shape[0] != _dimensions || max.shape[0] != _dimensions || steps.shape[0] != _dimensions)
         {
-            var arrays = new Tensor[min.shape[0]];
-            for (int i = 0; i < min.shape[0]; i++)
-            {
-                arrays[i] = linspace(min[i].item<double>(), max[i].item<double>(), steps[i].item<long>()).to(_device);
-            }
-            var grid = meshgrid(arrays);
-            var points = vstack(grid.Select(tensor => tensor.flatten()).ToList()).T;
-            var evaluatedPoints = Evaluate(points);
-            var dimensions = steps.data<long>().ToArray();
-            var reshaped = evaluatedPoints.reshape(dimensions);
-            return reshaped.MoveToOuterDisposeScope();
+            throw new ArgumentException("The lengths of min, max, and steps must be equal to the number of dimensions.");
         }
+
+        if (min.dtype != ScalarType.Float64)
+        {
+            throw new ArgumentException("The scalar type of min and max must be float64.");
+        }
+        
+        if (steps.dtype != ScalarType.Int64)
+        {
+            throw new ArgumentException("The scalar type of steps must be int64.");
+        }
+
+        using var _ = NewDisposeScope();
+        var arrays = new Tensor[min.shape[0]];
+        for (int i = 0; i < min.shape[0]; i++)
+        {
+            arrays[i] = linspace(min[i].item<double>(), max[i].item<double>(), steps[i].item<long>(), dtype: _scalarType, device: _device);
+        }
+        var grid = meshgrid(arrays);
+        var points = vstack(grid.Select(tensor => tensor.flatten()).ToList()).T;
+        var evaluatedPoints = Evaluate(points);
+        var dimensions = steps.data<long>().ToArray();
+        return evaluatedPoints
+            .reshape(dimensions)
+            .MoveToOuterDisposeScope();
     }
 
     /// <inheritdoc/>
-    public override Tensor Evaluate(Tensor points)
+    public Tensor Evaluate(Tensor points)
     {
-        using (var _ = NewDisposeScope())
+        if (points.shape[1] != _dimensions)
         {
-            var densities = new Tensor[_kernels.Count];
-            for (int i = 0; i < _kernels.Count; i++)
-            {
-                var kernel = _kernels[i];
-                var differences = kernel.Mean.unsqueeze(0) - points.unsqueeze(1);
-                var squareDistances = pow(differences, 2);
-                var normedSquareDistances = squareDistances / kernel.DiagonalCovariance;
-                var sumDistances = sum(normedSquareDistances, dim: 2);
-                var rawDensity = exp(-0.5 * sumDistances);
-                var kernelDensity = rawDensity / sqrt(2 * Math.PI * kernel.DiagonalCovariance.prod());
-                densities[i] = kernel.Weight * kernelDensity;
-            }
-            var density = sum(stack(densities), dim: 0);
-            var normed = density / density.sum();
-            return normed.MoveToOuterDisposeScope();
+            throw new ArgumentException("The number of dimensions must match the shape of the data.");
         }
+
+        using var _ = NewDisposeScope();
+        points = points.to_type(_scalarType).to(_device);
+        var diff = pow(_kernels[TensorIndex.Ellipsis, 1] - points.unsqueeze(1), 2);
+        var gaussian = exp(-0.5 * sum(diff / _kernels[TensorIndex.Ellipsis, 2], dim: -1));
+        var kernelWeights = _kernels[TensorIndex.Ellipsis, 0];
+        var kernelSqrtDiag = sqrt(2 * Math.PI * _kernels[TensorIndex.Ellipsis, 2].prod(dim: 1));
+        var kernelDensity = kernelWeights.T * gaussian / kernelSqrtDiag.unsqueeze(0);
+        var density = sum(kernelDensity, dim: 1);
+        var normed = density / density.sum();
+        return normed
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
     }
 }

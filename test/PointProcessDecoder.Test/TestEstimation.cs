@@ -14,7 +14,7 @@ public class TestEstimation
     private int cycles = 10;
     private double yMin = 0.0;
     private double yMax = 100.0;
-    private ScalarType scalarType = ScalarType.Float64;
+    private ScalarType scalarType = ScalarType.Float32;
     private Device device = CPU;
     private int numNeurons = 40;
     private double placeFieldRadius = 8.0;
@@ -39,13 +39,13 @@ public class TestEstimation
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
 
-        var positionKC = new KernelCompression(bandwidth, numDimensions, distanceThreshold, device);
+        var positionKC = new KernelCompression(bandwidth, numDimensions, distanceThreshold, device, scalarType);
         positionKC.Fit(position1D);
         var positionKCDensity = positionKC.Evaluate(
             new double[] { yMin }, 
             new double[] { yMax }, 
             new long[] { evaluationSteps }
-        ).to_type(scalarType);
+        );
 
         var positionKC2D = tile(positionKCDensity, [heatmapPadding, 1]);
 
@@ -57,13 +57,13 @@ public class TestEstimation
             title: "PositionKernelCompression2D"
         );
         plotKernelDensityEstimate.OutputDirectory = Path.Combine(plotKernelDensityEstimate.OutputDirectory, kernelCompressionDirectory);
-        plotKernelDensityEstimate.Show(positionKC2D);
+        plotKernelDensityEstimate.Show<float>(positionKC2D);
         plotKernelDensityEstimate.Save(png: true);
 
         var neuronKDEs = new List<KernelCompression>();
         for (int i = 0; i < numNeurons; i++)
         {
-            var neuronKDE = new KernelCompression(bandwidth, numDimensions, distanceThreshold, device);
+            var neuronKDE = new KernelCompression(bandwidth, numDimensions, distanceThreshold, device, scalarType);
             var neuronPosition1D = position1D[spikingData[TensorIndex.Colon, i]];
             neuronKDE.Fit(neuronPosition1D);
             neuronKDEs.Add(neuronKDE);
@@ -72,7 +72,7 @@ public class TestEstimation
                 new double[] { yMin }, 
                 new double[] { yMax }, 
                 new long[] { evaluationSteps }
-            ).to_type(scalarType);
+            );
 
             var neuronDensity2D = tile(neuronDensity, [heatmapPadding, 1]).T;
 
@@ -87,7 +87,7 @@ public class TestEstimation
                 figureName: $"Neuron{i}PlaceField"
             );
             plotNeuronKernelDensityEstimate.OutputDirectory = Path.Combine(plotNeuronKernelDensityEstimate.OutputDirectory, compressedPlaceFieldsDirectory);
-            plotNeuronKernelDensityEstimate.Show(neuronDensity2D);
+            plotNeuronKernelDensityEstimate.Show<float>(neuronDensity2D);
             plotNeuronKernelDensityEstimate.Save(png: true);
         }
         Assert.IsTrue(true);
@@ -123,7 +123,7 @@ public class TestEstimation
             title: "PositionDensity2D"
         );
         plotKernelDensityEstimate.OutputDirectory = Path.Combine(plotKernelDensityEstimate.OutputDirectory, kernelDensityDirectory);
-        plotKernelDensityEstimate.Show(positionDensity2DExtended);
+        plotKernelDensityEstimate.Show<float>(positionDensity2DExtended);
         plotKernelDensityEstimate.Save(png: true);
 
         var neuronKDEs = new List<KernelDensity>();
@@ -153,7 +153,7 @@ public class TestEstimation
                 figureName: $"Neuron{i}PlaceField"
             );
             plotNeuronKernelDensityEstimate.OutputDirectory = Path.Combine(plotNeuronKernelDensityEstimate.OutputDirectory, placeFieldsDirectory);
-            plotNeuronKernelDensityEstimate.Show(neuronDensity2D);
+            plotNeuronKernelDensityEstimate.Show<float>(neuronDensity2D);
             plotNeuronKernelDensityEstimate.Save(png: true);
         }
         Assert.IsTrue(true);

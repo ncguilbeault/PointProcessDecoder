@@ -17,9 +17,13 @@ public class UniformTransitions : StateTransitions
     /// <inheritdoc/>
     public override Device Device => _device;
 
-    private readonly Tensor _values;
+    private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public override Tensor Values => _values;
+    public override ScalarType ScalarType => _scalarType;
+
+    private readonly Tensor _transitions;
+    /// <inheritdoc/>
+    public override Tensor Transitions => _transitions;
 
     /// <summary>
     /// Create a new instance of the <see cref="UniformTransitions"/> class.
@@ -28,17 +32,25 @@ public class UniformTransitions : StateTransitions
     /// <param name="max"></param>
     /// <param name="steps"></param>
     /// <param name="device"></param>
-    public UniformTransitions(double min, double max, long steps, Device? device = null)
+    public UniformTransitions(
+        double min, 
+        double max, 
+        long steps, 
+        Device? device = null,
+        ScalarType? scalarType = null
+    )
     {
         _dimensions = 1;
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
         _points = ComputeLatentSpace(
             [min], 
             [max],
             [steps],
-            _device
+            _device,
+            _scalarType
         );
-        _values = ComputeUniformTransitions(_points);
+        _transitions = ComputeUniformTransitions(_points);
     }
 
     /// <summary>
@@ -49,7 +61,14 @@ public class UniformTransitions : StateTransitions
     /// <param name="steps"></param>
     /// <param name="device"></param>
     /// <exception cref="ArgumentException"></exception>
-    public UniformTransitions(int dimensions, double[] min, double[] max, long[] steps, Device? device = null)
+    public UniformTransitions(
+        int dimensions, 
+        double[] min, 
+        double[] max, 
+        long[] steps, 
+        Device? device = null,
+        ScalarType? scalarType = null
+    )
     {
         if (dimensions != min.Length || dimensions != max.Length || dimensions != steps.Length)
         {
@@ -58,23 +77,26 @@ public class UniformTransitions : StateTransitions
 
         _dimensions = dimensions;
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
         _points = ComputeLatentSpace(
             min, 
             max,
             steps,
-            _device
+            _device,
+            _scalarType
         );
-        _values = ComputeUniformTransitions(_points);
+        _transitions = ComputeUniformTransitions(_points);
     }
 
     private Tensor ComputeUniformTransitions(Tensor points)
     {
-        using (var _ = NewDisposeScope())
-        {
-            var n = points.shape[0];
-            var transitions = ones(n, n, device: _device);
-            transitions /= transitions.sum(1, true);
-            return transitions.MoveToOuterDisposeScope();
-        }
+        using var _ = NewDisposeScope();
+        var n = points.shape[0];
+        var transitions = ones(n, n, device: _device);
+        transitions /= transitions.sum(1, true);
+        return transitions
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
     }
 }

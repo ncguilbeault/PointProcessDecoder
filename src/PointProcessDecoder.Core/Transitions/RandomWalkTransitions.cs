@@ -17,9 +17,13 @@ public class RandomWalkTransitions : StateTransitions
     /// <inheritdoc/>
     public override Device Device => _device;
 
-    private readonly Tensor _values;
+    private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public override Tensor Values => _values;
+    public override ScalarType ScalarType => _scalarType;
+
+    private readonly Tensor _transitions;
+    /// <inheritdoc/>
+    public override Tensor Transitions => _transitions;
 
     private readonly Tensor? _sigma;
     /// <summary>
@@ -27,21 +31,40 @@ public class RandomWalkTransitions : StateTransitions
     /// </summary>
     public Tensor? Sigma => _sigma;
 
-    public RandomWalkTransitions(double min, double max, long steps, double? sigma = null, Device? device = null)
+    public RandomWalkTransitions(
+        double min, 
+        double max, 
+        long steps, 
+        double? sigma = null,
+        Device? device = null,
+        ScalarType? scalarType = null
+    )
     {
         _dimensions = 1;
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
+        _sigma = sigma is not null ? tensor(new double[] { sigma.Value }) : null;
+        
         _points = ComputeLatentSpace(
             [min], 
             [max],
             [steps],
-            _device
+            _device,
+            _scalarType
         );
-        _sigma = sigma is not null ? tensor(new double[] { sigma.Value }) : null;
-        _values = ComputeRandomWalkTransitions(_points, _sigma);
+
+        _transitions = ComputeRandomWalkTransitions(_points, _sigma);
     }
 
-    public RandomWalkTransitions(int dimensions, double[] min, double[] max, long[] steps, double[]? sigma = null, Device? device = null)
+    public RandomWalkTransitions(
+        int dimensions, 
+        double[] min, 
+        double[] max, 
+        long[] steps, 
+        double[]? sigma = null, 
+        Device? device = null,
+        ScalarType? scalarType = null
+    )
     {
         if (dimensions != min.Length || dimensions != max.Length || dimensions != steps.Length)
         {
@@ -55,30 +78,34 @@ public class RandomWalkTransitions : StateTransitions
 
         _dimensions = dimensions;
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
+        _sigma = sigma is not null ? tensor(sigma) : null;
+
         _points = ComputeLatentSpace(
             min, 
             max,
             steps,
-            _device
+            _device,
+            _scalarType
         );
 
-        _sigma = sigma is not null ? tensor(sigma) : null;
-        _values = ComputeRandomWalkTransitions(_points, _sigma);
+        _transitions = ComputeRandomWalkTransitions(_points, _sigma);
     }
 
     // Define a function to compute a random walk transition matrix (gaussian) across the latent space. 
     // It should compute this efficiently with tensor broadcasting and it should be able to handle multiple dimensions.
     private Tensor ComputeRandomWalkTransitions(Tensor points, Tensor? sigma = null)
     {
-        using (var _ = NewDisposeScope())
-        {
-            var diff = points.unsqueeze(1) - points.unsqueeze(0);
-            diff = sigma is not null ? diff / sigma : diff;
-            var distance = diff.pow(2).sum(2).sqrt();
-            var bandwidth = sigma is not null ? distance.mean() / 2 : 1;
-            var weights = exp(-distance.pow(2) / (2 * bandwidth.pow(2)));
-            var transitions = weights / weights.sum(1, true);
-            return transitions.MoveToOuterDisposeScope();
-        }
+        using var _ = NewDisposeScope();
+        var diff = points.unsqueeze(1) - points.unsqueeze(0);
+        diff = sigma is not null ? diff / sigma : diff;
+        var distance = diff.pow(2).sum(2).sqrt();
+        var bandwidth = sigma is not null ? distance.mean() / 2 : 1;
+        var weights = exp(-distance.pow(2) / (2 * bandwidth.pow(2)));
+        var transitions = weights / weights.sum(1, true);
+        return transitions
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
     }
 }

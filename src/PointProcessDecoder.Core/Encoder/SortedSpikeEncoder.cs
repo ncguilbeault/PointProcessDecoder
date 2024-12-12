@@ -3,23 +3,27 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Encoder;
 
-public class SortedUnitEncoder : EncoderModel
+public class SortedSpikeEncoder : IEncoder
 {
     private readonly Device _device;
-    public override Device Device => _device;
+    public Device Device => _device;
+
+    private readonly ScalarType _scalarType;
+    public ScalarType ScalarType => _scalarType;
 
     private readonly int _observationDimensions;
     public int ObservationDimensions => _observationDimensions;
 
+    private IEnumerable<Tensor>? _conditionalIntensities = null;
+    public IEnumerable<Tensor>? ConditionalIntensities => _conditionalIntensities;
+
     private readonly int _nUnits;
-
-    private readonly DensityEstimation[] _unitEstimation;
-
+    private readonly IEstimation[] _unitEstimation;
     private readonly Tensor _minLatentSpace;
     private readonly Tensor _maxLatentSpace;
     private readonly Tensor _stepsLatentSpace;
 
-    public SortedUnitEncoder(
+    public SortedSpikeEncoder(
         EstimationMethod estimationMethod, 
         double[] bandwidth, 
         int observationDimensions,
@@ -28,7 +32,8 @@ public class SortedUnitEncoder : EncoderModel
         double[] maxLatentSpace,
         long[] stepsLatentSpace,
         double? distanceThreshold = null, 
-        Device? device = null
+        Device? device = null,
+        ScalarType? scalarType = null
     )
     {
         if (observationDimensions < 1)
@@ -43,6 +48,7 @@ public class SortedUnitEncoder : EncoderModel
 
         _observationDimensions = observationDimensions;
         _device = device ?? CPU;
+        _scalarType = scalarType ?? ScalarType.Float32;
 
         _minLatentSpace = tensor(minLatentSpace, device: _device);
         _maxLatentSpace = tensor(maxLatentSpace, device: _device);
@@ -50,38 +56,62 @@ public class SortedUnitEncoder : EncoderModel
 
         _nUnits = nUnits;
 
-        _unitEstimation = new DensityEstimation[_nUnits];
+        _unitEstimation = new IEstimation[_nUnits];
 
         for (int i = 0; i < _nUnits; i++)
         {
-            _unitEstimation[i] = GetEstimationMethod(estimationMethod, bandwidth, observationDimensions, distanceThreshold);
+            _unitEstimation[i] = GetEstimationMethod(
+                estimationMethod, 
+                bandwidth, 
+                observationDimensions, 
+                distanceThreshold
+            );
         }
     }
 
-    private DensityEstimation GetEstimationMethod(EstimationMethod estimationMethod, double[] bandwidth, int dimensions, double? distanceThreshold = null)
+    private IEstimation GetEstimationMethod(EstimationMethod estimationMethod, double[] bandwidth, int dimensions, double? distanceThreshold = null)
     {
         return estimationMethod switch
         {
-            EstimationMethod.KernelDensity => new KernelDensity(bandwidth, dimensions, device: _device),
-            EstimationMethod.KernelCompression => new KernelCompression(bandwidth, dimensions, distanceThreshold, device: _device),
+            EstimationMethod.KernelDensity => new KernelDensity(
+                bandwidth, 
+                dimensions, 
+                device: _device,
+                scalarType: _scalarType
+            ),
+            EstimationMethod.KernelCompression => new KernelCompression(
+                bandwidth, 
+                dimensions, 
+                distanceThreshold, 
+                device: _device,
+                scalarType: _scalarType
+            ),
             _ => throw new ArgumentException("Invalid estimation method.")
         };
     }
 
-    // observation is a tensor of shape (nSamples, observationDimensions)
-    // spikes is a tensor of shape (nSamples, nUnits)
-    public override void Encode(Tensor observations, Tensor spikes)
+    /// <summary>
+    /// Encode the observations and inputs.
+    /// </summary>
+    /// <param name="observations"></param>
+    /// <param name="inputs"></param>
+    /// <exception cref="ArgumentException"></exception>
+    public void Encode(Tensor observations, Tensor inputs)
     {
-        observations.to(_device);
-        spikes.to(_device);
+        if (inputs.shape[1] != _nUnits)
+        {
+            throw new ArgumentException("The number of units in the input tensor must match the expected number of units.");
+        }
 
         for (int i = 0; i < _nUnits; i++)
         {
-            _unitEstimation[i].Fit(observations[spikes[TensorIndex.Colon, i]]);
+            _unitEstimation[i].Fit(observations[inputs[TensorIndex.Colon, i]]);
         }
+
+        _conditionalIntensities = Evaluate();
     }
 
-    public override IEnumerable<Tensor> Evaluate()
+    public IEnumerable<Tensor> Evaluate()
     {
         return Evaluate(_minLatentSpace, _maxLatentSpace, _stepsLatentSpace);
     }
@@ -102,7 +132,7 @@ public class SortedUnitEncoder : EncoderModel
     /// <param name="max"></param>
     /// <param name="steps"></param>
     /// <returns></returns>
-    public override IEnumerable<Tensor> Evaluate(Tensor min, Tensor max, Tensor steps)
+    public IEnumerable<Tensor> Evaluate(Tensor min, Tensor max, Tensor steps)
     {
         var unitDensity = new Tensor[_nUnits];
 
