@@ -22,7 +22,7 @@ public class TestEstimation
     private double bandwidth = 5;
     private int numDimensions = 1;
     private long evaluationSteps = 50;
-    private double distanceThreshold = 1.5;
+    private double distanceThreshold = double.NegativeInfinity;
     private int heatmapPadding = 10;
     private string outputDirectory = "TestEstimation";
 
@@ -35,7 +35,7 @@ public class TestEstimation
         var position1DExpanded = concat([zeros_like(position1D), position1D], dim: 1);
 
         var placeFieldCenters = Simulate.PlaceFieldCenters(yMin, yMax, numNeurons, seed, scalarType);
-        var placeFieldCenters2D = vstack([zeros_like(placeFieldCenters), placeFieldCenters]).T;
+        var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
 
@@ -45,7 +45,7 @@ public class TestEstimation
             new double[] { yMin }, 
             new double[] { yMax }, 
             new long[] { evaluationSteps }
-        );
+        ).to_type(scalarType);
 
         var positionKC2D = tile(positionKCDensity, [heatmapPadding, 1]);
 
@@ -72,7 +72,7 @@ public class TestEstimation
                 new double[] { yMin }, 
                 new double[] { yMax }, 
                 new long[] { evaluationSteps }
-            );
+            ).to_type(scalarType);
 
             var neuronDensity2D = tile(neuronDensity, [heatmapPadding, 1]).T;
 
@@ -102,7 +102,7 @@ public class TestEstimation
         var position1DExpanded = concat([zeros_like(position1D), position1D], dim: 1);
 
         var placeFieldCenters = Simulate.PlaceFieldCenters(yMin, yMax, numNeurons, seed, scalarType);
-        var placeFieldCenters2D = vstack([zeros_like(placeFieldCenters), placeFieldCenters]).T;
+        var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
         var positionKDE = new KernelDensity(bandwidth, numDimensions, device);

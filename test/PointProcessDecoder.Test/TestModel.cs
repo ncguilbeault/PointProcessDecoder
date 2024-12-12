@@ -37,7 +37,7 @@ public class TestModel
         var position1DExpanded = concat([zeros_like(position1D), position1D], dim: 1);
 
         var placeFieldCenters = Simulate.PlaceFieldCenters(yMin, yMax, numNeurons, seed, scalarType);
-        var placeFieldCenters2D = vstack([zeros_like(placeFieldCenters), placeFieldCenters]).T;
+        var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
 

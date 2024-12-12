@@ -131,7 +131,7 @@ public static class Simulate
         device ??= _device;
         using var _ = NewDisposeScope();
         if (seed != null) manual_seed(seed.Value);
-        var positions = linspace(min + 0.5 * (max - min) / numNeurons, max - 0.5 * (max - min) / numNeurons, numNeurons);
+        var positions = linspace(min + 0.5 * (max - min) / numNeurons, max - 0.5 * (max - min) / numNeurons, numNeurons).unsqueeze(1);
         return positions
             .to_type(scalarType.Value)
             .to(device)
@@ -231,7 +231,7 @@ public static class Simulate
         Tensor placeFieldRadius, 
         Tensor firingThreshold, 
         int? seed = null, 
-        ScalarType? scalarType = ScalarType.Int32,
+        ScalarType? scalarType = ScalarType.Bool,
         Device? device = null,
         double? noiseScale = null)
     {

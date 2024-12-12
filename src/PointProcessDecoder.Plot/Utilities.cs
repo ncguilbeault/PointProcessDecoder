@@ -7,18 +7,32 @@ namespace PointProcessDecoder.Plot;
 /// </summary>
 public static class Utilities
 {
+    private static Random random = new Random();
+
     /// <summary>
     /// Generates a list of colors.
     /// </summary>
     /// <param name="n"></param>
     /// <returns></returns>
-    public static List<OxyColor> GenerateRandomColors(int n)
+    public static List<OxyColor> GenerateRandomColors(int n, int? seed = null)
     {
+        if (seed.HasValue) 
+            random = new Random(seed.Value);
+
         var colors = new List<OxyColor>();
         for (int i = 0; i < n; i++)
         {
             colors.Add(OxyColor.FromHsv((double)i / n, 1, 1));
         }
+
+        for (int i = 0; i < n; i++)
+        {
+            int j = random.Next(i, n);
+            var temp = colors[i];
+            colors[i] = colors[j];
+            colors[j] = temp;
+        }
+
         return colors;
     }
 }

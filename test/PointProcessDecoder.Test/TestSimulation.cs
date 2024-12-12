@@ -37,23 +37,23 @@ public class TestSimulation
         plotPosition1D.Save(png: true);
 
         var placeFieldCenters = Simulate.PlaceFieldCenters(min, max, numNeurons, seed, scalarType);
-        var placeFieldCenters2D = vstack([zeros_like(placeFieldCenters), placeFieldCenters]).T;
+        var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         ScatterPlot plotPlaceFieldCenters = new(-1, 1, min, max, "PlaceFieldCenters1D");
         plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, spikingNeuronsDirectory);
         plotPlaceFieldCenters.Show<float>(placeFieldCenters2D);
         plotPlaceFieldCenters.Save(png: true);
 
-        var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
+        var spikingData = Simulate.SpikesAtPosition(position1D, placeFieldCenters, placeFieldRadius, firingThreshold, seed);
 
         ScatterPlot plotSpikingNeurons = new(0, position1D.shape[0], min, max, title: "SpikingNeurons1D");
         plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, spikingNeuronsDirectory);
 
-        var colors = Utilities.GenerateRandomColors(numNeurons);
+        var colors = Utilities.GenerateRandomColors(numNeurons, seed);
 
         for (int i = 0; i < numNeurons; i++)
         {
-            var positionsAtSpikes = position1DExpandedTime[spikingData[TensorIndex.Colon, i]];
+            var positionsAtSpikes = position1DExpandedTime[spikingData[TensorIndex.Ellipsis, i]];
             plotSpikingNeurons.Show<float>(positionsAtSpikes, colors[i]);
         }
         plotSpikingNeurons.Save(png: true);
@@ -90,7 +90,7 @@ public class TestSimulation
         ScatterPlot plotSpikingNeurons = new(xMin, xMax, yMin, yMax, title: "SpikingNeurons");
         plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, spikingNeuronsDirectory);
 
-        var colors = Utilities.GenerateRandomColors(numNeurons);
+        var colors = Utilities.GenerateRandomColors(numNeurons, seed);
 
         for (int i = 0; i < numNeurons; i++)
         {

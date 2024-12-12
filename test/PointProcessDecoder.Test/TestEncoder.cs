@@ -34,7 +34,7 @@ public class TestEncoder
         var position1DExpanded = concat([zeros_like(position1D), position1D], dim: 1);
 
         var placeFieldCenters = Simulate.PlaceFieldCenters(min, max, numNeurons, seed, scalarType);
-        var placeFieldCenters2D = vstack([zeros_like(placeFieldCenters), placeFieldCenters]).T;
+        var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
 
@@ -146,7 +146,7 @@ public class TestEncoder
             position1D, 
             spikingData, 
             sortedSpikeEncoderDirectory,
-            [ 0, steps * cycles, 0, 1 ],
+            [ 0, evaluationSteps, 0, 1 ],
             [ 0, heatmapPadding, min, max ]
         );
 
@@ -192,7 +192,7 @@ public class TestEncoder
             position1D, 
             spikingData, 
             sortedSpikeEncoderDirectory,
-            [ 0, steps * cycles, 0, 1 ],
+            [ 0, evaluationSteps, 0, 1 ],
             [ 0, heatmapPadding, min, max ]
         );
 
