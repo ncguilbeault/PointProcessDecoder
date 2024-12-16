@@ -1,7 +1,4 @@
-using static TorchSharp.torch;
-using PointProcessDecoder.Core;
 using PointProcessDecoder.Plot;
-using PointProcessDecoder.Simulation;
 using PointProcessDecoder.Core.Transitions;
 
 namespace PointProcessDecoder.Test;

@@ -178,6 +178,11 @@ public class KernelDensity : IEstimation
             throw new ArgumentException("The number of dimensions must match the shape of the data.");
         }
 
+        if (_kernels.numel() == 0)
+        {
+            return zeros(points.shape[0], dtype: _scalarType, device: _device);
+        }
+
         using var _ = NewDisposeScope();
         var differences = _kernels.unsqueeze(0) - points.unsqueeze(1);
         var distances = differences / _kernelBandwidth;

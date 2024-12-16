@@ -142,6 +142,11 @@ public class Heatmap : OxyPlotBase
 
     private void AddPoints(Tensor points)
     {
+        if (points.shape[1] != 2)
+        {
+            throw new ArgumentException("Points must have 2 columns.");
+        }
+
         var scatterSeries = new ScatterSeries
         {
             MarkerType = MarkerType.Circle,
@@ -151,7 +156,10 @@ public class Heatmap : OxyPlotBase
             ColorAxisKey = "scatterColor"
         };
 
-        var pointsArray = points.data<double>().ToNDArray();
+        var pointsArray = points.to_type(ScalarType.Float64)
+            .data<double>()
+            .ToNDArray();
+
         var pointsData = new double[points.shape[0], points.shape[1]];
         Array.Copy(pointsArray, pointsData, pointsArray.Length);
 

@@ -81,7 +81,7 @@ public abstract class OxyPlotBase
         }
     }
 
-    public byte[] ExportToBytes()
+    public byte[] ToBytes()
     {
         var exporter = new PngExporter() {Width = Width, Height = Height};
         using (var stream = new MemoryStream())

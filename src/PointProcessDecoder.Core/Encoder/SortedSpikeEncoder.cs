@@ -19,18 +19,20 @@ public class SortedSpikeEncoder : IEncoder
 
     private readonly int _nUnits;
     private readonly IEstimation[] _unitEstimation;
-    private readonly Tensor _minLatentSpace;
-    private readonly Tensor _maxLatentSpace;
-    private readonly Tensor _stepsLatentSpace;
+    private readonly IEstimation _observationEstimation;
+    private float[] _meanRates = new float[0];
+    private readonly Tensor _minObservationSpace;
+    private readonly Tensor _maxObservationSpace;
+    private readonly Tensor _stepsObservationSpace;
 
     public SortedSpikeEncoder(
         EstimationMethod estimationMethod, 
         double[] bandwidth, 
         int observationDimensions,
         int nUnits,
-        double[] minLatentSpace,
-        double[] maxLatentSpace,
-        long[] stepsLatentSpace,
+        double[] minObservationSpace,
+        double[] maxObservationSpace,
+        long[] stepsObservationSpace,
         double? distanceThreshold = null, 
         Device? device = null,
         ScalarType? scalarType = null
@@ -50,11 +52,18 @@ public class SortedSpikeEncoder : IEncoder
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
 
-        _minLatentSpace = tensor(minLatentSpace, device: _device);
-        _maxLatentSpace = tensor(maxLatentSpace, device: _device);
-        _stepsLatentSpace = tensor(stepsLatentSpace, device: _device);
+        _minObservationSpace = tensor(minObservationSpace, device: _device);
+        _maxObservationSpace = tensor(maxObservationSpace, device: _device);
+        _stepsObservationSpace = tensor(stepsObservationSpace, device: _device);
 
         _nUnits = nUnits;
+        
+        _observationEstimation = GetEstimationMethod(
+            estimationMethod, 
+            bandwidth, 
+            observationDimensions, 
+            distanceThreshold
+        );
 
         _unitEstimation = new IEstimation[_nUnits];
 
@@ -69,7 +78,12 @@ public class SortedSpikeEncoder : IEncoder
         }
     }
 
-    private IEstimation GetEstimationMethod(EstimationMethod estimationMethod, double[] bandwidth, int dimensions, double? distanceThreshold = null)
+    private IEstimation GetEstimationMethod(
+        EstimationMethod estimationMethod, 
+        double[] bandwidth, 
+        int dimensions, 
+        double? distanceThreshold = null
+    )
     {
         return estimationMethod switch
         {
@@ -103,6 +117,19 @@ public class SortedSpikeEncoder : IEncoder
             throw new ArgumentException("The number of units in the input tensor must match the expected number of units.");
         }
 
+        if (observations.shape[1] != _observationDimensions)
+        {
+            throw new ArgumentException("The number of observation dimensions must match the shape of the observations.");
+        }
+
+        _observationEstimation.Fit(observations);
+
+        _meanRates = inputs.to_type(ScalarType.Int32)
+            .mean([0], type: ScalarType.Float32)
+            .log()
+            .data<float>()
+            .ToArray();
+
         for (int i = 0; i < _nUnits; i++)
         {
             _unitEstimation[i].Fit(observations[inputs[TensorIndex.Colon, i]]);
@@ -113,17 +140,18 @@ public class SortedSpikeEncoder : IEncoder
 
     public IEnumerable<Tensor> Evaluate()
     {
-        return Evaluate(_minLatentSpace, _maxLatentSpace, _stepsLatentSpace);
+        return Evaluate(_minObservationSpace, _maxObservationSpace, _stepsObservationSpace);
     }
 
     public IEnumerable<Tensor> Evaluate(double[] min, double[] max, double[] steps)
     {
-        var minLatentSpace = tensor(min, device: _device);
-        var maxLatentSpace = tensor(max, device: _device);
-        var stepsLatentSpace = tensor(steps, device: _device);
+        var minObservationSpace = tensor(min, device: _device);
+        var maxObservationSpace = tensor(max, device: _device);
+        var stepsObservationSpace = tensor(steps, device: _device);
 
-        return Evaluate(minLatentSpace, maxLatentSpace, stepsLatentSpace);
+        return Evaluate(minObservationSpace, maxObservationSpace, stepsObservationSpace);
     }
+
 
     /// <summary>
     /// Evaluate the density estimation for the given range and steps.
@@ -134,13 +162,16 @@ public class SortedSpikeEncoder : IEncoder
     /// <returns></returns>
     public IEnumerable<Tensor> Evaluate(Tensor min, Tensor max, Tensor steps)
     {
-        var unitDensity = new Tensor[_nUnits];
+        using var _ = NewDisposeScope();
+        var observationDensity = _observationEstimation.Evaluate(min, max, steps).log();
+        var conditionalIntensities = new Tensor[_nUnits];
 
         for (int i = 0; i < _nUnits; i++)
         {
-            unitDensity[i] = _unitEstimation[i].Evaluate(min, max, steps);
+            var unitDensity = _unitEstimation[i].Evaluate(min, max, steps).log();
+            conditionalIntensities[i] = exp(_meanRates[i] + unitDensity - observationDensity).MoveToOuterDisposeScope();
         }
 
-        return unitDensity;
+        return conditionalIntensities;
     }
 }

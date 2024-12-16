@@ -11,11 +11,9 @@ namespace PointProcessDecoder.Test;
 [TestClass]
 public class TestModel
 {
-    private int heatmapPadding = 10;
     private int seed = 0;
-    private ScalarType scalarType = ScalarType.Float64;
+    private ScalarType scalarType = ScalarType.Float32;
     private Device device = CPU;
-    private int testingSteps = 1800;
     private string outputDirectory = "TestModel";
 
     [TestMethod]
@@ -31,6 +29,8 @@ public class TestModel
         int numNeurons = 40;
         double placeFieldRadius = 8.0;
         double firingThreshold = 0.2;
+        int nTraining = 1800;
+        int nTesting = 200;
 
         var pointProcessModelDirectory = Path.Combine(outputDirectory, "PointProcessModelUniformDensity");
         var (position1D, spikingData) = Utilities.InitializeSimulation1D(
@@ -59,12 +59,12 @@ public class TestModel
             device: device
         );
 
-        pointProcessModel.Encode(position1D[TensorIndex.Slice(0, testingSteps)], spikingData[TensorIndex.Slice(0, testingSteps)]);
-        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(testingSteps)]);
+        pointProcessModel.Encode(position1D[TensorIndex.Slice(0, nTraining)], spikingData[TensorIndex.Slice(0, nTraining)]);
+        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
 
         Heatmap plotPrediction = new(
             0,
-            steps * cycles - testingSteps,
+            steps * cycles - nTraining,
             min,
             max,
             title: "Prediction1D"
@@ -73,7 +73,7 @@ public class TestModel
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, pointProcessModelDirectory);
         plotPrediction.Show<float>(
             prediction, 
-            concat([arange(steps * cycles - testingSteps).unsqueeze(-1), position1D[TensorIndex.Slice(testingSteps)]], dim: 1)
+            concat([arange(steps * cycles - nTraining).unsqueeze(-1), position1D[TensorIndex.Slice(nTraining)]], dim: 1)
         );
         plotPrediction.Save(png: true);
 
@@ -94,6 +94,8 @@ public class TestModel
         double placeFieldRadius = 8.0;
         double firingThreshold = 0.2;
         double sigma = 1.0;
+        int nTraining = 1800;
+        int nTesting = 200;
 
         var pointProcessModelDirectory = Path.Combine(outputDirectory, "PointProcessModelRandomWalkDensity");
         var (position1D, spikingData) = Utilities.InitializeSimulation1D(
@@ -123,12 +125,12 @@ public class TestModel
             device: device
         );
 
-        pointProcessModel.Encode(position1D[TensorIndex.Slice(0, testingSteps)], spikingData[TensorIndex.Slice(0, testingSteps)]);
-        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(testingSteps)]);
+        pointProcessModel.Encode(position1D[TensorIndex.Slice(0, nTraining)], spikingData[TensorIndex.Slice(0, nTraining)]);
+        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
 
         Heatmap plotPrediction = new(
             0,
-            steps * cycles - testingSteps,
+            steps * cycles - nTraining,
             min,
             max,
             title: "Prediction1D"
@@ -137,7 +139,7 @@ public class TestModel
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, pointProcessModelDirectory);
         plotPrediction.Show<float>(
             prediction,
-            concat([arange(steps * cycles - testingSteps).unsqueeze(-1), position1D[TensorIndex.Slice(testingSteps)]], dim: 1)
+            concat([arange(steps * cycles - nTraining).unsqueeze(-1), position1D[TensorIndex.Slice(nTraining)]], dim: 1)
         );
         plotPrediction.Save(png: true);
 
@@ -159,6 +161,8 @@ public class TestModel
         double firingThreshold = 0.2;
         double sigma = 1.0;
         double distanceThreshold = 1.5;
+        int nTraining = 1800;
+        int nTesting = 200;
 
         var pointProcessModelDirectory = Path.Combine(outputDirectory, "PointProcessModelRandomWalkCompression");
         var (position1D, spikingData) = Utilities.InitializeSimulation1D(
@@ -189,12 +193,12 @@ public class TestModel
             device: device
         );
 
-        pointProcessModel.Encode(position1D[TensorIndex.Slice(0, testingSteps)], spikingData[TensorIndex.Slice(0, testingSteps)]);
-        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(testingSteps)]);
+        pointProcessModel.Encode(position1D[TensorIndex.Slice(0, nTraining)], spikingData[TensorIndex.Slice(0, nTraining)]);
+        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
 
         Heatmap plotPrediction = new(
             0,
-            steps * cycles - testingSteps,
+            steps * cycles - nTraining,
             min,
             max,
             title: "Prediction1D"
@@ -203,7 +207,7 @@ public class TestModel
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, pointProcessModelDirectory);
         plotPrediction.Show<float>(
             prediction,
-            concat([arange(steps * cycles - testingSteps).unsqueeze(-1), position1D[TensorIndex.Slice(testingSteps)]], dim: 1)
+            concat([arange(steps * cycles - nTraining).unsqueeze(-1), position1D[TensorIndex.Slice(nTraining)]], dim: 1)
         );
         plotPrediction.Save(png: true);
 
@@ -226,6 +230,8 @@ public class TestModel
         double placeFieldRadius = 8.0;
         double firingThreshold = 0.2;
         double scale = 0.1;
+        int nTraining = 1800;
+        int nTesting = 200;
 
         var pointProcessModelDirectory = Path.Combine(outputDirectory, "PointProcessModelUniformDensity2D");
         var (position2D, spikingData) = Utilities.InitializeSimulation2D(
@@ -257,9 +263,9 @@ public class TestModel
             device: device
         );
 
-        pointProcessModel.Encode(position2D[TensorIndex.Slice(0, testingSteps)], spikingData[TensorIndex.Slice(0, testingSteps)]);
-        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(testingSteps)]);
-        prediction = prediction[0].reshape(evaluationSteps);
+        pointProcessModel.Encode(position2D[TensorIndex.Slice(0, nTraining)], spikingData[TensorIndex.Slice(0, nTraining)]);
+        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
+        prediction = (prediction.sum(dim: 0) / prediction.sum()).reshape(evaluationSteps);
 
         Heatmap plotPrediction = new(
             xMin,
@@ -272,7 +278,223 @@ public class TestModel
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, pointProcessModelDirectory);
         plotPrediction.Show<float>(
             prediction,
-            position2D[TensorIndex.Slice(testingSteps)]
+            position2D[TensorIndex.Slice(nTraining)]
+        );
+        plotPrediction.Save(png: true);
+
+        Assert.IsTrue(true);
+    }
+
+    [TestMethod]
+    public void TestPointProcessModelRandomWalkDensity2D()
+    {
+        double[] bandwidth = [5, 5];
+        int numDimensions = 2;
+        long[] evaluationSteps = [50, 50];
+        int steps = 200;
+        int cycles = 10;
+        double xMin = 0.0;
+        double xMax = 100.0;
+        double yMin = 0.0;
+        double yMax = 100.0;
+        int numNeurons = 40;
+        double placeFieldRadius = 8.0;
+        double firingThreshold = 0.2;
+        double scale = 0.1;
+        double[] sigma = [100, 100];
+        int nTraining = 1800;
+        int nTesting = 200;
+
+        var pointProcessModelDirectory = Path.Combine(outputDirectory, "PointProcessModelRandomWalkDensity2D");
+        var (position2D, spikingData) = Utilities.InitializeSimulation2D(
+            steps: steps,
+            cycles: cycles,
+            xMin: xMin,
+            xMax: xMax,
+            yMin: yMin,
+            yMax: yMax,
+            numNeurons: numNeurons,
+            placeFieldRadius: placeFieldRadius,
+            firingThreshold: firingThreshold,
+            scale: scale,
+            scalarType: scalarType,
+            seed: seed
+        );
+
+        var pointProcessModel = new PointProcessModel(
+            EstimationMethod.KernelDensity,
+            TransitionsType.RandomWalk,
+            EncoderType.SortedSpikeEncoder,
+            DecoderType.SortedSpikeDecoder,
+            [xMin, yMin],
+            [xMax, yMax],
+            evaluationSteps,
+            bandwidth,
+            latentDimensions: numDimensions,
+            nUnits: numNeurons,
+            device: device,
+            sigmaRandomWalk: sigma
+        );
+
+        pointProcessModel.Encode(position2D[TensorIndex.Slice(0, nTraining)], spikingData[TensorIndex.Slice(0, nTraining)]);
+        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
+        prediction = (prediction.sum(dim: 0) / prediction.sum()).reshape(evaluationSteps);
+
+        Heatmap plotPrediction = new(
+            xMin,
+            xMax,
+            yMin,
+            yMax,
+            title: "Prediction2D"
+        );
+
+        plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, pointProcessModelDirectory);
+        plotPrediction.Show<float>(
+            prediction,
+            position2D[TensorIndex.Slice(nTraining)]
+        );
+        plotPrediction.Save(png: true);
+
+        Assert.IsTrue(true);
+    }
+
+    [TestMethod]
+    public void TestPointProcessModelRandomWalkCompression2D()
+    {
+        double[] bandwidth = [5, 5];
+        int numDimensions = 2;
+        long[] evaluationSteps = [50, 50];
+        int steps = 200;
+        int cycles = 10;
+        double xMin = 0.0;
+        double xMax = 100.0;
+        double yMin = 0.0;
+        double yMax = 100.0;
+        int numNeurons = 40;
+        double placeFieldRadius = 8.0;
+        double firingThreshold = 0.2;
+        double scale = 0.1;
+        double distanceThreshold = 1.5;
+        double[] sigma = [100, 100];
+        int nTraining = 1800;
+        int nTesting = 200;
+
+        var pointProcessModelDirectory = Path.Combine(outputDirectory, "PointProcessModelRandomWalkCompression2D");
+        var (position2D, spikingData) = Utilities.InitializeSimulation2D(
+            steps: steps,
+            cycles: cycles,
+            xMin: xMin,
+            xMax: xMax,
+            yMin: yMin,
+            yMax: yMax,
+            numNeurons: numNeurons,
+            placeFieldRadius: placeFieldRadius,
+            firingThreshold: firingThreshold,
+            scale: scale,
+            scalarType: scalarType,
+            seed: seed
+        );
+
+        var pointProcessModel = new PointProcessModel(
+            EstimationMethod.KernelCompression,
+            TransitionsType.RandomWalk,
+            EncoderType.SortedSpikeEncoder,
+            DecoderType.SortedSpikeDecoder,
+            [xMin, yMin],
+            [xMax, yMax],
+            evaluationSteps,
+            bandwidth,
+            latentDimensions: numDimensions,
+            nUnits: numNeurons,
+            distanceThreshold: distanceThreshold,
+            device: device,
+            sigmaRandomWalk: sigma
+        );
+
+        pointProcessModel.Encode(position2D[TensorIndex.Slice(0, nTraining)], spikingData[TensorIndex.Slice(0, nTraining)]);
+        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
+        prediction = (prediction.sum(dim: 0) / prediction.sum()).reshape(evaluationSteps);
+
+        Heatmap plotPrediction = new(
+            xMin,
+            xMax,
+            yMin,
+            yMax,
+            title: "Prediction2D"
+        );
+
+        plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, pointProcessModelDirectory);
+        plotPrediction.Show<float>(
+            prediction,
+            position2D[TensorIndex.Slice(nTraining)]
+        );
+        plotPrediction.Save(png: true);
+
+        Assert.IsTrue(true);
+    }
+
+[TestMethod]
+    public void TestPointProcessModelRandomWalkCompressionRealData2D()
+    {
+        double[] bandwidth = [5, 5];
+        int numDimensions = 2;
+        long[] evaluationSteps = [50, 50];
+        double xMin = 0.0;
+        double xMax = 120.0;
+        double yMin = 0.0;
+        double yMax = 120.0;
+        double distanceThreshold = 1.5;
+        double[] sigma = [100, 100];
+        int nTraining = 1800;
+        int nTesting = 200;
+
+        string positionFile = "../../../../data/positions_2D.bin";
+        string spikesFile = "../../../../data/spike_times.bin";
+
+        var pointProcessModelDirectory = Path.Combine(outputDirectory, "PointProcessModelRandomWalkCompressionRealData2D");
+        var (position, spikingData) = Utilities.InitializeRealData(
+            positionFile: positionFile,
+            spikesFile: spikesFile,
+            device: device,
+            scalarType: scalarType
+        );
+        var position2D = position.reshape(-1, 2);
+        spikingData = spikingData.reshape(position2D.shape[0], -1)
+            .to_type(ScalarType.Bool);
+        var numNeurons = (int)spikingData.shape[1];
+
+        var pointProcessModel = new PointProcessModel(
+            EstimationMethod.KernelCompression,
+            TransitionsType.RandomWalk,
+            EncoderType.SortedSpikeEncoder,
+            DecoderType.SortedSpikeDecoder,
+            [xMin, yMin],
+            [xMax, yMax],
+            evaluationSteps,
+            bandwidth,
+            latentDimensions: numDimensions,
+            nUnits: numNeurons,
+            distanceThreshold: distanceThreshold,
+            device: device,
+            sigmaRandomWalk: sigma
+        );
+
+        pointProcessModel.Encode(position2D[TensorIndex.Slice(0, nTraining)], spikingData[TensorIndex.Slice(0, nTraining)]);
+        var prediction = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
+        prediction = (prediction.sum(dim: 0) / prediction.sum()).reshape(evaluationSteps);
+
+        Heatmap plotPrediction = new(
+            xMin,
+            xMax,
+            yMin,
+            yMax,
+            title: "Prediction2D"
+        );
+
+        plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, pointProcessModelDirectory);
+        plotPrediction.Show<float>(
+            prediction,
+            position2D[TensorIndex.Slice(nTraining)]
         );
         plotPrediction.Save(png: true);
 

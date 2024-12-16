@@ -127,7 +127,11 @@ public class KernelCompression : IEstimation
         if (_kernels.numel() == 0)
         {
             _kernels = concat([_weight.unsqueeze(1), data[0].unsqueeze(1), _kernelBandwidth.unsqueeze(1)], dim: 1).unsqueeze(0);
-            if (data.shape[0] == 1) return;
+            if (data.shape[0] == 1) 
+            {
+                _kernels.MoveToOuterDisposeScope();
+                return;
+            }
             data = data[TensorIndex.Slice(1)];
         }
 
@@ -208,6 +212,11 @@ public class KernelCompression : IEstimation
         if (points.shape[1] != _dimensions)
         {
             throw new ArgumentException("The number of dimensions must match the shape of the data.");
+        }
+
+        if (_kernels.numel() == 0)
+        {
+            return zeros(points.shape[0], dtype: _scalarType, device: _device);
         }
 
         using var _ = NewDisposeScope();

@@ -26,9 +26,9 @@ public class SortedSpikeDecoder : IDecoder
     public SortedSpikeDecoder(
         TransitionsType transitionsType,
         int latentDimensions,
-        double[] minLatentSpace,
-        double[] maxLatentSpace,
-        long[] stepsLatentSpace,
+        double[] minObservationSpace,
+        double[] maxObservationSpace,
+        long[] stepsObservationSpace,
         double[]? sigmaRandomWalk = null,
         Device? device = null,
         ScalarType? scalarType = null
@@ -42,17 +42,17 @@ public class SortedSpikeDecoder : IDecoder
         {
             TransitionsType.Uniform => new UniformTransitions(
                 _latentDimensions, 
-                minLatentSpace, 
-                maxLatentSpace, 
-                stepsLatentSpace, 
+                minObservationSpace, 
+                maxObservationSpace, 
+                stepsObservationSpace, 
                 device: _device,
                 scalarType: _scalarType
             ),
             TransitionsType.RandomWalk => new RandomWalkTransitions(
                 _latentDimensions, 
-                minLatentSpace, 
-                maxLatentSpace, 
-                stepsLatentSpace, 
+                minObservationSpace, 
+                maxObservationSpace, 
+                stepsObservationSpace, 
                 sigmaRandomWalk, 
                 device: _device,
                 scalarType: _scalarType
@@ -78,23 +78,30 @@ public class SortedSpikeDecoder : IDecoder
     /// </returns>
     public Tensor Decode(Tensor inputs, IEnumerable<Tensor> conditionalIntensities)
     {
+        using var _ = NewDisposeScope();
         inputs = inputs.to_type(_scalarType).to(_device);
 
-        using var conditionalIntensitiesTensor = stack(conditionalIntensities.Select(t => t.flatten()), dim: -1)
+        var conditionalIntensitiesTensor = stack(conditionalIntensities.Select(ci => ci.flatten()), dim: -1)
             .to_type(_scalarType)
             .to(_device);
 
-        using var logLikelihood = LogLikelihood(inputs, conditionalIntensitiesTensor);
-        _posterior = exp(logLikelihood + _stateTransitions.Transitions.matmul(_posterior).log());
-        
-        return _posterior / _posterior.sum(0, true);
+        var logLikelihood = LogLikelihood(inputs, conditionalIntensitiesTensor);
+        var output = zeros_like(logLikelihood);
+        for (int i = 0; i < inputs.shape[0]; i++)
+        {
+            _posterior = exp(logLikelihood[i] * inputs[i].any() + _stateTransitions.Transitions.T.matmul(_posterior).log().clamp(1e-10));
+            _posterior /= _posterior.sum();
+            output[i] = _posterior;
+        }
+        _posterior.MoveToOuterDisposeScope();
+        return output.MoveToOuterDisposeScope();
     }
 
     private static Tensor LogLikelihood(Tensor inputs, Tensor conditionalIntensities)
     {
         using var _ = NewDisposeScope();
-        var clippedConditionalIntensities = conditionalIntensities.clamp(1e-10);
-        var logLikelihood = xlogy(inputs.unsqueeze(1), clippedConditionalIntensities.unsqueeze(0)).sum(dim: 2);
-        return (logLikelihood - logLikelihood.logsumexp(1, true)).MoveToOuterDisposeScope();
+        conditionalIntensities = conditionalIntensities.clamp(1e-10);
+        var logLikelihood = xlogy(inputs.unsqueeze(1), conditionalIntensities.unsqueeze(0)) - conditionalIntensities.unsqueeze(0);
+        return logLikelihood.sum(dim: -1).MoveToOuterDisposeScope();
     }
 }

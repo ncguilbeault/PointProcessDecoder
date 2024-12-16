@@ -19,7 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PointProcessDecoder.Core\PointProcessDecoder.Core.csproj" />
-    <ProjectReference Include="..\..\src\PointProcessDecoder.Simulation\PointProcessDecoder.Simulation.csproj" />
     <ProjectReference Include="..\..\src\PointProcessDecoder.Plot\PointProcessDecoder.Plot.csproj" />
+    <ProjectReference Include="..\..\src\PointProcessDecoder.Simulation\PointProcessDecoder.Simulation.csproj" />
   </ItemGroup>
 </Project>
