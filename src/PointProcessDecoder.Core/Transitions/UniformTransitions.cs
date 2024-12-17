@@ -50,7 +50,12 @@ public class UniformTransitions : StateTransitions
             _device,
             _scalarType
         );
-        _transitions = ComputeUniformTransitions(_points);
+        
+        _transitions = ComputeUniformTransitions(
+            _points,
+            _device,
+            _scalarType
+        );
     }
 
     /// <summary>
@@ -85,18 +90,27 @@ public class UniformTransitions : StateTransitions
             _device,
             _scalarType
         );
-        _transitions = ComputeUniformTransitions(_points);
+
+        _transitions = ComputeUniformTransitions(
+            _points,
+            _device,
+            _scalarType
+        );
     }
 
-    private Tensor ComputeUniformTransitions(Tensor points)
+    private static Tensor ComputeUniformTransitions(
+        Tensor points,
+        Device device,
+        ScalarType scalarType
+    )
     {
         using var _ = NewDisposeScope();
         var n = points.shape[0];
-        var transitions = ones(n, n, device: _device);
+        var transitions = ones(n, n, device: device, dtype: scalarType);
         transitions /= transitions.sum(1, true);
         return transitions
-            .to_type(_scalarType)
-            .to(_device)
+            .to_type(scalarType)
+            .to(device)
             .MoveToOuterDisposeScope();
     }
 }

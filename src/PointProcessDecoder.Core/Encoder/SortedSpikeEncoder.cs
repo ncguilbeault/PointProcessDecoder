@@ -20,7 +20,7 @@ public class SortedSpikeEncoder : IEncoder
     private readonly int _nUnits;
     private readonly IEstimation[] _unitEstimation;
     private readonly IEstimation _observationEstimation;
-    private float[] _meanRates = new float[0];
+    private Tensor _meanRates = empty(0);
     private readonly Tensor _minObservationSpace;
     private readonly Tensor _maxObservationSpace;
     private readonly Tensor _stepsObservationSpace;
@@ -127,8 +127,7 @@ public class SortedSpikeEncoder : IEncoder
         _meanRates = inputs.to_type(ScalarType.Int32)
             .mean([0], type: ScalarType.Float32)
             .log()
-            .data<float>()
-            .ToArray();
+            .nan_to_num();
 
         for (int i = 0; i < _nUnits; i++)
         {
@@ -163,12 +162,16 @@ public class SortedSpikeEncoder : IEncoder
     public IEnumerable<Tensor> Evaluate(Tensor min, Tensor max, Tensor steps)
     {
         using var _ = NewDisposeScope();
-        var observationDensity = _observationEstimation.Evaluate(min, max, steps).log();
+        var observationDensity = _observationEstimation.Evaluate(min, max, steps)
+            .clamp_min(1e-18)
+            .log();
         var conditionalIntensities = new Tensor[_nUnits];
 
         for (int i = 0; i < _nUnits; i++)
         {
-            var unitDensity = _unitEstimation[i].Evaluate(min, max, steps).log();
+            var unitDensity = _unitEstimation[i].Evaluate(min, max, steps)
+                .clamp_min(1e-18)
+                .log();
             conditionalIntensities[i] = exp(_meanRates[i] + unitDensity - observationDensity).MoveToOuterDisposeScope();
         }
 

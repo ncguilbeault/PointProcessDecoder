@@ -43,7 +43,7 @@ public class RandomWalkTransitions : StateTransitions
         _dimensions = 1;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _sigma = sigma is not null ? tensor(new double[] { sigma.Value }) : null;
+        _sigma = sigma is not null ? tensor(new double[] { sigma.Value }, device: _device, dtype: _scalarType) : null;
         
         _points = ComputeLatentSpace(
             [min], 
@@ -53,7 +53,12 @@ public class RandomWalkTransitions : StateTransitions
             _scalarType
         );
 
-        _transitions = ComputeRandomWalkTransitions(_points, _sigma);
+        _transitions = ComputeRandomWalkTransitions(
+            _points,
+            _device,
+            _scalarType, 
+            _sigma
+        );
     }
 
     public RandomWalkTransitions(
@@ -79,7 +84,7 @@ public class RandomWalkTransitions : StateTransitions
         _dimensions = dimensions;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _sigma = sigma is not null ? tensor(sigma) : null;
+        _sigma = sigma is not null ? tensor(sigma, device: _device, dtype: _scalarType) : null;
 
         _points = ComputeLatentSpace(
             min, 
@@ -89,23 +94,33 @@ public class RandomWalkTransitions : StateTransitions
             _scalarType
         );
 
-        _transitions = ComputeRandomWalkTransitions(_points, _sigma);
+        _transitions = ComputeRandomWalkTransitions(
+            _points,
+            _device,
+            _scalarType, 
+            _sigma
+        );
     }
 
     // Define a function to compute a random walk transition matrix (gaussian) across the latent space. 
     // It should compute this efficiently with tensor broadcasting and it should be able to handle multiple dimensions.
-    private Tensor ComputeRandomWalkTransitions(Tensor points, Tensor? sigma = null)
+    private static Tensor ComputeRandomWalkTransitions(
+        Tensor points,
+        Device device,
+        ScalarType scalarType,
+        Tensor? sigma = null)
     {
         using var _ = NewDisposeScope();
-        var diff = points.unsqueeze(1) - points.unsqueeze(0);
-        diff = sigma is not null ? diff / sigma : diff;
-        var distance = diff.pow(2).sum(2).sqrt();
-        var bandwidth = sigma is not null ? distance.mean() / 2 : 1;
-        var weights = exp(-distance.pow(2) / (2 * bandwidth.pow(2)));
+
+        if (sigma is not null)
+            points /= sigma;
+
+        var dist = cdist(points, points);
+        var bandwidth = sigma is not null ? dist.mean() / 2 : tensor(1, device: device, dtype: scalarType);
+        var weights = exp(-dist.pow(2) / (2 * bandwidth.pow(2)));
         var transitions = weights / weights.sum(1, true);
+
         return transitions
-            .to_type(_scalarType)
-            .to(_device)
             .MoveToOuterDisposeScope();
     }
 }

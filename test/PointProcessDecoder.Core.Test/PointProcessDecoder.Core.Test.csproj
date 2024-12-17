@@ -18,8 +18,7 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\PointProcessDecoder.Core\PointProcessDecoder.Core.csproj" />
-    <ProjectReference Include="..\..\src\PointProcessDecoder.Plot\PointProcessDecoder.Plot.csproj" />
-    <ProjectReference Include="..\..\src\PointProcessDecoder.Simulation\PointProcessDecoder.Simulation.csproj" />
+    <ProjectReference Include="..\PointProcessDecoder.Test.Common\PointProcessDecoder.Test.Common.csproj" />
+    <ProjectReference Include="..\..\src\PointProcessDecoder.Cpu\PointProcessDecoder.Cpu.csproj" />
   </ItemGroup>
 </Project>

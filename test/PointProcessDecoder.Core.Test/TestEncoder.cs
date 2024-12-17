@@ -4,8 +4,9 @@ using PointProcessDecoder.Plot;
 using PointProcessDecoder.Simulation;
 using PointProcessDecoder.Core.Estimation;
 using PointProcessDecoder.Core.Encoder;
+using PointProcessDecoder.Test.Common;
 
-namespace PointProcessDecoder.Test;
+namespace PointProcessDecoder.Core.Test;
 
 [TestClass]
 public class TestEncoder

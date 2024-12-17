@@ -1,7 +1,8 @@
 using static TorchSharp.torch;
 using PointProcessDecoder.Simulation;
+using PointProcessDecoder.Plot;
 
-namespace PointProcessDecoder.Test;
+namespace PointProcessDecoder.Test.Common;
 
 public static class Utilities
 {

@@ -10,25 +10,6 @@ namespace PointProcessDecoder.Core.Estimation;
 /// </summary>
 public class KernelCompression : IEstimation
 {
-    class WeightedGaussian
-    {
-        public Tensor Weight { get; }
-        public Tensor Mean { get; }
-        public Tensor DiagonalCovariance { get; }
-
-        public WeightedGaussian(Tensor weight, Tensor mean, Tensor diagonalCovariance)
-        {
-            Weight = weight;
-            Mean = mean;
-            DiagonalCovariance = diagonalCovariance;
-        }
-
-        public T[] ToArray<T>() where T : unmanaged
-        {
-            return [ Weight.item<T>(), Mean.item<T>(), DiagonalCovariance.item<T>() ];
-        }
-    }
-
     private readonly Device _device;
     /// <inheritdoc/>
     public Device Device => _device;
@@ -126,7 +107,7 @@ public class KernelCompression : IEstimation
 
         if (_kernels.numel() == 0)
         {
-            _kernels = concat([_weight.unsqueeze(1), data[0].unsqueeze(1), _kernelBandwidth.unsqueeze(1)], dim: 1).unsqueeze(0);
+            _kernels = stack([_weight, data[0], _kernelBandwidth], dim: 1).unsqueeze(0);
             if (data.shape[0] == 1) 
             {
                 _kernels.MoveToOuterDisposeScope();
@@ -137,7 +118,7 @@ public class KernelCompression : IEstimation
 
         for (int i = 0; i < data.shape[0]; i++)
         {
-            var kernel = concat([_weight.unsqueeze(1), data[i].unsqueeze(1), _kernelBandwidth.unsqueeze(1)], dim: 1);
+            var kernel = stack([_weight, data[i], _kernelBandwidth], dim: 1);
             var dist = CalculateMahalanobisDistance(data[i]);
             var (minDist, argminDist) = dist.min(0);
             if ((minDist > _distanceThreshold).item<bool>())
@@ -171,7 +152,7 @@ public class KernelCompression : IEstimation
         var mean = (kernel1[TensorIndex.Ellipsis, 1] * kernel1[TensorIndex.Ellipsis, 0] + kernel2[TensorIndex.Ellipsis, 1] * kernel2[TensorIndex.Ellipsis, 0]) / weightSum;
         var variance = (kernel1[TensorIndex.Ellipsis, 2] + pow(kernel1[TensorIndex.Ellipsis, 1], 2)) * kernel1[TensorIndex.Ellipsis, 0] + (kernel2[TensorIndex.Ellipsis, 2] + pow(kernel2[TensorIndex.Ellipsis, 1], 2)) * kernel2[TensorIndex.Ellipsis, 0];
         var diagonalCovariance = variance / weightSum - pow(mean, 2);
-        return concat([weightSum.unsqueeze(1), mean.unsqueeze(1), diagonalCovariance.unsqueeze(1)], dim: 1);
+        return stack([weightSum, mean, diagonalCovariance], dim: 1);
     }
 
     /// <inheritdoc/>
@@ -223,12 +204,13 @@ public class KernelCompression : IEstimation
         points = points.to_type(_scalarType).to(_device);
         var diff = pow(_kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
         var gaussian = exp(-0.5 * sum(diff / _kernels[TensorIndex.Ellipsis, 2], dim: -1));
-        var kernelWeights = _kernels[TensorIndex.Ellipsis, 0].sum(dim: -1);
-        var kernelSqrtDiag = sqrt(2 * Math.PI * _kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
-        var kernelDensity = kernelWeights * gaussian / kernelSqrtDiag;
-        var density = sum(kernelDensity, dim: -1);
-        var normed = density / density.sum();
-        return normed
+        var sumWeights = _kernels[TensorIndex.Ellipsis, 0].sum(dim: -1);
+        var sqrtDiagonalCovariance = sqrt(2 * Math.PI * _kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
+        var density = (sumWeights * gaussian / sqrtDiagonalCovariance)
+            .sum(dim: -1);
+        density /= density.sum();
+        return density
+            .nan_to_num()
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();

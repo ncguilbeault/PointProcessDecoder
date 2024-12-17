@@ -2,8 +2,9 @@ using static TorchSharp.torch;
 using PointProcessDecoder.Core;
 using PointProcessDecoder.Plot;
 using PointProcessDecoder.Simulation;
+using PointProcessDecoder.Test.Common;
 
-namespace PointProcessDecoder.Test;
+namespace PointProcessDecoder.Core.Test;
 
 [TestClass]
 public class TestSimulation

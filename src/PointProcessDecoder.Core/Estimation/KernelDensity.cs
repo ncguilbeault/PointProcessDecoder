@@ -184,16 +184,11 @@ public class KernelDensity : IEstimation
         }
 
         using var _ = NewDisposeScope();
-        var differences = _kernels.unsqueeze(0) - points.unsqueeze(1);
-        var distances = differences / _kernelBandwidth;
-        var squareDistances = pow(distances, 2);
-        var sumDistances = sum(squareDistances, dim: 2);
-        var values = exp(-0.5 * sumDistances);
-        var meanValues = mean(values, dimensions: [ 1 ]);
-        var kernelBandwidthProduct = prod(_kernelBandwidth);
-        var kdeValues = meanValues / kernelBandwidthProduct;
-        var normalizedKdeValues = kdeValues / sum(kdeValues) + _tolerance;
-        return normalizedKdeValues
+        var diff = (_kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
+        var density = mean(exp(-0.5 * diff.pow(2).sum(2)), [1]) / _kernelBandwidth.prod();
+        density /= sum(density);
+        return density
+            .nan_to_num()
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();

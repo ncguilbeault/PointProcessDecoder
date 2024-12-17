@@ -89,8 +89,9 @@ public class SortedSpikeDecoder : IDecoder
         var output = zeros_like(logLikelihood);
         for (int i = 0; i < inputs.shape[0]; i++)
         {
-            _posterior = exp(logLikelihood[i] * inputs[i].any() + _stateTransitions.Transitions.T.matmul(_posterior).log().clamp(1e-10));
+            _posterior = exp(logLikelihood[i] * inputs[i].any() + _stateTransitions.Transitions.T.matmul(_posterior).log());
             _posterior /= _posterior.sum();
+            _posterior = _posterior.nan_to_num().clamp_min(1e-12);
             output[i] = _posterior;
         }
         _posterior.MoveToOuterDisposeScope();
@@ -100,7 +101,6 @@ public class SortedSpikeDecoder : IDecoder
     private static Tensor LogLikelihood(Tensor inputs, Tensor conditionalIntensities)
     {
         using var _ = NewDisposeScope();
-        conditionalIntensities = conditionalIntensities.clamp(1e-10);
         var logLikelihood = xlogy(inputs.unsqueeze(1), conditionalIntensities.unsqueeze(0)) - conditionalIntensities.unsqueeze(0);
         return logLikelihood.sum(dim: -1).MoveToOuterDisposeScope();
     }

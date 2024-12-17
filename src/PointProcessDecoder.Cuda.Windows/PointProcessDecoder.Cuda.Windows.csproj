@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="TorchSharp" Version="0.105.0" />
+    <PackageReference Include="TorchSharp-cuda-windows" Version="0.105.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PointProcessDecoder.Core\PointProcessDecoder.Core.csproj" />
   </ItemGroup>
 </Project>

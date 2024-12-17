@@ -1,7 +1,8 @@
 using PointProcessDecoder.Plot;
 using PointProcessDecoder.Core.Transitions;
+using PointProcessDecoder.Test.Common;
 
-namespace PointProcessDecoder.Test;
+namespace PointProcessDecoder.Core.Test;
 
 [TestClass]
 public class TestTransitions
