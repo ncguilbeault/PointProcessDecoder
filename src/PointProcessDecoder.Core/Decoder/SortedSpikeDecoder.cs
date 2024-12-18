@@ -79,17 +79,20 @@ public class SortedSpikeDecoder : IDecoder
     public Tensor Decode(Tensor inputs, IEnumerable<Tensor> conditionalIntensities)
     {
         using var _ = NewDisposeScope();
-        inputs = inputs.to_type(_scalarType).to(_device);
+        // inputs = inputs.to_type(_scalarType).to(_device);
 
-        var conditionalIntensitiesTensor = stack(conditionalIntensities.Select(ci => ci.flatten()), dim: -1)
-            .to_type(_scalarType)
-            .to(_device);
+        var conditionalIntensitiesTensor = stack(conditionalIntensities.Select(ci => ci.flatten()), dim: -1);
+            // .to_type(_scalarType)
+            // .to(_device);
 
         var logLikelihood = LogLikelihood(inputs, conditionalIntensitiesTensor);
         var output = zeros_like(logLikelihood);
         for (int i = 0; i < inputs.shape[0]; i++)
         {
-            _posterior = exp(logLikelihood[i] * inputs[i].any() + _stateTransitions.Transitions.T.matmul(_posterior).log());
+            var posteriorUpdated = _stateTransitions.Transitions.matmul(_posterior);
+            posteriorUpdated /= posteriorUpdated.sum();
+            logLikelihood[i] -= logLikelihood[i].max() + posteriorUpdated.log().max();
+            _posterior = exp(logLikelihood[i] * inputs[i].any() + posteriorUpdated.log());
             _posterior /= _posterior.sum();
             _posterior = _posterior.nan_to_num().clamp_min(1e-12);
             output[i] = _posterior;

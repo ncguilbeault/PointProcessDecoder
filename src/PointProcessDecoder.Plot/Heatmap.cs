@@ -13,6 +13,8 @@ public class Heatmap : OxyPlotBase
     public double XMax { get; } = double.NaN;
     public double YMin { get; } = double.NaN;
     public double YMax { get; } = double.NaN;
+    public double ValMin { get; } = double.NaN;
+    public double ValMax { get; } = double.NaN;
     public string Title { get; } = "Heatmap";
 
     public Heatmap()
@@ -30,12 +32,23 @@ public class Heatmap : OxyPlotBase
         Initialize();
     }
 
-    public Heatmap(double? xMin = null, double? xMax = null, double? yMin = null, double? yMax = null, string? title = null, string? figureName = null)
+    public Heatmap(
+        double? xMin = null, 
+        double? xMax = null, 
+        double? yMin = null, 
+        double? yMax = null, 
+        double? valMin = null,
+        double? valMax = null,
+        string? title = null, 
+        string? figureName = null
+    )
     {
         XMin = xMin ?? XMin;
         XMax = xMax ?? XMax;
         YMin = yMin ?? YMin;
         YMax = yMax ?? YMax;
+        ValMin = valMin ?? ValMin;
+        ValMax = valMax ?? ValMax;
         Title = title ?? Title;
         FigureName = figureName ?? Title;
 
@@ -75,7 +88,9 @@ public class Heatmap : OxyPlotBase
             Position = AxisPosition.Right, 
             Palette = OxyPalettes.Viridis(100), 
             TitleFont = "DejaVu Sans",
-            Key = "color"
+            Key = "color",
+            Minimum = ValMin,
+            Maximum = ValMax
         };
 
         var scatterColorAxis = new RangeColorAxis 

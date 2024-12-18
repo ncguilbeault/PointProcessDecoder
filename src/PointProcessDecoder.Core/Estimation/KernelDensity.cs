@@ -63,7 +63,8 @@ public class KernelDensity : IEstimation
         _dimensions = dimensions ?? 1;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _kernelBandwidth = tensor(bandwidth ?? 1.0).repeat(_dimensions).to(_device);
+        _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType)
+            .repeat(_dimensions);
     }
 
     /// <summary>
@@ -88,7 +89,7 @@ public class KernelDensity : IEstimation
         _dimensions = dimensions;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _kernelBandwidth = tensor(bandwidth).to(_device);
+        _kernelBandwidth = tensor(bandwidth, device: _device, dtype: _scalarType);
     }
 
     /// <summary>
@@ -103,7 +104,7 @@ public class KernelDensity : IEstimation
             throw new ArgumentException("The number of dimensions must match the shape of the data.");
         }
 
-        data = data.to_type(_scalarType).to(_device);
+        // data = data.to_type(_scalarType).to(_device);
 
         // Check if the kernels are empty
         if (_kernels.numel() == 0)

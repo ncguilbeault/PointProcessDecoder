@@ -73,16 +73,20 @@ public class SortedSpikeEncoder : IEncoder
                 estimationMethod, 
                 bandwidth, 
                 observationDimensions, 
-                distanceThreshold
+                distanceThreshold,
+                device: _device,
+                scalarType: _scalarType
             );
         }
     }
 
-    private IEstimation GetEstimationMethod(
+    private static IEstimation GetEstimationMethod(
         EstimationMethod estimationMethod, 
         double[] bandwidth, 
         int dimensions, 
-        double? distanceThreshold = null
+        double? distanceThreshold = null,
+        Device? device = null,
+        ScalarType? scalarType = null
     )
     {
         return estimationMethod switch
@@ -90,15 +94,15 @@ public class SortedSpikeEncoder : IEncoder
             EstimationMethod.KernelDensity => new KernelDensity(
                 bandwidth, 
                 dimensions, 
-                device: _device,
-                scalarType: _scalarType
+                device: device,
+                scalarType: scalarType
             ),
             EstimationMethod.KernelCompression => new KernelCompression(
                 bandwidth, 
                 dimensions, 
                 distanceThreshold, 
-                device: _device,
-                scalarType: _scalarType
+                device: device,
+                scalarType: scalarType
             ),
             _ => throw new ArgumentException("Invalid estimation method.")
         };
@@ -125,7 +129,7 @@ public class SortedSpikeEncoder : IEncoder
         _observationEstimation.Fit(observations);
 
         _meanRates = inputs.to_type(ScalarType.Int32)
-            .mean([0], type: ScalarType.Float32)
+            .mean([0], type: _scalarType)
             .log()
             .nan_to_num();
 
@@ -144,9 +148,9 @@ public class SortedSpikeEncoder : IEncoder
 
     public IEnumerable<Tensor> Evaluate(double[] min, double[] max, double[] steps)
     {
-        var minObservationSpace = tensor(min, device: _device);
-        var maxObservationSpace = tensor(max, device: _device);
-        var stepsObservationSpace = tensor(steps, device: _device);
+        var minObservationSpace = tensor(min, device: _device, dtype: _scalarType);
+        var maxObservationSpace = tensor(max, device: _device, dtype: _scalarType);
+        var stepsObservationSpace = tensor(steps, device: _device, dtype: _scalarType);
 
         return Evaluate(minObservationSpace, maxObservationSpace, stepsObservationSpace);
     }

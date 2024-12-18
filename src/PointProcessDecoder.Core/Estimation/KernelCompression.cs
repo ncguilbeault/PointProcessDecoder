@@ -60,7 +60,8 @@ public class KernelCompression : IEstimation
         _scalarType = scalarType ?? ScalarType.Float32;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _dimensions = dimensions ?? 1;
-        _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType).repeat(_dimensions);
+        _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType)
+            .repeat(_dimensions);
         _weight = ones(_dimensions, dtype: _scalarType, device: _device);
     }
 
@@ -103,7 +104,7 @@ public class KernelCompression : IEstimation
         if (data.shape[0] == 0) return;
 
         using var _ = NewDisposeScope();
-        data = data.to_type(_scalarType).to(_device);
+        // data = data.to_type(_scalarType).to(_device);
 
         if (_kernels.numel() == 0)
         {
@@ -163,7 +164,7 @@ public class KernelCompression : IEstimation
             throw new ArgumentException("The lengths of min, max, and steps must be equal to the number of dimensions.");
         }
 
-        if (min.dtype != ScalarType.Float64)
+        if (min.dtype != ScalarType.Float64 || max.dtype != ScalarType.Float64)
         {
             throw new ArgumentException("The scalar type of min and max must be float64.");
         }

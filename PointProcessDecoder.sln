@@ -19,13 +19,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Cuda.Wi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Cuda.Linux", "src\PointProcessDecoder.Cuda.Linux\PointProcessDecoder.Cuda.Linux.csproj", "{49F75192-E00D-440C-AFDC-E287CA51E88E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Cuda.Test", "test\PointProcessDecoder.Cuda.Test\PointProcessDecoder.Cuda.Test.csproj", "{7BF860C0-5795-4447-B841-851398A4CB44}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Cuda.Linux.Test", "test\PointProcessDecoder.Cuda.Linux.Test\PointProcessDecoder.Cuda.Linux.Test.csproj", "{7BF860C0-5795-4447-B841-851398A4CB44}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Test.Common", "test\PointProcessDecoder.Test.Common\PointProcessDecoder.Test.Common.csproj", "{C14934DD-B05E-4F08-ADDA-385B2FBFA3A8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Cpu", "src\PointProcessDecoder.Cpu\PointProcessDecoder.Cpu.csproj", "{535C73CD-E2DC-4A77-9D12-AB2A842F9396}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Plot.Linux", "src\PointProcessDecoder.Plot.Linux\PointProcessDecoder.Plot.Linux.csproj", "{275AF04F-C484-4166-B527-CF0DF71C6042}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointProcessDecoder.Cuda.Windows.Test", "test\PointProcessDecoder.Cuda.Windows.Test\PointProcessDecoder.Cuda.Windows.Test.csproj", "{937C54C6-8167-4EFD-8957-B1994F507123}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,6 +78,10 @@ Global
 		{275AF04F-C484-4166-B527-CF0DF71C6042}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{275AF04F-C484-4166-B527-CF0DF71C6042}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{275AF04F-C484-4166-B527-CF0DF71C6042}.Release|Any CPU.Build.0 = Release|Any CPU
+		{937C54C6-8167-4EFD-8957-B1994F507123}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{937C54C6-8167-4EFD-8957-B1994F507123}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{937C54C6-8167-4EFD-8957-B1994F507123}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{937C54C6-8167-4EFD-8957-B1994F507123}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4669E91F-8F4E-426D-954C-08C79C706E86} = {B5921CB9-32C3-40F5-AF48-8FBC2CCBC6BB}
@@ -88,5 +94,6 @@ Global
 		{C14934DD-B05E-4F08-ADDA-385B2FBFA3A8} = {C958FCC7-3B04-480D-B680-A9328403D791}
 		{535C73CD-E2DC-4A77-9D12-AB2A842F9396} = {B5921CB9-32C3-40F5-AF48-8FBC2CCBC6BB}
 		{275AF04F-C484-4166-B527-CF0DF71C6042} = {B5921CB9-32C3-40F5-AF48-8FBC2CCBC6BB}
+		{937C54C6-8167-4EFD-8957-B1994F507123} = {C958FCC7-3B04-480D-B680-A9328403D791}
 	EndGlobalSection
 EndGlobal

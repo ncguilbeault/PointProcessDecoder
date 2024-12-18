@@ -376,7 +376,7 @@ public class TestModel
         double firingThreshold = 0.2;
         double scale = 0.1;
         double distanceThreshold = 1.5;
-        double[] sigma = [100, 100];
+        double[] sigma = [1, 1];
         int nTraining = 1800;
         int nTesting = 200;
 
@@ -525,9 +525,8 @@ public class TestModel
         double yMin = 0.0;
         double yMax = 120.0;
         double[] sigma = [1, 1];
-        int nTraining = 180000;
-        int nTesting = 20000;
-        int batchSize = 1000;
+        double fractionTraining = 0.8;
+        int batchSize = 10;
         double distanceThreshold = 1.5;
 
         string positionFile = "../../../../data/positions_2D.bin";
@@ -545,6 +544,9 @@ public class TestModel
         spikingData = spikingData.reshape(position2D.shape[0], -1)
             .to_type(ScalarType.Bool);
         var numNeurons = (int)spikingData.shape[1];
+
+        int nTraining = (int)(position2D.shape[0] * fractionTraining);
+        int nTesting = (int)position2D.shape[0] - nTraining;
 
         var pointProcessModel = new PointProcessModel(
             EstimationMethod.KernelCompression,

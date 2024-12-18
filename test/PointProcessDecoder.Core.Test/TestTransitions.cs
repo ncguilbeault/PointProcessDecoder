@@ -56,10 +56,10 @@ public class TestTransitions
     [TestMethod]
     public void TestRandomWalk1DWithSigma()
     {
-        var steps = 200;
+        var steps = 50;
         var min = 0.0;
-        var max = 100.0;
-        var sigma = 5.0;
+        var max = 120.0;
+        var sigma = 1.0;
 
         var randomWalkTransitions = new RandomWalkTransitions(min, max, steps, sigma);
         Heatmap transitionsPlot = new(min, max, min, max, title: "RandomWalkTransitions1DWithSigma");
