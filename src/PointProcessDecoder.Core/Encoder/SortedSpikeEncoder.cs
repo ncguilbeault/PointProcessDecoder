@@ -11,9 +11,6 @@ public class SortedSpikeEncoder : IEncoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
-    private readonly int _observationDimensions;
-    public int ObservationDimensions => _observationDimensions;
-
     private IEnumerable<Tensor>? _conditionalIntensities = null;
     public IEnumerable<Tensor>? ConditionalIntensities => _conditionalIntensities;
 
@@ -21,47 +18,32 @@ public class SortedSpikeEncoder : IEncoder
     private readonly IEstimation[] _unitEstimation;
     private readonly IEstimation _observationEstimation;
     private Tensor _meanRates = empty(0);
-    private readonly Tensor _minObservationSpace;
-    private readonly Tensor _maxObservationSpace;
-    private readonly Tensor _stepsObservationSpace;
+    private readonly IStateSpace _stateSpace;
 
     public SortedSpikeEncoder(
         EstimationMethod estimationMethod, 
-        double[] bandwidth, 
-        int observationDimensions,
+        double[] bandwidth,
         int nUnits,
-        double[] minObservationSpace,
-        double[] maxObservationSpace,
-        long[] stepsObservationSpace,
+        IStateSpace stateSpace,
         double? distanceThreshold = null, 
         Device? device = null,
         ScalarType? scalarType = null
     )
     {
-        if (observationDimensions < 1)
-        {
-            throw new ArgumentException("The number of observation dimensions must be greater than 0.");
-        }
-
         if (nUnits < 1)
         {
             throw new ArgumentException("The number of units must be greater than 0.");
         }
 
-        _observationDimensions = observationDimensions;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-
-        _minObservationSpace = tensor(minObservationSpace, device: _device);
-        _maxObservationSpace = tensor(maxObservationSpace, device: _device);
-        _stepsObservationSpace = tensor(stepsObservationSpace, device: _device);
-
+        _stateSpace = stateSpace;
         _nUnits = nUnits;
         
         _observationEstimation = GetEstimationMethod(
             estimationMethod, 
             bandwidth, 
-            observationDimensions, 
+            _stateSpace.Dimensions, 
             distanceThreshold
         );
 
@@ -72,7 +54,7 @@ public class SortedSpikeEncoder : IEncoder
             _unitEstimation[i] = GetEstimationMethod(
                 estimationMethod, 
                 bandwidth, 
-                observationDimensions, 
+                _stateSpace.Dimensions, 
                 distanceThreshold,
                 device: _device,
                 scalarType: _scalarType
@@ -121,9 +103,9 @@ public class SortedSpikeEncoder : IEncoder
             throw new ArgumentException("The number of units in the input tensor must match the expected number of units.");
         }
 
-        if (observations.shape[1] != _observationDimensions)
+        if (observations.shape[1] != _stateSpace.Dimensions)
         {
-            throw new ArgumentException("The number of observation dimensions must match the shape of the observations.");
+            throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
         }
 
         _observationEstimation.Fit(observations);
@@ -143,40 +125,20 @@ public class SortedSpikeEncoder : IEncoder
 
     public IEnumerable<Tensor> Evaluate()
     {
-        return Evaluate(_minObservationSpace, _maxObservationSpace, _stepsObservationSpace);
-    }
-
-    public IEnumerable<Tensor> Evaluate(double[] min, double[] max, double[] steps)
-    {
-        var minObservationSpace = tensor(min, device: _device, dtype: _scalarType);
-        var maxObservationSpace = tensor(max, device: _device, dtype: _scalarType);
-        var stepsObservationSpace = tensor(steps, device: _device, dtype: _scalarType);
-
-        return Evaluate(minObservationSpace, maxObservationSpace, stepsObservationSpace);
-    }
-
-
-    /// <summary>
-    /// Evaluate the density estimation for the given range and steps.
-    /// </summary>
-    /// <param name="min"></param>
-    /// <param name="max"></param>
-    /// <param name="steps"></param>
-    /// <returns></returns>
-    public IEnumerable<Tensor> Evaluate(Tensor min, Tensor max, Tensor steps)
-    {
         using var _ = NewDisposeScope();
-        var observationDensity = _observationEstimation.Evaluate(min, max, steps)
+        var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
             .clamp_min(1e-18)
             .log();
         var conditionalIntensities = new Tensor[_nUnits];
 
         for (int i = 0; i < _nUnits; i++)
         {
-            var unitDensity = _unitEstimation[i].Evaluate(min, max, steps)
+            var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
                 .clamp_min(1e-18)
                 .log();
-            conditionalIntensities[i] = exp(_meanRates[i] + unitDensity - observationDensity).MoveToOuterDisposeScope();
+            conditionalIntensities[i] = exp(_meanRates[i] + unitDensity - observationDensity)
+                .reshape(_stateSpace.Shape)
+                .MoveToOuterDisposeScope();
         }
 
         return conditionalIntensities;

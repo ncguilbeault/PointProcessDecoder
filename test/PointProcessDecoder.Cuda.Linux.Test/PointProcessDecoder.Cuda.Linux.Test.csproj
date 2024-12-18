@@ -20,9 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PointProcessDecoder.Test.Common\PointProcessDecoder.Test.Common.csproj" />
     <ProjectReference Include="..\..\src\PointProcessDecoder.Cuda.Linux\PointProcessDecoder.Cuda.Linux.csproj" />
     <ProjectReference Include="..\..\src\PointProcessDecoder.Plot.Linux\PointProcessDecoder.Plot.Linux.csproj" />
+    <ProjectReference Include="..\PointProcessDecoder.Test.Common\PointProcessDecoder.Test.Common.csproj" />
   </ItemGroup>
 
 </Project>

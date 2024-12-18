@@ -25,6 +25,11 @@ public interface IModel
     public IDecoder Decoder { get; }
 
     /// <summary>
+    /// The state space of the model.
+    /// </summary>
+    public IStateSpace StateSpace { get; }
+
+    /// <summary>
     /// Encodes the observations into a latent representation based on the joint distribution of the observations and the inputs.
     /// </summary>
     /// <param name="observations"></param>

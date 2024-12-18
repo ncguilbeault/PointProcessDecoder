@@ -8,17 +8,15 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
     <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PointProcessDecoder.Test.Common\PointProcessDecoder.Test.Common.csproj" />
     <ProjectReference Include="..\..\src\PointProcessDecoder.Cpu\PointProcessDecoder.Cpu.csproj" />
+    <ProjectReference Include="..\PointProcessDecoder.Test.Common\PointProcessDecoder.Test.Common.csproj" />
   </ItemGroup>
 </Project>

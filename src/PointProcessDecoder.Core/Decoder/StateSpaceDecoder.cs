@@ -1,16 +1,17 @@
 using static TorchSharp.torch;
 
 using PointProcessDecoder.Core.Transitions;
+using PointProcessDecoder.Core.Likelihood;
 
 namespace PointProcessDecoder.Core.Decoder;
 
-public class SortedSpikeDecoder : IDecoder
+public class StateSpaceDecoder : PointProcessDecoder
 {
     private readonly Device _device;
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     private readonly Tensor _initialState;
     public Tensor InitialState => _initialState;
@@ -21,14 +22,13 @@ public class SortedSpikeDecoder : IDecoder
     private Tensor _posterior;
     public Tensor Posterior => _posterior;
 
-    private int _latentDimensions;
+    private readonly IStateSpace _stateSpace;
+    private readonly Func<Tensor, Tensor, Tensor> _likelihoodMethod;
 
-    public SortedSpikeDecoder(
+    public StateSpaceDecoder(
         TransitionsType transitionsType,
-        int latentDimensions,
-        double[] minObservationSpace,
-        double[] maxObservationSpace,
-        long[] stepsObservationSpace,
+        LikelihoodType likelihoodType,
+        IStateSpace stateSpace,
         double[]? sigmaRandomWalk = null,
         Device? device = null,
         ScalarType? scalarType = null
@@ -36,23 +36,17 @@ public class SortedSpikeDecoder : IDecoder
     {
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _latentDimensions = latentDimensions;
+        _stateSpace = stateSpace;
 
         _stateTransitions = transitionsType switch
         {
             TransitionsType.Uniform => new UniformTransitions(
-                _latentDimensions, 
-                minObservationSpace, 
-                maxObservationSpace, 
-                stepsObservationSpace, 
+                _stateSpace,
                 device: _device,
                 scalarType: _scalarType
             ),
             TransitionsType.RandomWalk => new RandomWalkTransitions(
-                _latentDimensions, 
-                minObservationSpace, 
-                maxObservationSpace, 
-                stepsObservationSpace, 
+                _stateSpace,
                 sigmaRandomWalk, 
                 device: _device,
                 scalarType: _scalarType
@@ -60,14 +54,19 @@ public class SortedSpikeDecoder : IDecoder
             _ => throw new ArgumentException("Invalid transitions type.")
         };
 
-        var points = _stateTransitions.Points;
-        var n = points.shape[0];
+        _likelihoodMethod = likelihoodType switch
+        {
+            LikelihoodType.Poisson => PoissonLikelihood.LogLikelihood,
+            _ => throw new ArgumentException("Invalid likelihood type.")
+        };
+
+        var n = _stateSpace.Points.shape[0];
         _initialState = ones(n, dtype: _scalarType, device: _device) / n;
         _posterior = _initialState.clone();
     }
 
     /// <summary>
-    /// Decodes the input into the latent space using a bayesian point process decoder.
+    /// Decodes the input into the latent space using a bayesian state space decoder.
     /// Input tensor should be of shape (m, n) where m is the number of observations and n is the number of units.
     /// Conditional intensities should be a list of tensors which can be used to compute the likelihood of the observations given the inputs.
     /// </summary>
@@ -76,17 +75,16 @@ public class SortedSpikeDecoder : IDecoder
     /// <returns>
     /// A tensor of shape (m, p) where m is the number of observations and p is the number of points in the latent space.
     /// </returns>
-    public Tensor Decode(Tensor inputs, IEnumerable<Tensor> conditionalIntensities)
+    public override Tensor Decode(Tensor inputs, IEnumerable<Tensor> conditionalIntensities)
     {
         using var _ = NewDisposeScope();
-        // inputs = inputs.to_type(_scalarType).to(_device);
 
         var conditionalIntensitiesTensor = stack(conditionalIntensities.Select(ci => ci.flatten()), dim: -1);
-            // .to_type(_scalarType)
-            // .to(_device);
-
-        var logLikelihood = LogLikelihood(inputs, conditionalIntensitiesTensor);
-        var output = zeros_like(logLikelihood);
+        var logLikelihood = _likelihoodMethod(inputs, conditionalIntensitiesTensor);
+        var outputShape = new long[] { inputs.shape[0] }
+            .Concat(_stateSpace.Shape)
+            .ToArray();
+        var output = zeros(outputShape, dtype: _scalarType, device: _device);
         for (int i = 0; i < inputs.shape[0]; i++)
         {
             var posteriorUpdated = _stateTransitions.Transitions.matmul(_posterior);
@@ -95,16 +93,9 @@ public class SortedSpikeDecoder : IDecoder
             _posterior = exp(logLikelihood[i] * inputs[i].any() + posteriorUpdated.log());
             _posterior /= _posterior.sum();
             _posterior = _posterior.nan_to_num().clamp_min(1e-12);
-            output[i] = _posterior;
+            output[i] = _posterior.reshape(_stateSpace.Shape);
         }
         _posterior.MoveToOuterDisposeScope();
         return output.MoveToOuterDisposeScope();
-    }
-
-    private static Tensor LogLikelihood(Tensor inputs, Tensor conditionalIntensities)
-    {
-        using var _ = NewDisposeScope();
-        var logLikelihood = xlogy(inputs.unsqueeze(1), conditionalIntensities.unsqueeze(0)) - conditionalIntensities.unsqueeze(0);
-        return logLikelihood.sum(dim: -1).MoveToOuterDisposeScope();
     }
 }

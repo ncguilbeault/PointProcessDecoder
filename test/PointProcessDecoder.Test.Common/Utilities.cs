@@ -1,11 +1,95 @@
 using static TorchSharp.torch;
 using PointProcessDecoder.Simulation;
 using PointProcessDecoder.Plot;
+using PointProcessDecoder.Core;
 
 namespace PointProcessDecoder.Test.Common;
 
 public static class Utilities
 {
+    public static void RunSortedSpikeEncoder1D(
+        IEncoder encoder, 
+        Tensor observations, 
+        Tensor spikes,
+        string encoderDirectory,
+        long evaluationSteps,
+        double[] densityScatterPlotRange,
+        double[] densityHeatmapRange,
+        int heatmapPadding,
+        string title = ""
+    )
+    {
+        encoder.Encode(observations, spikes);
+        var densities = encoder.Evaluate();
+
+        for (int i = 0; i < densities.Count(); i++)
+        {
+            var density = densities.ElementAt(i);
+            var density1DExpanded = vstack([arange(evaluationSteps), density]).T;
+
+            var directoryScatterPlot1D = Path.Combine(encoderDirectory, "ScatterPlot1D");
+
+            ScatterPlot plotDensity1D = new ScatterPlot(
+                densityScatterPlotRange[0],
+                densityScatterPlotRange[1],
+                densityScatterPlotRange[2],
+                densityScatterPlotRange[3],
+                title: $"{title}{i}"
+            );
+            plotDensity1D.OutputDirectory = Path.Combine(plotDensity1D.OutputDirectory, directoryScatterPlot1D);
+            plotDensity1D.Show<float>(density1DExpanded);
+            plotDensity1D.Save(png: true);
+
+            var density2D = tile(density, [heatmapPadding, 1]);
+
+            var directoryHeatmap2D = Path.Combine(encoderDirectory, "Heatmap2D");
+
+            Heatmap plotDensity2D = new(
+                densityHeatmapRange[0],
+                densityHeatmapRange[1],
+                densityHeatmapRange[2],
+                densityHeatmapRange[3],
+                title: $"{title}{i}"
+            );
+            plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, directoryHeatmap2D);
+            plotDensity2D.Show<float>(density2D);
+            plotDensity2D.Save(png: true);
+        }
+    }
+
+    public static void RunSortedSpikeEncoder2D(
+
+        IEncoder encoder, 
+        Tensor observations, 
+        Tensor spikes,
+        string encoderDirectory,
+        double[] densityHeatmapRange,
+        string title = ""
+    )
+    {
+        encoder.Encode(observations, spikes);
+        var densities = encoder.Evaluate();
+
+        for (int i = 0; i < densities.Count(); i++)
+        {
+            var density = densities.ElementAt(i);
+
+            var directoryHeatmap2D = Path.Combine(encoderDirectory, "Heatmap2D");
+
+            Heatmap plotDensity2D = new(
+                densityHeatmapRange[0],
+                densityHeatmapRange[1],
+                densityHeatmapRange[2],
+                densityHeatmapRange[3],
+                title: $"{title}{i}"
+            );
+
+            plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, directoryHeatmap2D);
+            plotDensity2D.Show<float>(density);
+            plotDensity2D.Save(png: true);
+        }
+    }
+
     public static Tensor ReadBinaryFile(
         string binary_file,
         Device? device = null,

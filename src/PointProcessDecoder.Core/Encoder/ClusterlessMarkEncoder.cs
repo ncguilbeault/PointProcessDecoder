@@ -11,15 +11,6 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
-    private readonly int _observationDimensions;
-    public int ObservationDimensions => _observationDimensions;
-
-    private readonly int _markDimensions;
-    public int MarkDimensions => _markDimensions;
-
-    private int _markChannels;
-    public int MarkChannels => _markChannels;
-
     private IEnumerable<Tensor>? _conditionalIntensities = null;
     public IEnumerable<Tensor>? ConditionalIntensities => _conditionalIntensities;
 
@@ -27,29 +18,23 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly IEstimation[] _observationAtMarkEstimation;
     private readonly IEstimation[] _jointEstimation;
 
-    private readonly Tensor _minLatentSpace;
-    private readonly Tensor _maxLatentSpace;
-    private readonly Tensor _stepsLatentSpace;
+    private readonly IStateSpace _stateSpace;
+    private Tensor _rates = empty(0);
+    private Tensor _samples = empty(0);
+    private readonly int _markDimensions;
+    private int _markChannels;
 
     public ClusterlessMarkEncoder(
         EstimationMethod estimationMethod, 
         double[] bandwidth, 
-        int observationDimensions, 
         int markDimensions,
         int markChannels,
-        double[] minLatentSpace,
-        double[] maxLatentSpace,
-        long[] stepsLatentSpace,
+        IStateSpace stateSpace,
         double? distanceThreshold = null, 
         Device? device = null,
         ScalarType? scalarType = null
     )
     {
-        if (observationDimensions < 1)
-        {
-            throw new ArgumentException("The number of observation dimensions must be greater than 0.");
-        }
-
         if (markChannels < 1)
         {
             throw new ArgumentException("The number of mark channels must be greater than 0.");
@@ -59,26 +44,17 @@ public class ClusterlessMarkEncoder : IEncoder
         {
             throw new ArgumentException("The number of mark dimensions must be greater than 0.");
         }
-
-        if (minLatentSpace.Length != observationDimensions || maxLatentSpace.Length != observationDimensions || stepsLatentSpace.Length != observationDimensions)
-        {
-            throw new ArgumentException("The length of minLatentSpace, maxLatentSpace, and stepsLatentSpace must match the number of observation dimensions.");
-        }
-
-        _observationDimensions = observationDimensions;
-        _markDimensions = markDimensions;
+        
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _markDimensions = markDimensions;
         _markChannels = markChannels;
-
-        _minLatentSpace = tensor(minLatentSpace, device: _device);
-        _maxLatentSpace = tensor(maxLatentSpace, device: _device);
-        _stepsLatentSpace = tensor(stepsLatentSpace, device: _device);
+        _stateSpace = stateSpace;
 
         _observationEstimation = GetEstimationMethod(
             estimationMethod, 
             bandwidth, 
-            observationDimensions, 
+            _stateSpace.Dimensions, 
             distanceThreshold
         );
 
@@ -90,24 +66,26 @@ public class ClusterlessMarkEncoder : IEncoder
             _observationAtMarkEstimation[i] = GetEstimationMethod(
                 estimationMethod, 
                 bandwidth, 
-                observationDimensions, 
+                _stateSpace.Dimensions, 
                 distanceThreshold
             );
 
             _jointEstimation[i] = GetEstimationMethod(
                 estimationMethod, 
                 bandwidth,
-                observationDimensions + markDimensions, 
+                _stateSpace.Dimensions + markDimensions, 
                 distanceThreshold
             );
         }
     }
 
-    private IEstimation GetEstimationMethod(
+    private static IEstimation GetEstimationMethod(
         EstimationMethod estimationMethod, 
         double[] bandwidth, 
         int dimensions, 
-        double? distanceThreshold = null
+        double? distanceThreshold = null,
+        Device? device = null,
+        ScalarType? scalarType = null
     )
     {
         return estimationMethod switch
@@ -115,15 +93,15 @@ public class ClusterlessMarkEncoder : IEncoder
             EstimationMethod.KernelDensity => new KernelDensity(
                 bandwidth, 
                 dimensions, 
-                device: _device,
-                scalarType: _scalarType
+                device: device,
+                scalarType: scalarType
             ),
             EstimationMethod.KernelCompression => new KernelCompression(
                 bandwidth, 
                 dimensions, 
                 distanceThreshold,
-                device: _device,
-                scalarType: _scalarType
+                device: device,
+                scalarType: scalarType
             ),
             _ => throw new ArgumentException("Invalid estimation method.")
         };
@@ -143,10 +121,38 @@ public class ClusterlessMarkEncoder : IEncoder
             throw new ArgumentException("The number of mark channels must match the shape of the marks tensor on dimension 2.");
         }
 
-        observations.to_type(_scalarType).to(_device);
-        marks.to_type(_scalarType).to(_device);
+        if (observations.shape[1] != _stateSpace.Dimensions)
+        {
+            throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
+        }
         
         _observationEstimation.Fit(observations);
+
+        // if (_rates.numel() == 0)
+        // {
+        //     _rates = inputs.to_type(ScalarType.Int32)
+        //         .sum([0], type: _scalarType)
+        //         .log()
+        //         .nan_to_num()
+        //         .to_type(_scalarType)
+        //         .to(_device);
+            
+        //     _samples = observations.shape[0];
+        // }
+        // else
+        // {
+        //     var totalSamples = _samples + observations.shape[0];
+        //     var oldRates = _rates * (_samples / totalSamples);
+        //     var newRates = inputs.to_type(ScalarType.Int32)
+        //         .sum([0], type: _scalarType)
+        //         .log()
+        //         .nan_to_num()
+        //         .to_type(_scalarType)
+        //         .to(_device) * (observations.shape[0] / totalSamples);
+        //     _rates = oldRates + newRates;
+        //     _samples = totalSamples;
+        // }
+
         var mask = marks.sum(dim: 1) > 0;
 
         for (int i = 0; i < _markChannels; i++)
@@ -162,41 +168,14 @@ public class ClusterlessMarkEncoder : IEncoder
 
     public IEnumerable<Tensor> Evaluate()
     {
-        return Evaluate(_minLatentSpace, _maxLatentSpace, _stepsLatentSpace);
-    }
-
-    public IEnumerable<Tensor> Evaluate(double[] min, double[] max, double[] steps)
-    {
-        if (_observationDimensions != min.Length || _observationDimensions != max.Length || _observationDimensions != steps.Length)
-        {
-            throw new ArgumentException("The length of min, max, and steps must match the number of observation dimensions");
-        }
-        var minLatentSpace = tensor(min, device: _device);
-        var maxLatentSpace = tensor(max, device: _device);
-        var stepsLatentSpace = tensor(steps, device: _device);
-
-        return Evaluate(minLatentSpace, maxLatentSpace, stepsLatentSpace);
-    }
-
-    /// <summary>
-    /// Evaluate the density estimation for the given range and steps.
-    /// </summary>
-    /// <param name="min"></param>
-    /// <param name="max"></param>
-    /// <param name="steps"></param>
-    /// <returns>
-    /// A list of tensors containing the density estimation for the observations, the density estimation for the observations at each mark channel, and the joint density of the observations and marks.
-    /// </returns>
-    public IEnumerable<Tensor> Evaluate(Tensor min, Tensor max, Tensor steps)
-    {
-        var observationDensity = _observationEstimation.Evaluate(min, max, steps);
+        var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points);
         var observationAtMarkDensity = new Tensor[_markChannels];
         var jointDensity = new Tensor[_markChannels];
 
         for (int i = 0; i < _markChannels; i++)
         {
-            observationAtMarkDensity[i] = _observationAtMarkEstimation[i].Evaluate(min, max, steps);
-            jointDensity[i] = _jointEstimation[i].Evaluate(min, max, steps);
+            observationAtMarkDensity[i] = _observationAtMarkEstimation[i].Evaluate(_stateSpace.Points);
+            jointDensity[i] = _jointEstimation[i].Evaluate(_stateSpace.Points);
         }
 
         return [observationDensity, concat(observationAtMarkDensity), concat(jointDensity)];
