@@ -122,7 +122,9 @@ public class Model
     {
         TestClusterlessMarks.BayesianStateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.Uniform,
-            firingThreshold: 0.4,
+            observationBandwidth: [2.0],
+            markBandwidth: [5, 5, 5, 5],
+            firingThreshold: 0.2,
             noiseScale: 2.0
         );
     }
