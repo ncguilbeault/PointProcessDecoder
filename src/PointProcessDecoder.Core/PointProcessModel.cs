@@ -11,11 +11,6 @@ namespace PointProcessDecoder.Core;
 
 public class PointProcessModel : IModel
 {
-    private int _stateSpaceDimensions;
-    private readonly int _markDimensions;
-    private readonly int _markChannels;
-    private readonly int _nUnits;
-
     private readonly Device _device;
     /// <inheritdoc/>
     public Device Device => _device;
@@ -23,6 +18,10 @@ public class PointProcessModel : IModel
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
+
+    private readonly LikelihoodType _likelihoodType;
+    public LikelihoodType Likelihood => _likelihoodType;
+    private readonly Func<Tensor, IEnumerable<Tensor>, Tensor> _likelihood;
 
     private readonly IEncoder _encoderModel;
     public IEncoder Encoder => _encoderModel;
@@ -43,10 +42,11 @@ public class PointProcessModel : IModel
         double[] minStateSpace,
         double[] maxStateSpace,
         long[] stepsStateSpace,
-        double[] bandwidth,
+        double[] observationBandwidth,
         int stateSpaceDimensions,
         int? markDimensions = null,
         int? markChannels = null,
+        double[]? markBandwidth = null,
         int? nUnits = null,
         double? distanceThreshold = null,
         double[]? sigmaRandomWalk = null,
@@ -56,10 +56,6 @@ public class PointProcessModel : IModel
     {
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _stateSpaceDimensions = stateSpaceDimensions;
-        _markDimensions = markDimensions ?? 0;
-        _markChannels = markChannels ?? 0;
-        _nUnits = nUnits ?? 0;
 
         _stateSpace = stateSpaceType switch
         {
@@ -78,20 +74,23 @@ public class PointProcessModel : IModel
         {
             EncoderType.ClusterlessMarkEncoder => new ClusterlessMarkEncoder(
                 estimationMethod, 
-                bandwidth,
-                _markDimensions, 
-                _markChannels,
+                observationBandwidth,
+                markDimensions ?? 1, 
+                markChannels ?? 1,
+                markBandwidth ?? observationBandwidth,
                 _stateSpace,
                 distanceThreshold, 
-                device: _device
+                device: _device,
+                scalarType: _scalarType
             ),
             EncoderType.SortedSpikeEncoder => new SortedSpikeEncoder(
                 estimationMethod, 
-                bandwidth,
-                _nUnits,
+                observationBandwidth,
+                nUnits ?? 1,
                 _stateSpace,
                 distanceThreshold, 
-                device: _device
+                device: _device,
+                scalarType: _scalarType
             ),
             _ => throw new ArgumentException("Invalid encoder type.")
         };
@@ -100,13 +99,22 @@ public class PointProcessModel : IModel
         {
             DecoderType.StateSpaceDecoder => new StateSpaceDecoder(
                 transitionsType,
-                likelihoodType,
                 _stateSpace,
                 sigmaRandomWalk,
-                device: _device
+                device: _device,
+                scalarType: _scalarType
             ),
             _ => throw new ArgumentException("Invalid decoder type.")
         };
+
+        _likelihoodType = likelihoodType;
+        _likelihood = likelihoodType switch
+        {
+            LikelihoodType.Poisson => PoissonLikelihood.LogLikelihood,
+            LikelihoodType.Clusterless => ClusterlessLikelihood.LogLikelihood,
+            _ => throw new ArgumentException("Invalid likelihood type.")
+        };
+
     }
 
     /// <summary>
@@ -118,7 +126,7 @@ public class PointProcessModel : IModel
     /// <param name="data"></param>
     public void Encode(Tensor observations, Tensor inputs)
     {
-        if (observations.shape[1] != _stateSpaceDimensions)
+        if (observations.shape[1] != _stateSpace.Dimensions)
         {
             throw new ArgumentException("The number of latent dimensions must match the shape of the observations.");
         }
@@ -138,11 +146,8 @@ public class PointProcessModel : IModel
     /// <exception cref="NotImplementedException"></exception>
     public Tensor Decode(Tensor inputs)
     {
-        if (_encoderModel.ConditionalIntensities == null)
-        {
-            throw new InvalidOperationException("The encoder must be run before decoding.");
-        }
-
-        return _decoderModel.Decode(inputs, _encoderModel.ConditionalIntensities);
+        var conditionalIntensities = _encoderModel.Evaluate(inputs);
+        var likelihood = _likelihood(inputs, conditionalIntensities);
+        return _decoderModel.Decode(inputs, likelihood);
     }
 }

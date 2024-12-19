@@ -6,5 +6,7 @@ public interface IDecoder
 {
     public Device Device { get; }
     public ScalarType ScalarType { get; }
-    public Tensor Decode(Tensor input, IEnumerable<Tensor> conditionalIntensities);
+    public Tensor InitialState { get; }
+    public IStateTransitions Transitions { get; }
+    public Tensor Decode(Tensor input, Tensor likelihood);
 }

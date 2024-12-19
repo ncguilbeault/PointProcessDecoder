@@ -12,7 +12,7 @@ namespace PointProcessDecoder.Simulation;
 /// </summary>
 public static class Simulate
 {
-    private static ScalarType _scalarType = ScalarType.Float64;
+    private static ScalarType _scalarType = ScalarType.Float32;
     public static ScalarType ScalarType
     {
         get => _scalarType;
@@ -248,5 +248,58 @@ public static class Simulate
             .to_type(scalarType.Value)
             .to(device)
             .MoveToOuterDisposeScope();
+    }
+
+    /// <summary>
+    /// Simulate marks at a given position using spikes and mark dimensions.
+    /// </summary>
+    /// <param name="positionData"></param>
+    /// <param name="spikes"></param>
+    /// <param name="markDimensions"></param>
+    /// <param name="markChannels"></param>
+    /// <param name="seed"></param>
+    /// <param name="scalarType"></param>
+    /// <param name="device"></param>
+    /// <param name="noiseScale"></param>
+    /// <returns></returns>
+    public static Tensor MarksAtPosition(
+        Tensor positionData,
+        Tensor spikes,
+        int markDimensions,
+        int markChannels,
+        int? seed = null,
+        ScalarType? scalarType = null,
+        Device? device = null,
+        double spikeScale = 5,
+        double noiseScale = 0.5
+    )
+    {
+        scalarType ??= _scalarType;
+        device ??= _device;
+        using var _ = NewDisposeScope();
+        if (seed != null) manual_seed(seed.Value);
+        var marks = ones([positionData.shape[0], markDimensions, markChannels], device: device, dtype: scalarType.Value) * double.NaN;
+        var nUnits = spikes.shape[1];
+        var spikeIndices = spikes.nonzero();
+        var unitMarks = rand([nUnits, markDimensions], device: device, dtype: scalarType.Value) * spikeScale;
+        var neuronsPerChannel = (int)Math.Ceiling((double)nUnits / markChannels);
+
+        // simulate marks for each channel
+        for (int i = 0; i < markChannels; i++)
+        {
+            // we expect there to be more units than channels, and each unit should have a unique mark with some noise
+            for (int j = 0; j < neuronsPerChannel; j++)
+            {
+                if (j + i * neuronsPerChannel >= nUnits) break;
+                var unitIndex = j + i * neuronsPerChannel;
+                var unitSpikes = spikeIndices[spikeIndices[TensorIndex.Colon, 1] == unitIndex];
+                var unitMark = unitMarks[unitIndex];
+                var unitMarkExpanded = unitMark.unsqueeze(0).expand(unitSpikes.shape[0], markDimensions);
+                // add gaussian noise to the mark
+                unitMarkExpanded += randn_like(unitMarkExpanded) * noiseScale;
+                marks[TensorIndex.Tensor(unitSpikes[TensorIndex.Colon, 0]), TensorIndex.Colon, i] = unitMarkExpanded;
+            }
+        }
+        return marks.MoveToOuterDisposeScope();
     }
 }

@@ -6,7 +6,6 @@ public interface IEncoder
 {
     public Device Device { get; }
     public ScalarType ScalarType { get; }
-    public IEnumerable<Tensor>? ConditionalIntensities { get; }
-    public IEnumerable<Tensor> Evaluate();
+    public IEnumerable<Tensor> Evaluate(params Tensor[] inputs);
     public void Encode(Tensor observations, Tensor input);
 }

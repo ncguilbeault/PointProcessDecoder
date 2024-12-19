@@ -10,7 +10,7 @@ using PointProcessDecoder.Core.StateSpace;
 
 namespace PointProcessDecoder.Test.Common;
 
-public static class TestModel
+public static class TestSortedUnits
 {
     public static void BayesianStateSpaceSortedUnitsSimulatedData(
         double[]? bandwidth = null,
@@ -28,7 +28,7 @@ public static class TestModel
         int nTesting = 200,
         double[]? sigma = null,
         double? distanceThreshold = null,
-        string outputDirectory = "TestModel",
+        string outputDirectory = "TestSortedUnits",
         string modelDirectory = "BayesianStateSpaceSortedUnitsSimulatedData",
         ScalarType scalarType = ScalarType.Float32,
         Device? device = null,
@@ -141,7 +141,7 @@ public static class TestModel
         double? testFraction = null,
         double[]? sigma = null,
         double? distanceThreshold = null,
-        string outputDirectory = "TestModel",
+        string outputDirectory = "TestSortedUnits",
         string modelDirectory = "BayesianStateSpaceSortedUnitsRealData",
         ScalarType scalarType = ScalarType.Float32,
         Device? device = null,

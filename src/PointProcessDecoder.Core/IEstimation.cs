@@ -38,6 +38,10 @@ public interface IEstimation
     /// <returns></returns>
     public Tensor Evaluate(Tensor min, Tensor max, Tensor steps);
 
+    public Tensor Estimate(Tensor points);
+
+    public Tensor Normalize(Tensor points);
+
     /// <summary>
     /// Fits new data points to the density estimation.
     /// </summary>

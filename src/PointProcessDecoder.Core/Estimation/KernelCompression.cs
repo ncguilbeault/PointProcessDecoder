@@ -156,6 +156,31 @@ public class KernelCompression : IEstimation
         return stack([weightSum, mean, diagonalCovariance], dim: 1);
     }
 
+    public Tensor Estimate(Tensor points)
+    {
+        using var _ = NewDisposeScope();
+        var diff = pow(_kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
+        var gaussian = exp(-0.5 * sum(diff / _kernels[TensorIndex.Ellipsis, 2], dim: -1));
+        var sumWeights = _kernels[TensorIndex.Ellipsis, 0].sum(dim: -1);
+        var sqrtDiagonalCovariance = sqrt(2 * Math.PI * _kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
+        return (sumWeights * gaussian / sqrtDiagonalCovariance)
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
+    }
+
+    public Tensor Normalize(Tensor points)
+    {
+        using var _ = NewDisposeScope();
+        var density = points.sum(dim: -1);
+        density /= density.sum();
+        return density
+            .nan_to_num()
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
+    }
+
     /// <inheritdoc/>
     public Tensor Evaluate(Tensor min, Tensor max, Tensor steps)
     {
@@ -202,18 +227,8 @@ public class KernelCompression : IEstimation
         }
 
         using var _ = NewDisposeScope();
-        points = points.to_type(_scalarType).to(_device);
-        var diff = pow(_kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
-        var gaussian = exp(-0.5 * sum(diff / _kernels[TensorIndex.Ellipsis, 2], dim: -1));
-        var sumWeights = _kernels[TensorIndex.Ellipsis, 0].sum(dim: -1);
-        var sqrtDiagonalCovariance = sqrt(2 * Math.PI * _kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
-        var density = (sumWeights * gaussian / sqrtDiagonalCovariance)
-            .sum(dim: -1);
-        density /= density.sum();
-        return density
-            .nan_to_num()
-            .to_type(_scalarType)
-            .to(_device)
+        var estimate = Estimate(points);
+        return Normalize(estimate)
             .MoveToOuterDisposeScope();
     }
 }

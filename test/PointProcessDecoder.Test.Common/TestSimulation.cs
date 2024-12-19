@@ -6,7 +6,7 @@ namespace PointProcessDecoder.Test.Common;
 
 public static class TestSimulation
 {
-    public static void TestSpikingNeurons1D(
+    public static void SpikingNeurons1D(
         int steps = 200,
         int cycles = 10,
         double min = 0.0,
@@ -17,12 +17,13 @@ public static class TestSimulation
         int numNeurons = 40,
         double placeFieldRadius = 8.0,
         double firingThreshold = 0.2,
-        string outputDirectory = "TestSimulation"
+        string outputDirectory = "TestSimulation",
+        string testDirectory = "SpikingNeurons1D"
     )
     {
         device ??= CPU;
 
-        var spikingNeuronsDirectory = Path.Combine(outputDirectory, "SpikingNeurons1D");
+        outputDirectory = string.IsNullOrEmpty(testDirectory) ? outputDirectory : Path.Combine(outputDirectory, testDirectory);
 
         var position1D = Simulate.Position(
             steps, 
@@ -37,7 +38,7 @@ public static class TestSimulation
         var maxPosition = position1D.shape[0];
         
         ScatterPlot plotPosition1D = new(minPosition, maxPosition, min, max, "Position1D");
-        plotPosition1D.OutputDirectory = Path.Combine(plotPosition1D.OutputDirectory, spikingNeuronsDirectory);
+        plotPosition1D.OutputDirectory = Path.Combine(plotPosition1D.OutputDirectory, outputDirectory);
         plotPosition1D.Show<float>(position1DExpandedTime);
         plotPosition1D.Save(png: true);
 
@@ -52,7 +53,7 @@ public static class TestSimulation
         var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         ScatterPlot plotPlaceFieldCenters = new(-1, 1, min, max, "PlaceFieldCenters1D");
-        plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, spikingNeuronsDirectory);
+        plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, outputDirectory);
         plotPlaceFieldCenters.Show<float>(placeFieldCenters2D);
         plotPlaceFieldCenters.Save(png: true);
 
@@ -66,7 +67,7 @@ public static class TestSimulation
         );
 
         ScatterPlot plotSpikingNeurons = new(0, position1D.shape[0], min, max, title: "SpikingNeurons1D");
-        plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, spikingNeuronsDirectory);
+        plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, outputDirectory);
 
         var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
 
@@ -78,7 +79,7 @@ public static class TestSimulation
         plotSpikingNeurons.Save(png: true);
     }
 
-    public static void TestSpikingNeurons2D(
+    public static void SpikingNeurons2D(
         int steps = 200,
         int cycles = 10,
         double xMin = 0.0,
@@ -91,11 +92,12 @@ public static class TestSimulation
         int numNeurons = 40,
         double placeFieldRadius = 8.0,
         double firingThreshold = 0.2,
-        string outputDirectory = "TestSimulation"
+        string outputDirectory = "TestSimulation",
+        string testDirectory = "SpikingNeurons2D"
     )
     {
         device ??= CPU;
-        var spikingNeuronsDirectory = Path.Combine(outputDirectory, "SpikingNeurons2D");
+        outputDirectory = string.IsNullOrEmpty(testDirectory) ? outputDirectory : Path.Combine(outputDirectory, testDirectory);
 
         var position2D = Simulate.Position(
             steps, 
@@ -109,7 +111,7 @@ public static class TestSimulation
         );
         
         ScatterPlot plotPosition2D = new(xMin, xMax, yMin, yMax, "Position2D");
-        plotPosition2D.OutputDirectory = Path.Combine(plotPosition2D.OutputDirectory, spikingNeuronsDirectory);
+        plotPosition2D.OutputDirectory = Path.Combine(plotPosition2D.OutputDirectory, outputDirectory);
         plotPosition2D.Show<float>(position2D);
         plotPosition2D.Save(png: true);
 
@@ -125,7 +127,7 @@ public static class TestSimulation
         );
 
         ScatterPlot plotPlaceFieldCenters = new(xMin, xMax, yMin, yMax, "PlaceFieldCenters");
-        plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, spikingNeuronsDirectory);
+        plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, outputDirectory);
         plotPlaceFieldCenters.Show<float>(placeFieldCenters);
         plotPlaceFieldCenters.Save(png: true);
 
@@ -139,7 +141,7 @@ public static class TestSimulation
         );
 
         ScatterPlot plotSpikingNeurons = new(xMin, xMax, yMin, yMax, title: "SpikingNeurons");
-        plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, spikingNeuronsDirectory);
+        plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, outputDirectory);
 
         var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
 
@@ -151,7 +153,7 @@ public static class TestSimulation
         plotSpikingNeurons.Save(png: true);
     }
 
-    public static void TestSpikingNeurons2DFirstAndLastSteps(
+    public static void SpikingNeurons2DFirstAndLastSteps(
         int steps = 200,
         int cycles = 10,
         double scale = 0.1,
@@ -166,12 +168,12 @@ public static class TestSimulation
         int numNeurons = 40,
         double placeFieldRadius = 8.0,
         double firingThreshold = 0.2,
-        string outputDirectory = "TestSimulation"
+        string outputDirectory = "TestSimulation",
+        string testDirectory = "SpikingNeurons2DFirstAndLastSteps"
     )
     {
         device ??= CPU;
-
-        var spikingNeuronsDirectory = Path.Combine(outputDirectory, "SpikingNeurons2DFirstAndLastSteps");
+        outputDirectory = string.IsNullOrEmpty(testDirectory) ? outputDirectory : Path.Combine(outputDirectory, testDirectory);
 
         var position2D = Simulate.Position(
             steps, 
@@ -186,12 +188,12 @@ public static class TestSimulation
         );
         
         ScatterPlot plotPositionFirst = new(xMin, xMax, yMin, yMax, "Position2DFirst");
-        plotPositionFirst.OutputDirectory = Path.Combine(plotPositionFirst.OutputDirectory, spikingNeuronsDirectory);
+        plotPositionFirst.OutputDirectory = Path.Combine(plotPositionFirst.OutputDirectory, outputDirectory);
         plotPositionFirst.Show<float>(position2D[TensorIndex.Slice(0, stepsToSeperate)]);
         plotPositionFirst.Save(png: true);
 
         ScatterPlot plotPositionLast = new(xMin, xMax, yMin, yMax, "Position2DLast");
-        plotPositionLast.OutputDirectory = Path.Combine(plotPositionLast.OutputDirectory, spikingNeuronsDirectory);
+        plotPositionLast.OutputDirectory = Path.Combine(plotPositionLast.OutputDirectory, outputDirectory);
         plotPositionLast.Show<float>(position2D[TensorIndex.Slice(stepsToSeperate)]);
         plotPositionLast.Save(png: true);
 
@@ -207,7 +209,7 @@ public static class TestSimulation
         );
 
         ScatterPlot plotPlaceFieldCenters = new(xMin, xMax, yMin, yMax, "PlaceFieldCenters");
-        plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, spikingNeuronsDirectory);
+        plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, outputDirectory);
         plotPlaceFieldCenters.Show<float>(placeFieldCenters);
         plotPlaceFieldCenters.Save(png: true);
 
@@ -221,10 +223,10 @@ public static class TestSimulation
         );
 
         ScatterPlot plotSpikingNeuronsFirst = new(xMin, xMax, yMin, yMax, title: "SpikingNeuronsFirst");
-        plotSpikingNeuronsFirst.OutputDirectory = Path.Combine(plotSpikingNeuronsFirst.OutputDirectory, spikingNeuronsDirectory);
+        plotSpikingNeuronsFirst.OutputDirectory = Path.Combine(plotSpikingNeuronsFirst.OutputDirectory, outputDirectory);
 
         ScatterPlot plotSpikingNeuronsLast = new(xMin, xMax, yMin, yMax, title: "SpikingNeuronsLast");
-        plotSpikingNeuronsLast.OutputDirectory = Path.Combine(plotSpikingNeuronsLast.OutputDirectory, spikingNeuronsDirectory);
+        plotSpikingNeuronsLast.OutputDirectory = Path.Combine(plotSpikingNeuronsLast.OutputDirectory, outputDirectory);
 
         var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
 
@@ -239,5 +241,87 @@ public static class TestSimulation
 
         plotSpikingNeuronsFirst.Save(png: true);
         plotSpikingNeuronsLast.Save(png: true);
+    }
+
+    public static void Marks1D(
+        int steps = 200,
+        int cycles = 10,
+        double min = 0.0,
+        double max = 100.0,
+        int stepsToSeperate = 1800,
+        int seed = 0,
+        ScalarType scalarType = ScalarType.Float32,
+        Device? device = null,
+        int numNeurons = 40,
+        double placeFieldRadius = 8.0,
+        double firingThreshold = 0.2,
+        int markDimensions = 4,
+        int markChannels = 8,
+        double spikeScale = 5,
+        double noiseScale = 0.5,
+        string outputDirectory = "TestSimulation",
+        string testDirectory = "Marks1D"
+    )
+    {
+        device ??= CPU;
+        outputDirectory = string.IsNullOrEmpty(testDirectory) ? outputDirectory : Path.Combine(outputDirectory, testDirectory);
+
+        var position = Simulate.Position(
+            steps, 
+            cycles, 
+            min, 
+            max,
+            scalarType: scalarType,
+            device: device
+        );
+
+        var placeFieldCenters = Simulate.PlaceFieldCenters(
+            min, 
+            max,
+            numNeurons, 
+            seed, 
+            scalarType,
+            device: device
+        );
+
+        var spikingData = Simulate.SpikesAtPosition(
+            position, 
+            placeFieldCenters, 
+            placeFieldRadius, 
+            firingThreshold, 
+            seed,
+            device: device
+        );
+
+        var marks = Simulate.MarksAtPosition(
+            position,
+            spikingData, 
+            markDimensions, 
+            markChannels, 
+            seed, 
+            device: device,
+            spikeScale: spikeScale,
+            noiseScale: noiseScale
+        );
+
+        var marksMin = marks.nan_to_num().min().item<float>();
+        var marksMax = marks.nan_to_num().max().item<float>();
+
+        for (int i = 0; i < markChannels; i++)
+        {
+            var marksChannel = marks[TensorIndex.Ellipsis, i];
+            var marksMasked = marksChannel.isnan().logical_not().all(1);
+            for (int j = 0; j < markDimensions - 1; j++)
+            {
+                var marksDim1 = marksChannel[marksMasked, j];
+                var marksDim2 = marksChannel[marksMasked, j + 1];
+                var marksAtSpikes = stack([marksDim1, marksDim2], dim: 1);
+                ScatterPlot plotMarks = new(marksMin, marksMax, marksMin, marksMax, title: $"Marks_{i}_{j}");
+                plotMarks.OutputDirectory = Path.Combine(plotMarks.OutputDirectory, outputDirectory);
+                plotMarks.Show<float>(marksAtSpikes);
+                plotMarks.Save(png: true);
+            }
+        }
+
     }
 }

@@ -4,10 +4,18 @@ namespace PointProcessDecoder.Core.Likelihood;
 
 public static class PoissonLikelihood
 {
-    public static Tensor LogLikelihood(Tensor inputs, Tensor conditionalIntensities)
+    public static Tensor LogLikelihood(
+        Tensor inputs, 
+        IEnumerable<Tensor> conditionalIntensities
+    )
     {
         using var _ = NewDisposeScope();
-        var logLikelihood = xlogy(inputs.unsqueeze(1), conditionalIntensities.unsqueeze(0)) - conditionalIntensities.unsqueeze(0);
-        return logLikelihood.sum(dim: -1).MoveToOuterDisposeScope();
+        var conditionalIntensity = conditionalIntensities.First();
+        var conditionalIntensityTensor = conditionalIntensity.flatten(1).T.unsqueeze(0);
+        var logLikelihood = (xlogy(inputs.unsqueeze(1), conditionalIntensityTensor) - conditionalIntensityTensor)
+            .nan_to_num()
+            .sum(dim: -1);
+        logLikelihood -= logLikelihood.max(dim: -1, keepdim: true).values;
+        return logLikelihood.MoveToOuterDisposeScope();
     }
 }

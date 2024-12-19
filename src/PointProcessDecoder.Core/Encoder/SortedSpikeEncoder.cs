@@ -11,14 +11,16 @@ public class SortedSpikeEncoder : IEncoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
-    private IEnumerable<Tensor>? _conditionalIntensities = null;
-    public IEnumerable<Tensor>? ConditionalIntensities => _conditionalIntensities;
-
+    private Tensor _conditionalIntensities = empty(0);
+    private bool _updateConditionalIntensities = true;
     private readonly int _nUnits;
     private readonly IEstimation[] _unitEstimation;
     private readonly IEstimation _observationEstimation;
-    private Tensor _meanRates = empty(0);
+    private Tensor _spikeCounts = empty(0);
+    private Tensor _samples = empty(0);
+    private Tensor _rates = empty(0);
     private readonly IStateSpace _stateSpace;
+    private readonly double _eps;
 
     public SortedSpikeEncoder(
         EstimationMethod estimationMethod, 
@@ -37,6 +39,7 @@ public class SortedSpikeEncoder : IEncoder
 
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _eps = finfo(_scalarType).eps;
         _stateSpace = stateSpace;
         _nUnits = nUnits;
         
@@ -110,37 +113,61 @@ public class SortedSpikeEncoder : IEncoder
 
         _observationEstimation.Fit(observations);
 
-        _meanRates = inputs.to_type(ScalarType.Int32)
-            .mean([0], type: _scalarType)
-            .log()
-            .nan_to_num();
+        if (_spikeCounts.numel() == 0)
+        {
+            _spikeCounts = inputs.to_type(ScalarType.Int32)
+                .nan_to_num()
+                .sum([0])
+                .to_type(_scalarType)
+                .to(_device);
+            
+            _samples = observations.shape[0];
+        }
+        else
+        {
+            _spikeCounts += inputs.to_type(ScalarType.Int32)
+                .nan_to_num()
+                .sum([0])
+                .to_type(_scalarType)
+                .to(_device);
+            _samples += observations.shape[0];
+        }
+
+        _rates = _spikeCounts.clamp_min(_eps).log() - _samples.clamp_min(_eps).log();
 
         for (int i = 0; i < _nUnits; i++)
         {
             _unitEstimation[i].Fit(observations[inputs[TensorIndex.Colon, i]]);
         }
 
-        _conditionalIntensities = Evaluate();
+        _updateConditionalIntensities = true;
+        _conditionalIntensities = Evaluate().First();
     }
 
-    public IEnumerable<Tensor> Evaluate()
+    public IEnumerable<Tensor> Evaluate(params Tensor[] inputs)
     {
+        if (_conditionalIntensities.numel() != 0 && !_updateConditionalIntensities)
+        {
+            return [_conditionalIntensities];
+        }
+        
         using var _ = NewDisposeScope();
         var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
-            .clamp_min(1e-18)
+            .clamp_min(_eps)
             .log();
         var conditionalIntensities = new Tensor[_nUnits];
 
         for (int i = 0; i < _nUnits; i++)
         {
             var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
-                .clamp_min(1e-18)
+                .clamp_min(_eps)
                 .log();
-            conditionalIntensities[i] = exp(_meanRates[i] + unitDensity - observationDensity)
-                .reshape(_stateSpace.Shape)
-                .MoveToOuterDisposeScope();
+            conditionalIntensities[i] = exp(_rates[i] + unitDensity - observationDensity)
+                .reshape(_stateSpace.Shape);
         }
-
-        return conditionalIntensities;
+        var output = stack(conditionalIntensities, dim: 0)
+            .MoveToOuterDisposeScope();
+        _updateConditionalIntensities = false;
+        return [output];
     }
 }

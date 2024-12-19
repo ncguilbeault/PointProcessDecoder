@@ -24,16 +24,6 @@ public class KernelDensity : IEstimation
     /// </summary>
     public Tensor KernelBandwidth => _kernelBandwidth;
 
-    private double _tolerance = 1e-12;
-    /// <summary>
-    /// The tolerance.
-    /// </summary>
-    public double Tolerance 
-    { 
-        get => _tolerance; 
-        set => _tolerance = value; 
-    }
-
     private readonly int _dimensions;
     /// <summary>
     /// The number of dimensions of the observations.
@@ -104,17 +94,18 @@ public class KernelDensity : IEstimation
             throw new ArgumentException("The number of dimensions must match the shape of the data.");
         }
 
-        // data = data.to_type(_scalarType).to(_device);
+        using var _ = NewDisposeScope();
 
         // Check if the kernels are empty
         if (_kernels.numel() == 0)
         {
-            _kernels = data;
+            _kernels = data.MoveToOuterDisposeScope();
             return;      
         }
 
         // Concatenate the data points with the kernels
-        _kernels = cat([ _kernels, data ], dim: 0);
+        _kernels = cat([ _kernels, data ], dim: 0)
+            .MoveToOuterDisposeScope();
     }
 
     /// <summary>
@@ -124,6 +115,28 @@ public class KernelDensity : IEstimation
     {
         _kernels.Dispose();
         _kernels = empty(0);
+    }
+
+    public Tensor Estimate(Tensor points)
+    {
+        using var _ = NewDisposeScope();
+        var diff = (_kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
+        return exp(-0.5 * diff.pow(2).sum(2))
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
+    }
+
+    public Tensor Normalize(Tensor points)
+    {
+        using var _ = NewDisposeScope();
+        var density = mean(points, [1]) / _kernelBandwidth.prod();
+        density /= sum(density);
+        return density
+            .nan_to_num()
+            .to_type(_scalarType)
+            .to(_device)
+            .MoveToOuterDisposeScope();
     }
 
     /// <summary>
@@ -185,13 +198,8 @@ public class KernelDensity : IEstimation
         }
 
         using var _ = NewDisposeScope();
-        var diff = (_kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
-        var density = mean(exp(-0.5 * diff.pow(2).sum(2)), [1]) / _kernelBandwidth.prod();
-        density /= sum(density);
-        return density
-            .nan_to_num()
-            .to_type(_scalarType)
-            .to(_device)
+        var estimate = Estimate(points);
+        return Normalize(estimate)
             .MoveToOuterDisposeScope();
     }
 }

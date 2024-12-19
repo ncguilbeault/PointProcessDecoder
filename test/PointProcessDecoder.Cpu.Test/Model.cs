@@ -10,13 +10,13 @@ public class Model
     [TestMethod]
     public void TestPointProcessModelUniformDensity()
     {
-        TestModel.BayesianStateSpaceSortedUnitsSimulatedData();
+        TestSortedUnits.BayesianStateSpaceSortedUnitsSimulatedData();
     }
 
     [TestMethod]
     public void TestPointProcessModelRandomWalkDensity()
     {
-        TestModel.BayesianStateSpaceSortedUnitsSimulatedData(
+        TestSortedUnits.BayesianStateSpaceSortedUnitsSimulatedData(
             transitionsType: TransitionsType.RandomWalk,
             sigma: [0.1],
             modelDirectory: "SimulatedData1D"
@@ -26,7 +26,7 @@ public class Model
     [TestMethod]
     public void TestPointProcessModelRandomWalkCompression()
     {
-        TestModel.BayesianStateSpaceSortedUnitsSimulatedData(
+        TestSortedUnits.BayesianStateSpaceSortedUnitsSimulatedData(
             transitionsType: TransitionsType.RandomWalk,
             estimationMethod: EstimationMethod.KernelCompression,
             sigma: [0.1],
@@ -38,7 +38,7 @@ public class Model
     [TestMethod]
     public void TestPointProcessModelUniformDensity2D()
     {
-        TestModel.BayesianStateSpaceSortedUnitsSimulatedData(
+        TestSortedUnits.BayesianStateSpaceSortedUnitsSimulatedData(
             bandwidth: [5.0, 5.0],
             dimensions: 2,
             evaluationSteps: [50, 50],
@@ -52,7 +52,7 @@ public class Model
     [TestMethod]
     public void TestPointProcessModelRandomWalkDensity2D()
     {
-        TestModel.BayesianStateSpaceSortedUnitsSimulatedData(
+        TestSortedUnits.BayesianStateSpaceSortedUnitsSimulatedData(
             bandwidth: [5.0, 5.0],
             dimensions: 2,
             evaluationSteps: [50, 50],
@@ -68,7 +68,7 @@ public class Model
     [TestMethod]
     public void TestPointProcessModelRandomWalkCompression2D()
     {
-        TestModel.BayesianStateSpaceSortedUnitsSimulatedData(
+        TestSortedUnits.BayesianStateSpaceSortedUnitsSimulatedData(
             bandwidth: [5.0, 5.0],
             dimensions: 2,
             evaluationSteps: [50, 50],
@@ -86,7 +86,7 @@ public class Model
     [TestMethod]
     public void TestPointProcessModelUniformDensityRealData2D()
     {
-        TestModel.BayesianStateSpaceSortedUnitsRealData(
+        TestSortedUnits.BayesianStateSpaceSortedUnitsRealData(
             bandwidth: [0.5, 0.5],
             dimensions: 2,
             evaluationSteps: [50, 50],
@@ -101,7 +101,7 @@ public class Model
     [TestMethod]
     public void TestPointProcessModelRandomWalkCompressionRealData2D()
     {
-        TestModel.BayesianStateSpaceSortedUnitsRealData(
+        TestSortedUnits.BayesianStateSpaceSortedUnitsRealData(
             bandwidth: [0.5, 0.5],
             dimensions: 2,
             evaluationSteps: [50, 50],
@@ -114,6 +114,16 @@ public class Model
             modelDirectory: "RealData2D",
             transitionsType: TransitionsType.RandomWalk,
             estimationMethod: EstimationMethod.KernelCompression
+        );
+    }
+
+    [TestMethod]
+    public void TestPointProcessModelUniformDensityClusterlessMarksSimulatedData()
+    {
+        TestClusterlessMarks.BayesianStateSpaceClusterlessMarksSimulated(
+            transitionsType: TransitionsType.Uniform,
+            firingThreshold: 0.4,
+            noiseScale: 2.0
         );
     }
 }

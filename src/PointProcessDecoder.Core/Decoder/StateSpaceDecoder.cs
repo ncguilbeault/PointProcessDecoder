@@ -5,15 +5,15 @@ using PointProcessDecoder.Core.Likelihood;
 
 namespace PointProcessDecoder.Core.Decoder;
 
-public class StateSpaceDecoder : PointProcessDecoder
+public class StateSpaceDecoder : IDecoder
 {
     private readonly Device _device;
-    public override Device Device => _device;
+    public Device Device => _device;
 
     private readonly ScalarType _scalarType;
-    public override ScalarType ScalarType => _scalarType;
+    public ScalarType ScalarType => _scalarType;
 
-    private readonly Tensor _initialState;
+    private readonly Tensor _initialState = empty(0);
     public Tensor InitialState => _initialState;
 
     private readonly IStateTransitions _stateTransitions;
@@ -23,11 +23,10 @@ public class StateSpaceDecoder : PointProcessDecoder
     public Tensor Posterior => _posterior;
 
     private readonly IStateSpace _stateSpace;
-    private readonly Func<Tensor, Tensor, Tensor> _likelihoodMethod;
+    private readonly double _eps;
 
     public StateSpaceDecoder(
         TransitionsType transitionsType,
-        LikelihoodType likelihoodType,
         IStateSpace stateSpace,
         double[]? sigmaRandomWalk = null,
         Device? device = null,
@@ -36,6 +35,7 @@ public class StateSpaceDecoder : PointProcessDecoder
     {
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _eps = finfo(_scalarType).eps;
         _stateSpace = stateSpace;
 
         _stateTransitions = transitionsType switch
@@ -54,12 +54,6 @@ public class StateSpaceDecoder : PointProcessDecoder
             _ => throw new ArgumentException("Invalid transitions type.")
         };
 
-        _likelihoodMethod = likelihoodType switch
-        {
-            LikelihoodType.Poisson => PoissonLikelihood.LogLikelihood,
-            _ => throw new ArgumentException("Invalid likelihood type.")
-        };
-
         var n = _stateSpace.Points.shape[0];
         _initialState = ones(n, dtype: _scalarType, device: _device) / n;
         _posterior = _initialState.clone();
@@ -75,24 +69,26 @@ public class StateSpaceDecoder : PointProcessDecoder
     /// <returns>
     /// A tensor of shape (m, p) where m is the number of observations and p is the number of points in the latent space.
     /// </returns>
-    public override Tensor Decode(Tensor inputs, IEnumerable<Tensor> conditionalIntensities)
+    public Tensor Decode(Tensor inputs, Tensor likelihood)
     {
         using var _ = NewDisposeScope();
 
-        var conditionalIntensitiesTensor = stack(conditionalIntensities.Select(ci => ci.flatten()), dim: -1);
-        var logLikelihood = _likelihoodMethod(inputs, conditionalIntensitiesTensor);
         var outputShape = new long[] { inputs.shape[0] }
             .Concat(_stateSpace.Shape)
             .ToArray();
+
         var output = zeros(outputShape, dtype: _scalarType, device: _device);
+
         for (int i = 0; i < inputs.shape[0]; i++)
         {
-            var posteriorUpdated = _stateTransitions.Transitions.matmul(_posterior);
-            posteriorUpdated /= posteriorUpdated.sum();
-            logLikelihood[i] -= logLikelihood[i].max() + posteriorUpdated.log().max();
-            _posterior = exp(logLikelihood[i] * inputs[i].any() + posteriorUpdated.log());
+            var update = _stateTransitions.Transitions.matmul(_posterior);
+            update = update.nan_to_num()
+                .clamp_min(_eps)
+                .log();
+            _posterior = exp(likelihood[i] + update);
             _posterior /= _posterior.sum();
-            _posterior = _posterior.nan_to_num().clamp_min(1e-12);
+            _posterior = _posterior.nan_to_num()
+                .clamp_min(_eps);
             output[i] = _posterior.reshape(_stateSpace.Shape);
         }
         _posterior.MoveToOuterDisposeScope();
