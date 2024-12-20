@@ -13,6 +13,7 @@ public static class ClusterlessLikelihood
             .nan_to_num()
             .sum(dim: 0);
         logLikelihood -= logLikelihood.max(dim: 0).values;
-        return logLikelihood.MoveToOuterDisposeScope();
+        return logLikelihood
+            .MoveToOuterDisposeScope();
     }
 }

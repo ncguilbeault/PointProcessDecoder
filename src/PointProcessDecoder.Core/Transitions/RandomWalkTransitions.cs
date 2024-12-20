@@ -61,11 +61,8 @@ public class RandomWalkTransitions : IStateTransitions
         using var _ = NewDisposeScope();
         var points = stateSpace.Points;
 
-        if (sigma is not null)
-            points /= sigma;
-
         var dist = cdist(points, points);
-        var bandwidth = sigma is not null ? dist.mean() / 2 : tensor(1, device: device, dtype: scalarType);
+        var bandwidth = sigma is null ? dist.mean() / 2 : sigma;
         var weights = exp(-dist.pow(2) / (2 * bandwidth.pow(2)));
         var transitions = weights / weights.sum(1, true);
 

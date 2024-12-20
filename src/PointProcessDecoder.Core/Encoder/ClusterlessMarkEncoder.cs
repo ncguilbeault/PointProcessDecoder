@@ -179,19 +179,33 @@ public class ClusterlessMarkEncoder : IEncoder
         using var _ = NewDisposeScope();
 
         var markConditionalIntensities = new Tensor[_markChannels];
+        var mask = inputs.sum(dim: 1) > 0;
 
         for (int i = 0; i < _markChannels; i++)
         {
-            var marks = inputs[TensorIndex.Ellipsis, i];
+            var jointDensityShape = new long[] { inputs.shape[0] }
+                .Concat(_stateSpace.Shape)
+                .ToArray();
+            var jointDensity = ones(jointDensityShape) * double.NaN;
+
+            if (mask[TensorIndex.Colon, i].sum().item<long>() == 0)
+            {
+                markConditionalIntensities[i] = jointDensity
+                    .MoveToOuterDisposeScope();
+                continue;
+            }
+
+            var marks = inputs[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i];
             var markEstimate = _markEstimation[i].Estimate(marks);
             var markDensity = markEstimate.matmul(_channelEstimates[i].T)
-                .clamp_min(_eps)
                 .log();
 
-            var jointDensity = markDensity + _channelConditionalIntensities[i].unsqueeze(0);
+            var jointMarksShape = new long[] { marks.shape[0] }
+                .Concat(_stateSpace.Shape)
+                .ToArray();
+            jointDensity[mask[TensorIndex.Colon, i]] = markDensity.reshape(jointMarksShape) + _channelConditionalIntensities[i].unsqueeze(0);
 
-            markConditionalIntensities[i] = jointDensity
-                .MoveToOuterDisposeScope();
+            markConditionalIntensities[i] = jointDensity;
             // markConditionalIntensities[i] = (jointDensity - _observationDensity.unsqueeze(0));
 
         }
@@ -217,12 +231,11 @@ public class ClusterlessMarkEncoder : IEncoder
 
             var channelDensity = _channelEstimates[i]
                 .mean(dimensions: [1])
-                .clamp_min(_eps)
                 .log()
                 .MoveToOuterDisposeScope();
 
             channelConditionalIntensities[i] = (_rates[i] + channelDensity - _observationDensity)
-                .clamp_min(_eps);
+                .reshape(_stateSpace.Shape);
         }
 
         _observationDensity.MoveToOuterDisposeScope();

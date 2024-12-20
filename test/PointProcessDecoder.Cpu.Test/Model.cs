@@ -122,10 +122,41 @@ public class Model
     {
         TestClusterlessMarks.BayesianStateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.Uniform,
-            observationBandwidth: [2.0],
-            markBandwidth: [5, 5, 5, 5],
-            firingThreshold: 0.2,
+            observationBandwidth: [1],
+            markBandwidth: [0.5,0.5,0.5,0.5],
+            firingThreshold: 0.5,
+            noiseScale: 0.5
+        );
+    }
+
+    [TestMethod]
+    public void TestPointProcessModelRandomWalkClusterlessMarksSimulatedData()
+    {
+        TestClusterlessMarks.BayesianStateSpaceClusterlessMarksSimulated(
+            transitionsType: TransitionsType.RandomWalk,
+            observationBandwidth: [2],
+            sigma: [3],
+            markBandwidth: [0.5,0.5,0.5,0.5],
+            firingThreshold: 0.4,
             noiseScale: 2.0
+        );
+    }
+
+    [TestMethod]
+    public void TestPointProcessModelRandomWalkClusterlessMarksSimulatedData2D()
+    {
+        TestClusterlessMarks.BayesianStateSpaceClusterlessMarksSimulated(
+            transitionsType: TransitionsType.Uniform,
+            observationBandwidth: [5, 5],
+            dimensions : 2,
+            evaluationSteps: [50, 50],
+            min: [0, 0],
+            max: [100, 100],
+            scale: 0.1,
+            markBandwidth: [2, 2, 2, 2],
+            firingThreshold: 0.5,
+            noiseScale: 0.5,
+            modelDirectory: "SimulatedData2D"
         );
     }
 }

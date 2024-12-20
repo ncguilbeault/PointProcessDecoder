@@ -81,14 +81,12 @@ public class StateSpaceDecoder : IDecoder
 
         for (int i = 0; i < inputs.shape[0]; i++)
         {
-            var update = _stateTransitions.Transitions.matmul(_posterior);
-            update = update.nan_to_num()
-                .clamp_min(_eps)
+            var update = _stateTransitions.Transitions.matmul(_posterior)
+                .nan_to_num()
                 .log();
-            _posterior = exp(likelihood[i] + update);
-            _posterior /= _posterior.sum();
-            _posterior = _posterior.nan_to_num()
+            _posterior = exp(likelihood[i].flatten() + update)
                 .clamp_min(_eps);
+            _posterior /= _posterior.sum();
             output[i] = _posterior.reshape(_stateSpace.Shape);
         }
         _posterior.MoveToOuterDisposeScope();

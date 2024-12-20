@@ -21,6 +21,7 @@ public static class TestClusterlessMarks
         int cycles = 10,
         double[]? min = null,
         double[]? max = null,
+        double scale = 0.1,
         int numNeurons = 40,
         double placeFieldRadius = 8.0,
         double firingThreshold = 0.2,
@@ -109,6 +110,7 @@ public static class TestClusterlessMarks
                 numNeurons: numNeurons,
                 placeFieldRadius: placeFieldRadius,
                 firingThreshold: firingThreshold,
+                scale: scale,
                 scalarType: scalarType,
                 seed: seed
             );
@@ -131,7 +133,7 @@ public static class TestClusterlessMarks
         pointProcessModel.Encode(position[TensorIndex.Slice(0, nTraining)], marks[TensorIndex.Slice(0, nTraining)]);
         var prediction = pointProcessModel.Decode(marks[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
         if (dimensions == 2)
-            prediction = prediction.sum(dim: 0);
+            prediction = prediction.max(dim: 0).values;
 
         Heatmap plotPrediction = new(
             heatmapRange[0],
