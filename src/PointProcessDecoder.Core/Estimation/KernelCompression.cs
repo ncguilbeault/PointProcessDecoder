@@ -50,8 +50,8 @@ public class KernelCompression : IEstimation
     /// <param name="device"></param>
     public KernelCompression(
         double? bandwidth = null, 
-        int? dimensions = null, 
-        double? distanceThreshold = null, 
+        int? dimensions = null,
+        double? distanceThreshold = null,
         Device? device = null, 
         ScalarType? scalarType = null
     )
@@ -76,7 +76,7 @@ public class KernelCompression : IEstimation
     public KernelCompression(
         double[] bandwidth, 
         int dimensions, 
-        double? distanceThreshold = null, 
+        double? distanceThreshold = null,
         Device? device = null, 
         ScalarType? scalarType = null
     )
@@ -156,13 +156,14 @@ public class KernelCompression : IEstimation
         return stack([weightSum, mean, diagonalCovariance], dim: 1);
     }
 
-    public Tensor Estimate(Tensor points)
+    public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null)
     {
         using var _ = NewDisposeScope();
-        var diff = pow(_kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
-        var gaussian = exp(-0.5 * sum(diff / _kernels[TensorIndex.Ellipsis, 2], dim: -1));
-        var sumWeights = _kernels[TensorIndex.Ellipsis, 0].sum(dim: -1);
-        var sqrtDiagonalCovariance = sqrt(2 * Math.PI * _kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
+        var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
+        var diff = pow(kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
+        var gaussian = exp(-0.5 * sum(diff / kernels[TensorIndex.Ellipsis, 2], dim: -1));
+        var sumWeights = kernels[TensorIndex.Ellipsis, 0, 0];
+        var sqrtDiagonalCovariance = sqrt(2 * Math.PI * kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
         return (sumWeights * gaussian / sqrtDiagonalCovariance)
             .to_type(_scalarType)
             .to(_device)

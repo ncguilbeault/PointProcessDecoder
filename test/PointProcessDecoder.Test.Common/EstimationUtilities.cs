@@ -38,7 +38,13 @@ public static class EstimationUtilities
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
 
-        var positionKC = new KernelCompression(bandwidth, numDimensions, distanceThreshold, device, scalarType);
+        var positionKC = new KernelCompression(
+            bandwidth, 
+            numDimensions, 
+            distanceThreshold, 
+            device: device, 
+            scalarType: scalarType
+        );
         positionKC.Fit(position1D.to_type(ScalarType.Float32));
         var positionKCDensity = positionKC.Evaluate(
             new double[] { yMin }, 
@@ -62,7 +68,13 @@ public static class EstimationUtilities
         var neuronKDEs = new List<KernelCompression>();
         for (int i = 0; i < numNeurons; i++)
         {
-            var neuronKDE = new KernelCompression(bandwidth, numDimensions, distanceThreshold, device, scalarType);
+            var neuronKDE = new KernelCompression(
+                bandwidth,
+                numDimensions, 
+                distanceThreshold, 
+                device: device, 
+                scalarType: scalarType
+            );
             var neuronPosition1D = position1D[spikingData[TensorIndex.Colon, i]];
             neuronKDE.Fit(neuronPosition1D.to_type(ScalarType.Float64));
             neuronKDEs.Add(neuronKDE);

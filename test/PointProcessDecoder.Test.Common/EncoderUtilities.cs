@@ -160,6 +160,8 @@ public static class EncoderUtilities
 
         Tensor position = empty(0);
         Tensor spikingData = empty(0);
+        double[] heatmapRange = new double[4];
+        bool is2D = numDimensions == 2;
 
         if (numDimensions == 1)
         {
@@ -172,6 +174,7 @@ public static class EncoderUtilities
                 placeFieldRadius,
                 firingThreshold
             );
+            heatmapRange = [0, heatmapPadding, min[0], max[0]];
         }
 
         else if (numDimensions == 2)
@@ -187,6 +190,7 @@ public static class EncoderUtilities
                 placeFieldRadius,
                 firingThreshold
             );
+            heatmapRange = [min[0], max[0], min[1], max[1]];
         }
 
         var marks = Simulate.MarksAtPosition(
@@ -205,19 +209,24 @@ public static class EncoderUtilities
 
         for (int i = 0; i < channelDensities.shape[0]; i++)
         {
-            var density = channelDensities[i];
-            var density2D = tile(density, [heatmapPadding, 1]);
+            var density = channelDensities[i]
+                .reshape(evaluationSteps);
+
+            if (!is2D)
+            {
+                density = tile(density, [heatmapPadding, 1]);
+            }
 
             Heatmap plotDensity2D = new(
-                0,
-                heatmapPadding,
-                min[0],
-                max[0],
+                heatmapRange[0],
+                heatmapRange[1],
+                heatmapRange[2],
+                heatmapRange[3],
                 title: $"Heatmap2D_{i}"
             );
 
             plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, outputDirectory);
-            plotDensity2D.Show<float>(density2D);
+            plotDensity2D.Show<float>(density);
             plotDensity2D.Save(png: true);
         }
     }

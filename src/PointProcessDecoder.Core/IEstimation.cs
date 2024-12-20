@@ -38,7 +38,7 @@ public interface IEstimation
     /// <returns></returns>
     public Tensor Evaluate(Tensor min, Tensor max, Tensor steps);
 
-    public Tensor Estimate(Tensor points);
+    public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null);
 
     public Tensor Normalize(Tensor points);
 

@@ -117,10 +117,11 @@ public class KernelDensity : IEstimation
         _kernels = empty(0);
     }
 
-    public Tensor Estimate(Tensor points)
+    public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null)
     {
         using var _ = NewDisposeScope();
-        var diff = (_kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
+        var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
+        var diff = (kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
         return exp(-0.5 * diff.pow(2).sum(2))
             .to_type(_scalarType)
             .to(_device)

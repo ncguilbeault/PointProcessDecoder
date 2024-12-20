@@ -164,6 +164,26 @@ public class TestModel
     }
 
     [TestMethod]
+    public void TestPointProcessModelClusterlessMarksUniformCompressionSimulatedData2D()
+    {
+        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+            transitionsType: TransitionsType.Uniform,
+            estimationMethod: EstimationMethod.KernelCompression,
+            distanceThreshold: 1.5,
+            observationBandwidth: [5,5],
+            dimensions : 2,
+            evaluationSteps: [50, 50],
+            min: [0, 0],
+            max: [100, 100],
+            scale: 0.1,
+            markBandwidth: [0.5,0.5,0.5,0.5],
+            firingThreshold: 0.4,
+            noiseScale: 0.5,
+            modelDirectory: "SimulatedData2D"
+        );
+    }
+
+    [TestMethod]
     public void TestPointProcessModelClusterlessMarksRandomWalkDensitySimulatedData()
     {
         ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
@@ -206,6 +226,27 @@ public class TestModel
             max: [100, 100],
             scale: 0.1,
             markBandwidth: [0.5,0.5,0.5,0.5],
+            firingThreshold: 0.4,
+            noiseScale: 0.5,
+            modelDirectory: "SimulatedData2D"
+        );
+    }
+
+    [TestMethod]
+    public void TestPointProcessModelClusterlessMarksRandomWalkCompressionSimulatedData2D()
+    {
+        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+            transitionsType: TransitionsType.RandomWalk,
+            estimationMethod: EstimationMethod.KernelCompression,
+            distanceThreshold: 1,
+            observationBandwidth: [10, 10],
+            sigma: 10,
+            dimensions : 2,
+            evaluationSteps: [50, 50],
+            min: [0, 0],
+            max: [100, 100],
+            scale: 0.1,
+            markBandwidth: [2,2,2,2],
             firingThreshold: 0.4,
             noiseScale: 0.5,
             modelDirectory: "SimulatedData2D"

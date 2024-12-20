@@ -30,6 +30,8 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly int _markDimensions;
     private int _markChannels;
     private readonly double _eps;
+    private readonly Action<IEstimation, Tensor, Tensor> _markFitMethod;
+    private readonly Func<IEstimation, Tensor, Tensor, Tensor, Tensor, Tensor> _estimateMarkConditionalIntensityMethod;
 
     public ClusterlessMarkEncoder(
         EstimationMethod estimationMethod, 
@@ -55,69 +57,151 @@ public class ClusterlessMarkEncoder : IEncoder
         
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _markDimensions = markDimensions;
         _markChannels = markChannels;
+        _eps = finfo(_scalarType).eps;
         _stateSpace = stateSpace;
-
-        _observationEstimation = GetEstimationMethod(
-            estimationMethod, 
-            observationBandwidth, 
-            _stateSpace.Dimensions, 
-            distanceThreshold
-        );
 
         _channelEstimation = new IEstimation[_markChannels];
         _markEstimation = new IEstimation[_markChannels];
 
-        for (int i = 0; i < _markChannels; i++)
+        switch (estimationMethod)
         {
-            _channelEstimation[i] = GetEstimationMethod(
-                estimationMethod, 
-                observationBandwidth, 
-                _stateSpace.Dimensions, 
-                distanceThreshold
-            );
+            case EstimationMethod.KernelDensity:
 
-            _markEstimation[i] = GetEstimationMethod(
-                estimationMethod, 
-                markBandwidth,
-                markDimensions, 
-                distanceThreshold
-            );
-        }
-    }
+                _observationEstimation = new KernelDensity(
+                    observationBandwidth, 
+                    _stateSpace.Dimensions, 
+                    device: device,
+                    scalarType: scalarType
+                );
 
-    private static IEstimation GetEstimationMethod(
-        EstimationMethod estimationMethod, 
-        double[] bandwidth, 
-        int dimensions, 
-        double? distanceThreshold = null,
-        Device? device = null,
-        ScalarType? scalarType = null
-    )
-    {
-        return estimationMethod switch
-        {
-            EstimationMethod.KernelDensity => new KernelDensity(
-                bandwidth, 
-                dimensions, 
-                device: device,
-                scalarType: scalarType
-            ),
-            EstimationMethod.KernelCompression => new KernelCompression(
-                bandwidth, 
-                dimensions, 
-                distanceThreshold,
-                device: device,
-                scalarType: scalarType
-            ),
-            _ => throw new ArgumentException("Invalid estimation method.")
+                for (int i = 0; i < _markChannels; i++)
+                {
+                    _channelEstimation[i] = new KernelDensity(
+                        observationBandwidth, 
+                        _stateSpace.Dimensions, 
+                        device: device,
+                        scalarType: scalarType
+                    );
+
+                    _markEstimation[i] = new KernelDensity(
+                        markBandwidth, 
+                        _markDimensions, 
+                        device: device,
+                        scalarType: scalarType
+                    );
+                }
+
+                _markFitMethod = FitMarksFactoredMethod;
+                _estimateMarkConditionalIntensityMethod = EstimateMarksFactoredMethod;
+
+                break;
+
+            case EstimationMethod.KernelCompression:
+                _observationEstimation = new KernelCompression(
+                    observationBandwidth, 
+                    _stateSpace.Dimensions, 
+                    distanceThreshold,
+                    device: device,
+                    scalarType: scalarType
+                );
+
+                var bandwidth = observationBandwidth.Concat(markBandwidth).ToArray();
+                var jointDimensions = _stateSpace.Dimensions + _markDimensions;
+
+                for (int i = 0; i < _markChannels; i++)
+                {
+                    _channelEstimation[i] = new KernelCompression(
+                        observationBandwidth, 
+                        _stateSpace.Dimensions, 
+                        distanceThreshold,
+                        device: device,
+                        scalarType: scalarType
+                    );
+
+                    _markEstimation[i] = new KernelCompression(
+                        bandwidth, 
+                        jointDimensions, 
+                        distanceThreshold,
+                        device: device,
+                        scalarType: scalarType
+                    );
+                }
+
+                _markFitMethod = FitMarksUnfactoredMethod;
+                _estimateMarkConditionalIntensityMethod = EstimateMarksUnfactoredMethod;
+
+                break;
+
+            default:
+                throw new ArgumentException("Invalid estimation method.");
         };
     }
 
-    // mark is a tensor of shape (nSamples, markDimensions, markChannels)
-    // observation is a tensor of shape (nSamples, observationDimensions)
+    private static void FitMarksFactoredMethod(
+        IEstimation markEstimation, 
+        Tensor observations, 
+        Tensor marks
+    )
+    {
+        markEstimation.Fit(marks);
+    }
+
+    private static void FitMarksUnfactoredMethod(
+        IEstimation markEstimation, 
+        Tensor observations, 
+        Tensor marks
+    )
+    {
+        markEstimation.Fit(concat([observations, marks], dim: 1));
+    }
+
+    private static Tensor EstimateMarksFactoredMethod(
+        IEstimation markEstimation, 
+        Tensor channelEstimate, 
+        Tensor channelConditionalIntensity,
+        Tensor rate,
+        Tensor marks
+    )
+    {
+        using var _ = NewDisposeScope();
+        var markEstimate = markEstimation.Estimate(marks);
+        var markDensity = markEstimate.matmul(channelEstimate.T)
+            .log();
+        return (markDensity + channelConditionalIntensity.unsqueeze(0))
+            .MoveToOuterDisposeScope();
+    }
+
+    private Tensor EstimateMarksUnfactoredMethod(
+        IEstimation markEstimation,
+        Tensor channelEstimate,
+        Tensor channelConditionalIntensity,
+        Tensor rate,
+        Tensor marks
+    )
+    {
+        using var _ = NewDisposeScope();
+        var markKernelEstimate = markEstimation.Estimate(marks, _stateSpace.Dimensions)
+            .nan_to_num()
+            .sum(dim: 0);
+        markKernelEstimate /= markKernelEstimate.sum();
+        // var markKernelDensity = exp(markKernelEstimate - markKernelEstimate.max());
+        // markKernelDensity /= markKernelDensity.sum();
+        var stateSpaceKernelEstimate = markEstimation.Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions)
+            .nan_to_num();
+
+        stateSpaceKernelEstimate /= stateSpaceKernelEstimate.sum(dim:0);
+        
+        var markDensity = (markKernelEstimate * stateSpaceKernelEstimate)
+            .nan_to_num()
+            .sum(dim: 1)
+            .log();
+
+        return (rate + markDensity - _observationDensity)
+            .MoveToOuterDisposeScope();
+    }
+
     public void Encode(Tensor observations, Tensor marks)
     {
         if (marks.shape[1] != _markDimensions)
@@ -166,7 +250,8 @@ public class ClusterlessMarkEncoder : IEncoder
             var channelObservation = observations[mask[TensorIndex.Colon, i]];
             var markObservation = marks[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i];
             _channelEstimation[i].Fit(channelObservation);
-            _markEstimation[i].Fit(markObservation);
+            // _markEstimation[i].Fit(markObservation);
+            _markFitMethod(_markEstimation[i], channelObservation, markObservation);
         }
 
         _updateConditionalIntensities = true;
@@ -194,11 +279,18 @@ public class ClusterlessMarkEncoder : IEncoder
             }
 
             var marks = inputs[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i];
-            var markEstimate = _markEstimation[i].Estimate(marks);
-            var markDensity = markEstimate.matmul(_channelEstimates[i].T)
-                .log();
+            // var markEstimate = _markEstimation[i].Estimate(marks);
+            // var markDensity = markEstimate.matmul(_channelEstimates[i].T)
+            //     .log();
 
-            jointDensity[mask[TensorIndex.Colon, i]] = markDensity + _channelConditionalIntensities[i].unsqueeze(0);
+            // jointDensity[mask[TensorIndex.Colon, i]] = markDensity + _channelConditionalIntensities[i].unsqueeze(0);
+            jointDensity[mask[TensorIndex.Colon, i]] = _estimateMarkConditionalIntensityMethod(
+                _markEstimation[i], 
+                _channelEstimates[i], 
+                _channelConditionalIntensities[i],
+                _rates[i],
+                marks
+            );
 
             markConditionalIntensities[i] = jointDensity;
         }
