@@ -11,7 +11,7 @@ using PointProcessDecoder.Simulation;
 
 namespace PointProcessDecoder.Test.Common;
 
-public static class TestClusterlessMarks
+public static class ClusterlessMarksUtilities
 {
     public static void BayesianStateSpaceClusterlessMarksSimulated(
         double[]? observationBandwidth = null,
@@ -30,7 +30,7 @@ public static class TestClusterlessMarks
         double[]? markBandwidth = null,
         int nTraining = 1800,
         int nTesting = 200,
-        double[]? sigma = null,
+        double? sigma = null,
         double? distanceThreshold = null,
         string outputDirectory = "TestClusterlessMarks",
         string modelDirectory = "BayesianStateSpaceClusterlessMarksSimulatedData",

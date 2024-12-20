@@ -6,7 +6,7 @@ using PointProcessDecoder.Core.StateSpace;
 
 namespace PointProcessDecoder.Test.Common;
 
-public static class TestTransitions
+public static class TransitionsUtilities
 {
     public static void TestUniform(
         int dimensions = 1,
@@ -53,7 +53,7 @@ public static class TestTransitions
         long[]? steps = null,
         double[]? min = null,
         double[]? max = null,
-        double[]? sigma = null,
+        double? sigma = null,
         string outputDirectory = "TestTransitions",
         string figureName = "RandomWalkTransitions",
         ScalarType scalarType = ScalarType.Float32,

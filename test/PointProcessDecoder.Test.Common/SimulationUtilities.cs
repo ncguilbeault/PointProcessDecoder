@@ -4,7 +4,7 @@ using PointProcessDecoder.Simulation;
 
 namespace PointProcessDecoder.Test.Common;
 
-public static class TestSimulation
+public static class SimulationUtilities
 {
     public static void SpikingNeurons1D(
         int steps = 200,

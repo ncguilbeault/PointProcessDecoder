@@ -27,7 +27,7 @@ public class RandomWalkTransitions : IStateTransitions
 
     public RandomWalkTransitions(
         IStateSpace stateSpace,
-        double[]? sigma = null, 
+        double? sigma = null, 
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -35,12 +35,7 @@ public class RandomWalkTransitions : IStateTransitions
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
         _stateSpace = stateSpace;
-
-        if (sigma is not null && sigma.Length != _stateSpace.Dimensions)
-        {
-            throw new ArgumentException("The length of sigma must be equal to the number of dimensions.");
-        }
-        _sigma = sigma is not null ? tensor(sigma, device: _device, dtype: _scalarType) : null;
+        _sigma = sigma is not null ? tensor(sigma.Value, device: _device, dtype: _scalarType) : null;
 
         _transitions = ComputeRandomWalkTransitions(
             _stateSpace,

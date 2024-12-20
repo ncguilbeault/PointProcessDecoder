@@ -28,7 +28,7 @@ public class StateSpaceDecoder : IDecoder
     public StateSpaceDecoder(
         TransitionsType transitionsType,
         IStateSpace stateSpace,
-        double[]? sigmaRandomWalk = null,
+        double? sigmaRandomWalk = null,
         Device? device = null,
         ScalarType? scalarType = null
     )

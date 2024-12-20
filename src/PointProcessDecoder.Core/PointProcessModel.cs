@@ -49,7 +49,7 @@ public class PointProcessModel : IModel
         double[]? markBandwidth = null,
         int? nUnits = null,
         double? distanceThreshold = null,
-        double[]? sigmaRandomWalk = null,
+        double? sigmaRandomWalk = null,
         Device? device = null,
         ScalarType? scalarType = null
     )

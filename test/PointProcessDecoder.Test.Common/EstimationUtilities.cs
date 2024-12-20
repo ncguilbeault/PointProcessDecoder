@@ -5,7 +5,7 @@ using PointProcessDecoder.Core.Estimation;
 
 namespace PointProcessDecoder.Test.Common;
 
-public static class TestEstimation
+public static class EstimationUtilities
 {
     public static void KernelCompression(
         int seed = 0,
