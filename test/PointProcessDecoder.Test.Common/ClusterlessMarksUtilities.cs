@@ -69,7 +69,6 @@ public static class ClusterlessMarksUtilities
             markDimensions: markDimensions,
             markChannels: markChannels,
             markBandwidth: markBandwidth,
-            nUnits: numNeurons,
             distanceThreshold: distanceThreshold,
             sigmaRandomWalk: sigma,
             device: device,
@@ -147,6 +146,99 @@ public static class ClusterlessMarksUtilities
         plotPrediction.Show<float>(
             prediction, 
             positionPoints
+        );
+        plotPrediction.Save(png: true);
+    }
+
+    public static void BayesianStateSpaceClusterlessMarksRealData(
+        double[]? observationBandwidth = null,
+        int dimensions = 2,
+        long[]? evaluationSteps = null,
+        double[]? minVals = null,
+        double[]? maxVals = null,
+        double trainingFraction = 0.8,
+        double? testFraction = null,
+        int markDimensions = 4,
+        int markChannels = 28,
+        double[]? markBandwidth = null,
+        double? sigma = null,
+        double? distanceThreshold = null,
+        string outputDirectory = "TestClusterlessMarks",
+        string modelDirectory = "BayesianStateSpaceClusterlessMarksRealData",
+        ScalarType scalarType = ScalarType.Float32,
+        Device? device = null,
+        string figureName = "Prediction",
+        EstimationMethod estimationMethod = EstimationMethod.KernelDensity,
+        TransitionsType transitionsType = TransitionsType.Uniform,
+        string positionFile = "../../../../data/positions_2D.bin",
+        string marksFile = "../../../../data/marks.bin"
+    )
+    {
+        observationBandwidth ??= [5, 5];
+        evaluationSteps ??= [50, 50];
+        minVals ??= [0, 0];
+        maxVals ??= [120, 120];
+        markBandwidth ??= [1, 1, 1, 1];
+        device ??= CPU;
+
+        outputDirectory = string.IsNullOrEmpty(modelDirectory) ? outputDirectory : Path.Combine(outputDirectory, modelDirectory);
+        outputDirectory = Path.Combine(outputDirectory, estimationMethod.ToString(), transitionsType.ToString());
+        
+        var (position, marks) = Utilities.InitializeRealClusterlessMarksData(
+            positionFile: positionFile,
+            marksFile: marksFile,
+            device: device,
+            scalarType: scalarType
+        );
+
+        position = position.reshape(-1, 2);
+        marks = marks.reshape(position.shape[0], markDimensions, markChannels);
+
+        position = position[TensorIndex.Slice(0, 20000)];
+        marks = marks[TensorIndex.Slice(0, 20000)];
+
+        double[] heatmapRange = [minVals[0], maxVals[0], minVals[1], maxVals[1]];
+
+        var nTraining = (int)(position.shape[0] * trainingFraction);
+        var nTesting = testFraction == null ? (int)position.shape[0] - nTraining : Math.Min((int)(position.shape[0] * testFraction), (int)position.shape[0] - nTraining);
+
+        var pointProcessModel = new PointProcessModel(
+            estimationMethod,
+            transitionsType,
+            EncoderType.ClusterlessMarkEncoder,
+            DecoderType.StateSpaceDecoder,
+            StateSpaceType.DiscreteUniformStateSpace,
+            LikelihoodType.Clusterless,
+            minVals,
+            maxVals,
+            evaluationSteps,
+            observationBandwidth,
+            dimensions,
+            markDimensions: markDimensions,
+            markChannels: markChannels,
+            markBandwidth: markBandwidth,
+            distanceThreshold: distanceThreshold,
+            sigmaRandomWalk: sigma,
+            device: device,
+            scalarType: scalarType
+        );
+
+        pointProcessModel.Encode(position[TensorIndex.Slice(0, nTraining)], marks[TensorIndex.Slice(0, nTraining)]);
+        var prediction = pointProcessModel.Decode(marks[TensorIndex.Slice(nTraining, nTraining + nTesting)]);
+        prediction = prediction.sum(dim: 0);
+
+        Heatmap plotPrediction = new(
+            heatmapRange[0],
+            heatmapRange[1],
+            heatmapRange[2],
+            heatmapRange[3],
+            title: figureName
+        );
+
+        plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, outputDirectory);
+        plotPrediction.Show<float>(
+            prediction, 
+            position[TensorIndex.Slice(nTraining, nTraining + nTesting)]
         );
         plotPrediction.Save(png: true);
     }

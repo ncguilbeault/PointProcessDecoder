@@ -104,7 +104,19 @@ public static class Utilities
         return t;
     }
 
-    public static (Tensor, Tensor) InitializeRealData(
+    public static (Tensor, Tensor) InitializeRealClusterlessMarksData(
+        string positionFile,
+        string marksFile,
+        Device? device = null,
+        ScalarType scalarType = ScalarType.Float32
+    )
+    {
+        var position = ReadBinaryFile(positionFile, device, scalarType);
+        var marks = ReadBinaryFile(marksFile, device, scalarType);
+        return (position, marks);
+    }
+
+    public static (Tensor, Tensor) InitializeRealSortedSpikeData(
         string positionFile,
         string spikesFile,
         Device? device = null,

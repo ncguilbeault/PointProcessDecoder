@@ -162,7 +162,7 @@ public static class SortedUnitsUtilities
         outputDirectory = string.IsNullOrEmpty(modelDirectory) ? outputDirectory : Path.Combine(outputDirectory, modelDirectory);
         outputDirectory = Path.Combine(outputDirectory, estimationMethod.ToString(), transitionsType.ToString());
         
-        var (position, spikingData) = Utilities.InitializeRealData(
+        var (position, spikingData) = Utilities.InitializeRealSortedSpikeData(
             positionFile: positionFile,
             spikesFile: spikesFile,
             device: device,

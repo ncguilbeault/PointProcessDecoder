@@ -252,4 +252,37 @@ public class TestModel
             modelDirectory: "SimulatedData2D"
         );
     }
+
+    [TestMethod]
+    public void TestPointProcessModelClusterlessMarksUniformDensityRealData2D()
+    {
+        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksRealData(
+            observationBandwidth: [0.5, 0.5],
+            dimensions: 2,
+            evaluationSteps: [50, 50],
+            minVals: [0, 0],
+            maxVals: [120, 120],
+            testFraction: 0.01,
+            trainingFraction: 0.2,
+            modelDirectory: "RealData2D"
+        );
+    }
+
+    [TestMethod]
+    public void TestPointProcessModelClusterlessMarksRandomWalkCompressionRealData2D()
+    {
+        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksRealData(
+            transitionsType: TransitionsType.RandomWalk,
+            estimationMethod: EstimationMethod.KernelCompression,
+            distanceThreshold: 1.5,
+            sigma: 0.25,
+            observationBandwidth: [0.5, 0.5],
+            dimensions: 2,
+            evaluationSteps: [50, 50],
+            minVals: [0, 0],
+            maxVals: [120, 120],
+            trainingFraction: 0.8,
+            modelDirectory: "RealData2D"
+        );
+    }
 }
