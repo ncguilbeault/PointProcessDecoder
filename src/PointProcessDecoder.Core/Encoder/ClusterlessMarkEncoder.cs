@@ -167,9 +167,9 @@ public class ClusterlessMarkEncoder : IEncoder
     {
         using var _ = NewDisposeScope();
         var markEstimate = markEstimation.Estimate(marks);
-        var markDensity = markEstimate.matmul(channelEstimate.T)
-            .log();
-        return (markDensity + channelConditionalIntensity.unsqueeze(0))
+        var markDensity = markEstimate.matmul(channelEstimate.T);
+        return (markDensity * channelConditionalIntensity.unsqueeze(0))
+            .log()
             .MoveToOuterDisposeScope();
     }
 
@@ -318,7 +318,7 @@ public class ClusterlessMarkEncoder : IEncoder
                 .log()
                 .MoveToOuterDisposeScope();
 
-            channelConditionalIntensities[i] = _rates[i] + channelDensity - _observationDensity;
+            channelConditionalIntensities[i] = exp(_rates[i] + channelDensity - _observationDensity);
         }
 
         _observationDensity.MoveToOuterDisposeScope();
