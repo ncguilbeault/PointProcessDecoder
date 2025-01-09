@@ -7,7 +7,8 @@
         <RepositoryUrl>https://github.com/ncguilbeault/PointProcessDecoder</RepositoryUrl>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <UseArtifactsOutput>true</UseArtifactsOutput>
-        <PackageVersion>0.1.0</PackageVersion>
+        <LangVersion>12</LangVersion>
+        <PackageVersion>0.1.1</PackageVersion>
     </PropertyGroup>
     <ItemGroup>
         <None Include="$(SolutionDir)/LICENSE.txt" Pack="true" PackagePath="" />
