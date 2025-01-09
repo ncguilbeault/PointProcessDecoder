@@ -1,5 +1,6 @@
 using static TorchSharp.torch;
 using PointProcessDecoder.Plot;
+using PointProcessDecoder.Core;
 using PointProcessDecoder.Core.Estimation;
 using PointProcessDecoder.Core.Encoder;
 using PointProcessDecoder.Core.StateSpace;
@@ -58,7 +59,7 @@ public static class EncoderUtilities
 
         if (numDimensions == 1)
         {
-            var (position1D, spikingData) = Utilities.InitializeSimulation1D(
+            var (position1D, spikingData) = Simulation.Utilities.InitializeSimulation1D(
                 steps,
                 cycles,
                 min[0],
@@ -68,7 +69,7 @@ public static class EncoderUtilities
                 firingThreshold
             );
 
-            Utilities.RunSortedSpikeEncoder1D(
+            RunSortedSpikeEncoder1D(
                 sortedSpikeEncoder, 
                 position1D, 
                 spikingData, 
@@ -81,7 +82,7 @@ public static class EncoderUtilities
         }
         else if (numDimensions == 2)
         {
-            var (position2D, spikingData) = Utilities.InitializeSimulation2D(
+            var (position2D, spikingData) = Simulation.Utilities.InitializeSimulation2D(
                 steps,
                 cycles,
                 min[0],
@@ -93,7 +94,7 @@ public static class EncoderUtilities
                 firingThreshold
             );
 
-            Utilities.RunSortedSpikeEncoder2D(
+            RunSortedSpikeEncoder2D(
                 sortedSpikeEncoder, 
                 position2D, 
                 spikingData, 
@@ -165,7 +166,7 @@ public static class EncoderUtilities
 
         if (numDimensions == 1)
         {
-            (position, spikingData) = Utilities.InitializeSimulation1D(
+            (position, spikingData) = Simulation.Utilities.InitializeSimulation1D(
                 steps,
                 cycles,
                 min[0],
@@ -179,7 +180,7 @@ public static class EncoderUtilities
 
         else if (numDimensions == 2)
         {
-            (position, spikingData) = Utilities.InitializeSimulation2D(
+            (position, spikingData) = Simulation.Utilities.InitializeSimulation2D(
                 steps,
                 cycles,
                 min[0],
@@ -226,6 +227,87 @@ public static class EncoderUtilities
             );
 
             plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, outputDirectory);
+            plotDensity2D.Show<float>(density);
+            plotDensity2D.Save(png: true);
+        }
+    }
+
+    public static void RunSortedSpikeEncoder1D(
+        IEncoder encoder, 
+        Tensor observations, 
+        Tensor spikes,
+        string encoderDirectory,
+        long evaluationSteps,
+        double[] densityScatterPlotRange,
+        double[] densityHeatmapRange,
+        int heatmapPadding,
+        string title = ""
+    )
+    {
+        encoder.Encode(observations, spikes);
+        var densities = encoder.Evaluate().First();
+
+        for (int i = 0; i < densities.shape[0]; i++)
+        {
+            var density = densities[i];
+            var density1DExpanded = vstack([arange(evaluationSteps), density]).T;
+
+            var directoryScatterPlot1D = Path.Combine(encoderDirectory, "ScatterPlot1D");
+
+            ScatterPlot plotDensity1D = new ScatterPlot(
+                densityScatterPlotRange[0],
+                densityScatterPlotRange[1],
+                densityScatterPlotRange[2],
+                densityScatterPlotRange[3],
+                title: $"{title}{i}"
+            );
+            plotDensity1D.OutputDirectory = Path.Combine(plotDensity1D.OutputDirectory, directoryScatterPlot1D);
+            plotDensity1D.Show<float>(density1DExpanded);
+            plotDensity1D.Save(png: true);
+
+            var density2D = tile(density, [heatmapPadding, 1]);
+
+            var directoryHeatmap2D = Path.Combine(encoderDirectory, "Heatmap2D");
+
+            Heatmap plotDensity2D = new(
+                densityHeatmapRange[0],
+                densityHeatmapRange[1],
+                densityHeatmapRange[2],
+                densityHeatmapRange[3],
+                title: $"{title}{i}"
+            );
+            plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, directoryHeatmap2D);
+            plotDensity2D.Show<float>(density2D);
+            plotDensity2D.Save(png: true);
+        }
+    }
+
+    public static void RunSortedSpikeEncoder2D(
+        IEncoder encoder, 
+        Tensor observations, 
+        Tensor spikes,
+        string encoderDirectory,
+        double[] densityHeatmapRange,
+        string title = ""
+    )
+    {
+        encoder.Encode(observations, spikes);
+        var densities = encoder.Evaluate().First();
+
+        for (int i = 0; i < densities.shape[0]; i++)
+        {
+            var density = densities[i];
+            var directoryHeatmap2D = Path.Combine(encoderDirectory, "Heatmap2D");
+
+            Heatmap plotDensity2D = new(
+                densityHeatmapRange[0],
+                densityHeatmapRange[1],
+                densityHeatmapRange[2],
+                densityHeatmapRange[3],
+                title: $"{title}{i}"
+            );
+
+            plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, directoryHeatmap2D);
             plotDensity2D.Show<float>(density);
             plotDensity2D.Save(png: true);
         }

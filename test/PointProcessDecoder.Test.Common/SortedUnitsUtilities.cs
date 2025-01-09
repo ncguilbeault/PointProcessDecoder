@@ -74,7 +74,7 @@ public static class SortedUnitsUtilities
 
         if (dimensions == 1)
         {
-            (position, spikingData) = Utilities.InitializeSimulation1D(
+            (position, spikingData) = Simulation.Utilities.InitializeSimulation1D(
                 steps: steps,
                 cycles: cycles,
                 min: min[0],
@@ -91,7 +91,7 @@ public static class SortedUnitsUtilities
         }
         else if (dimensions == 2)
         {
-            (position, spikingData) = Utilities.InitializeSimulation2D(
+            (position, spikingData) = Simulation.Utilities.InitializeSimulation2D(
                 steps: steps,
                 cycles: cycles,
                 xMin: min[0],
