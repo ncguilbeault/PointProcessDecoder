@@ -120,7 +120,9 @@ public class PointProcessModel : IModel
     /// <summary>
     /// Encodes the observations and data into the latent space.
     /// The observations are in the latent space and are of shape (n, stateSpaceDimensions).
-    /// The data is in the mark space and is of shape (n, markDimensions, markChannels).
+    /// The inputs are in the neural space.
+    /// In the case of sorted units, the inputs are of shape (n, nUnits).
+    /// In the case of clusterless marks, the inputs are of shape (n, markDimensions, markChannels).
     /// </summary>
     /// <param name="observations"></param>
     /// <param name="data"></param>
