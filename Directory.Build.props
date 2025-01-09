@@ -1,0 +1,6 @@
+<Project>
+    <PropertyGroup>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <UseArtifactsOutput>true</UseArtifactsOutput>
+    </PropertyGroup>
+</Project>

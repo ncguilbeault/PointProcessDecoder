@@ -13,7 +13,7 @@ public class ScatterPlot : OxyPlotBase
     public double XMax { get; } = 100;
     public double YMin { get; } = 0;
     public double YMax { get; } = 100;
-    public string Title { get; } = "PositionData";
+    public string Title { get; } = "ScatterPlot";
 
     public ScatterPlot()
     {
@@ -30,7 +30,14 @@ public class ScatterPlot : OxyPlotBase
         Initialize();
     }
 
-    public ScatterPlot(double? xMin = null, double? xMax = null, double? yMin = null, double? yMax = null, string? title = null, string? figureName = null)
+    public ScatterPlot(
+        double? xMin = null, 
+        double? xMax = null, 
+        double? yMin = null, 
+        double? yMax = null, 
+        string? title = null, 
+        string? figureName = null
+    )
     {
         XMin = xMin ?? XMin;
         XMax = xMax ?? XMax;
@@ -74,20 +81,45 @@ public class ScatterPlot : OxyPlotBase
         plot.Axes.Add(yAxis);
     }
 
-    public void Show(Tensor positionData)
+    public void Show(Tensor positionData, OxyColor? color = null)
     {
         
         var scatterSeries = new ScatterSeries
         {
             MarkerType = MarkerType.Circle,
-            MarkerFill = OxyColors.Red,
+            MarkerFill = color ?? OxyColors.Red,
             MarkerSize = 4,
             MarkerStrokeThickness = 1,
         };
         
         for (int i = 0; i < positionData.shape[0]; i++)
         {
-            scatterSeries.Points.Add(new ScatterPoint(positionData[i,0].item<double>(), positionData[i,1].item<double>()));
+            scatterSeries.Points.Add(new ScatterPoint(
+                positionData[i,0].item<double>(), 
+                positionData[i,1].item<double>()
+            ));
+        }
+
+        plot.Series.Add(scatterSeries);
+    }
+
+    public void Show<T>(Tensor positionData, OxyColor? color = null) where T : unmanaged
+    {
+        
+        var scatterSeries = new ScatterSeries
+        {
+            MarkerType = MarkerType.Circle,
+            MarkerFill = color ?? OxyColors.Red,
+            MarkerSize = 4,
+            MarkerStrokeThickness = 1,
+        };
+        
+        for (int i = 0; i < positionData.shape[0]; i++)
+        {
+            scatterSeries.Points.Add(new ScatterPoint(
+                Convert.ToDouble(positionData[i,0].item<T>()), 
+                Convert.ToDouble(positionData[i,1].item<T>())
+            ));
         }
 
         plot.Series.Add(scatterSeries);

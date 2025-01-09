@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PointProcessDecoder.Core\PointProcessDecoder.Core.csproj" />
+    <ProjectReference Include="..\..\src\PointProcessDecoder.Plot\PointProcessDecoder.Plot.csproj" />
+    <ProjectReference Include="..\..\src\PointProcessDecoder.Simulation\PointProcessDecoder.Simulation.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

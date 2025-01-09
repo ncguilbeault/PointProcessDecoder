@@ -3,26 +3,31 @@ using static TorchSharp.torch;
 namespace PointProcessDecoder.Core;
 
 /// <summary>
-/// Abstract class for online density estimation.
+/// Interface for density estimation.
 /// </summary>
-public abstract class OnlineDensityEstimation : IDensityEstimation
+public interface IEstimation
 {
     /// <summary>
     /// The device on which the density estimation is performed.
     /// </summary>
-    public abstract Device Device { get; }
+    public Device Device { get; }
+
+    /// <summary>
+    /// The scalar type of the density estimation.
+    /// </summary>
+    public ScalarType ScalarType { get; }
 
     /// <summary>
     /// The kernel bandwidth used for the density estimation.
     /// </summary>
-    public abstract Tensor KernelBandwidth { get; }
+    public Tensor KernelBandwidth { get; }
 
     /// <summary>
     /// Evaluate the density estimation at the given points.
     /// </summary>
     /// <param name="points"></param>
     /// <returns></returns>
-    public abstract Tensor Evaluate(Tensor points);
+    public Tensor Evaluate(Tensor points);
 
     /// <summary>
     /// Evaluate the density estimation at the given points.
@@ -31,16 +36,20 @@ public abstract class OnlineDensityEstimation : IDensityEstimation
     /// <param name="max"></param>
     /// <param name="steps"></param>
     /// <returns></returns>
-    public abstract Tensor Evaluate(Tensor min, Tensor max, Tensor steps);
+    public Tensor Evaluate(Tensor min, Tensor max, Tensor steps);
+
+    public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null);
+
+    public Tensor Normalize(Tensor points);
 
     /// <summary>
-    /// Add a new data point to the density estimation.
+    /// Fits new data points to the density estimation.
     /// </summary>
     /// <param name="data"></param>
-    public abstract void Add(Tensor data);
+    public void Fit(Tensor data);
 
     /// <summary>
     /// Clear the density estimation kernels.
     /// </summary>
-    public abstract void Clear();
+    public void Clear();
 }
