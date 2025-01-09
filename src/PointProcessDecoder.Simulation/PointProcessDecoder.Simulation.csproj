@@ -1,13 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <ProjectReference Include="..\PointProcessDecoder.Core\PointProcessDecoder.Core.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
+    <Description>A library for running simulations of neural and behavioral data. Designed for use with the PointProcessDecoder package.</Description>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\PointProcessDecoder.Core\PointProcessDecoder.Core.csproj" />
+  </ItemGroup>
 </Project>
