@@ -181,18 +181,11 @@ public class ClusterlessMarkEncoder : IEncoder
     )
     {
         using var _ = NewDisposeScope();
-        var markKernelEstimate = markEstimation.Estimate(marks, _stateSpace.Dimensions)
-            .nan_to_num()
-            .sum(dim: 0);
-        markKernelEstimate /= markKernelEstimate.sum();
-        // var markKernelDensity = exp(markKernelEstimate - markKernelEstimate.max());
-        // markKernelDensity /= markKernelDensity.sum();
-        var stateSpaceKernelEstimate = markEstimation.Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions)
-            .nan_to_num();
 
-        stateSpaceKernelEstimate /= stateSpaceKernelEstimate.sum(dim:0);
-        
-        var markDensity = (markKernelEstimate * stateSpaceKernelEstimate)
+        var markKernelEstimate = markEstimation.Estimate(marks, _stateSpace.Dimensions);
+        var stateSpaceKernelEstimate = markEstimation.Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions);
+
+        var markDensity = stateSpaceKernelEstimate.matmul(markKernelEstimate.T)
             .nan_to_num()
             .sum(dim: 1)
             .log();
