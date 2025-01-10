@@ -2,9 +2,9 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Likelihood;
 
-public static class PoissonLikelihood
+public class PoissonLikelihood : ILikelihood
 {
-    public static Tensor LogLikelihood(
+    public Tensor LogLikelihood(
         Tensor inputs, 
         IEnumerable<Tensor> conditionalIntensities
     )
