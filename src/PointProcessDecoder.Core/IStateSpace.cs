@@ -2,7 +2,7 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core;
 
-public interface IStateSpace
+public interface IStateSpace : IDisposable
 {
     public Device Device { get; }
     public ScalarType ScalarType { get; }

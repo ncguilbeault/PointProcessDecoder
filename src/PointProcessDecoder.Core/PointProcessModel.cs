@@ -152,4 +152,12 @@ public class PointProcessModel : IModel
         var likelihood = _likelihood.LogLikelihood(inputs, conditionalIntensities);
         return _decoderModel.Decode(inputs, likelihood);
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _encoderModel.Dispose();
+        _decoderModel.Dispose();
+        _stateSpace.Dispose();
+    }
 }

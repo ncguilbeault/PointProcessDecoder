@@ -132,13 +132,6 @@ public class KernelCompression : IEstimation
         _kernels.MoveToOuterDisposeScope();
     }
 
-    /// <inheritdoc/>
-    public void Clear()
-    {
-        _kernels.Dispose();
-        _kernels = empty(0);
-    }
-
     private Tensor CalculateMahalanobisDistance(Tensor data)
     {
         using var _ = NewDisposeScope();
@@ -236,6 +229,12 @@ public class KernelCompression : IEstimation
         var estimate = Estimate(points);
         return Normalize(estimate)
             .MoveToOuterDisposeScope();
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _kernels.Dispose();
     }
 }
 

@@ -335,4 +335,23 @@ public class ClusterlessMarkEncoder : IEncoder
 
         return [_channelConditionalIntensities, _markConditionalIntensities];
     }
+
+    public void Dispose()
+    {
+        _observationEstimation.Dispose();
+        foreach (var estimation in _channelEstimation)
+        {
+            estimation.Dispose();
+        }
+        foreach (var estimation in _markEstimation)
+        {
+            estimation.Dispose();
+        }
+        _updateConditionalIntensities = true;
+        _markConditionalIntensities.Dispose();
+        _channelConditionalIntensities.Dispose();
+        _spikeCounts.Dispose();
+        _samples.Dispose();
+        _rates.Dispose();
+    }
 }

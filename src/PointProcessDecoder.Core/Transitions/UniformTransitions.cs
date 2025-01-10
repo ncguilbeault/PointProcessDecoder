@@ -51,4 +51,10 @@ public class UniformTransitions : IStateTransitions
             .to(device)
             .MoveToOuterDisposeScope();
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _transitions.Dispose();
+    }
 }

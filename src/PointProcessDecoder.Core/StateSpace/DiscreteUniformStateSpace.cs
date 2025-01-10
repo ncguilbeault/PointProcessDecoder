@@ -85,4 +85,10 @@ public class DiscreteUniformStateSpace : IStateSpace
             .to(device)
             .MoveToOuterDisposeScope();
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _points.Dispose();
+    }
 }

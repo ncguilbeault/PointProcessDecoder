@@ -66,4 +66,11 @@ public class RandomWalkTransitions : IStateTransitions
             .to(device: device)
             .MoveToOuterDisposeScope();
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _transitions.Dispose();
+        _sigma?.Dispose();
+    }
 }

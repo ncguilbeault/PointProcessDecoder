@@ -176,4 +176,19 @@ public class SortedSpikeEncoder : IEncoder
         _updateConditionalIntensities = false;
         return [output];
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _observationEstimation.Dispose();
+        foreach (var estimation in _unitEstimation)
+        {
+            estimation.Dispose();
+        }
+        _updateConditionalIntensities = true;
+        _conditionalIntensities.Dispose();
+        _spikeCounts.Dispose();
+        _samples.Dispose();
+        _rates.Dispose();
+    }
 }
