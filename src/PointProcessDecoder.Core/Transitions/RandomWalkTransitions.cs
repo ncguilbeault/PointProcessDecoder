@@ -62,6 +62,8 @@ public class RandomWalkTransitions : IStateTransitions
         var transitions = weights / weights.sum(1, true);
 
         return transitions
+            .to_type(type: scalarType)
+            .to(device: device)
             .MoveToOuterDisposeScope();
     }
 }
