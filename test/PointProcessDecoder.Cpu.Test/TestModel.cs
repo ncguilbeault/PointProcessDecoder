@@ -262,8 +262,7 @@ public class TestModel
             evaluationSteps: [50, 50],
             minVals: [0, 0],
             maxVals: [120, 120],
-            testFraction: 0.01,
-            trainingFraction: 0.2,
+            trainingFraction: 0.8,
             modelDirectory: "RealData2D"
         );
     }
