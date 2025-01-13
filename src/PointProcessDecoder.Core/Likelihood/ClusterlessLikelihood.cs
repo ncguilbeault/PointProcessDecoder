@@ -2,9 +2,12 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Likelihood;
 
-public static class ClusterlessLikelihood
+public class ClusterlessLikelihood : ILikelihood
 {
-    public static Tensor LogLikelihood(Tensor inputs, IEnumerable<Tensor> conditionalIntensities)
+    public Tensor LogLikelihood(
+        Tensor inputs, 
+        IEnumerable<Tensor> conditionalIntensities
+    )
     {
         using var _ = NewDisposeScope();
         var channelConditionalIntensities = conditionalIntensities.ElementAt(0);
@@ -12,8 +15,8 @@ public static class ClusterlessLikelihood
         var logLikelihood = (markConditionalIntensities - channelConditionalIntensities.unsqueeze(1))
             .nan_to_num()
             .sum(dim: 0);
-        logLikelihood -= logLikelihood.max(dim: 0).values;
-        return logLikelihood
-            .MoveToOuterDisposeScope();
+        logLikelihood -= logLikelihood.max(dim: 0, keepdim: true)
+            .values;
+        return logLikelihood.MoveToOuterDisposeScope();
     }
 }

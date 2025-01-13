@@ -21,7 +21,7 @@ public class PointProcessModel : IModel
 
     private readonly LikelihoodType _likelihoodType;
     public LikelihoodType Likelihood => _likelihoodType;
-    private readonly Func<Tensor, IEnumerable<Tensor>, Tensor> _likelihood;
+    private readonly ILikelihood _likelihood;
 
     private readonly IEncoder _encoderModel;
     public IEncoder Encoder => _encoderModel;
@@ -110,8 +110,8 @@ public class PointProcessModel : IModel
         _likelihoodType = likelihoodType;
         _likelihood = likelihoodType switch
         {
-            LikelihoodType.Poisson => PoissonLikelihood.LogLikelihood,
-            LikelihoodType.Clusterless => ClusterlessLikelihood.LogLikelihood,
+            LikelihoodType.Poisson => new PoissonLikelihood(),
+            LikelihoodType.Clusterless => new ClusterlessLikelihood(),
             _ => throw new ArgumentException("Invalid likelihood type.")
         };
 
@@ -149,7 +149,7 @@ public class PointProcessModel : IModel
     public Tensor Decode(Tensor inputs)
     {
         var conditionalIntensities = _encoderModel.Evaluate(inputs);
-        var likelihood = _likelihood(inputs, conditionalIntensities);
+        var likelihood = _likelihood.LogLikelihood(inputs, conditionalIntensities);
         return _decoderModel.Decode(inputs, likelihood);
     }
 }
