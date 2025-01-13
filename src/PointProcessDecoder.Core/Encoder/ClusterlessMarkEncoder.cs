@@ -279,7 +279,9 @@ public class ClusterlessMarkEncoder : IEncoder
 
         for (int i = 0; i < _markChannels; i++)
         {
-            var jointDensity = empty([inputs.shape[0], _stateSpace.Points.shape[0]]);
+            var jointDensity = empty([inputs.shape[0], _stateSpace.Points.shape[0]])
+                .to_type(_scalarType)
+                .to(_device);
 
             if (mask[TensorIndex.Colon, i].sum().item<long>() == 0)
             {
