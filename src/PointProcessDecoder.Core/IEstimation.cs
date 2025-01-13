@@ -5,7 +5,7 @@ namespace PointProcessDecoder.Core;
 /// <summary>
 /// Interface for density estimation.
 /// </summary>
-public interface IEstimation
+public interface IEstimation : IDisposable
 {
     /// <summary>
     /// The device on which the density estimation is performed.
@@ -47,9 +47,4 @@ public interface IEstimation
     /// </summary>
     /// <param name="data"></param>
     public void Fit(Tensor data);
-
-    /// <summary>
-    /// Clear the density estimation kernels.
-    /// </summary>
-    public void Clear();
 }

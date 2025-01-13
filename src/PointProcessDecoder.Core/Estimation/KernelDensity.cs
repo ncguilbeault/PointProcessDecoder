@@ -108,15 +108,6 @@ public class KernelDensity : IEstimation
             .MoveToOuterDisposeScope();
     }
 
-    /// <summary>
-    /// Clear the density estimation kernels.
-    /// </summary>
-    public void Clear() 
-    {
-        _kernels.Dispose();
-        _kernels = empty(0);
-    }
-
     public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null)
     {
         using var _ = NewDisposeScope();
@@ -207,5 +198,11 @@ public class KernelDensity : IEstimation
         var estimate = Estimate(points);
         return Normalize(estimate)
             .MoveToOuterDisposeScope();
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _kernels.Dispose();
     }
 }

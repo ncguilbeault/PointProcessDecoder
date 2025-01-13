@@ -2,7 +2,7 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core;
 
-public interface IModel
+public interface IModel : IDisposable
 {    
     /// <summary>
     /// The device on which the model is running.
