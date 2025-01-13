@@ -231,7 +231,7 @@ public static class Simulate
         Tensor placeFieldRadius, 
         Tensor firingThreshold, 
         int? seed = null, 
-        ScalarType? scalarType = ScalarType.Bool,
+        ScalarType? scalarType = ScalarType.Int32,
         Device? device = null,
         double? noiseScale = null)
     {

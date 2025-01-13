@@ -111,33 +111,39 @@ public class SortedSpikeEncoder : IEncoder
             throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
         }
 
+        using var _ = NewDisposeScope();
         _observationEstimation.Fit(observations);
 
         if (_spikeCounts.numel() == 0)
         {
-            _spikeCounts = inputs.to_type(ScalarType.Int32)
-                .nan_to_num()
+            _spikeCounts = inputs.nan_to_num()
                 .sum([0])
                 .to_type(_scalarType)
-                .to(_device);
+                .to(_device)
+                .MoveToOuterDisposeScope();                
             
             _samples = observations.shape[0];
         }
         else
         {
-            _spikeCounts += inputs.to_type(ScalarType.Int32)
-                .nan_to_num()
+            _spikeCounts += inputs.nan_to_num()
                 .sum([0])
                 .to_type(_scalarType)
-                .to(_device);
+                .to(_device)
+                .MoveToOuterDisposeScope();
+                
             _samples += observations.shape[0];
         }
 
-        _rates = _spikeCounts.clamp_min(_eps).log() - _samples.clamp_min(_eps).log();
+        _samples.MoveToOuterDisposeScope();
+        _rates = (_spikeCounts.clamp_min(_eps).log() - _samples.clamp_min(_eps).log())
+            .MoveToOuterDisposeScope();
+
+        var inputMask = inputs.isnan().logical_not();
 
         for (int i = 0; i < _nUnits; i++)
         {
-            _unitEstimation[i].Fit(observations[inputs[TensorIndex.Colon, i]]);
+            _unitEstimation[i].Fit(observations[inputMask[TensorIndex.Colon, i]]);
         }
 
         _updateConditionalIntensities = true;

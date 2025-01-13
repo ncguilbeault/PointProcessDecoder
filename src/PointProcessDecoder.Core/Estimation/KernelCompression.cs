@@ -159,6 +159,11 @@ public class KernelCompression : IEstimation
     public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null)
     {
         using var _ = NewDisposeScope();
+        if (_kernels.numel() == 0)
+        {
+            return (ones([1, 1], dtype: _scalarType, device: _device) * float.NaN)
+                .MoveToOuterDisposeScope();
+        }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
         var diff = pow(kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
         var gaussian = exp(-0.5 * sum(diff / kernels[TensorIndex.Ellipsis, 2], dim: -1));

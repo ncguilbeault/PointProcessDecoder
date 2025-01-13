@@ -1,4 +1,3 @@
-using System.Security.AccessControl;
 using PointProcessDecoder.Core.Estimation;
 using static TorchSharp.torch;
 
@@ -182,18 +181,11 @@ public class ClusterlessMarkEncoder : IEncoder
     )
     {
         using var _ = NewDisposeScope();
-        var markKernelEstimate = markEstimation.Estimate(marks, _stateSpace.Dimensions)
-            .nan_to_num()
-            .sum(dim: 0);
-        markKernelEstimate /= markKernelEstimate.sum();
-        // var markKernelDensity = exp(markKernelEstimate - markKernelEstimate.max());
-        // markKernelDensity /= markKernelDensity.sum();
-        var stateSpaceKernelEstimate = markEstimation.Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions)
-            .nan_to_num();
 
-        stateSpaceKernelEstimate /= stateSpaceKernelEstimate.sum(dim:0);
-        
-        var markDensity = (markKernelEstimate * stateSpaceKernelEstimate)
+        var markKernelEstimate = markEstimation.Estimate(marks, _stateSpace.Dimensions);
+        var stateSpaceKernelEstimate = markEstimation.Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions);
+
+        var markDensity = stateSpaceKernelEstimate.matmul(markKernelEstimate.T)
             .nan_to_num()
             .sum(dim: 1)
             .log();
@@ -243,14 +235,18 @@ public class ClusterlessMarkEncoder : IEncoder
         _rates = (_spikeCounts.clamp_min(_eps).log() - _samples.clamp_min(_eps).log())
             .MoveToOuterDisposeScope();
         
-        var mask = marks.sum(dim: 1) > 0;
+        var mask = ~marks.isnan().all(dim: 1);
 
         for (int i = 0; i < _markChannels; i++)
         {
+            if (mask[TensorIndex.Colon, i].sum().item<long>() == 0)
+            {
+                continue;
+            }
+
             var channelObservation = observations[mask[TensorIndex.Colon, i]];
             var markObservation = marks[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i];
             _channelEstimation[i].Fit(channelObservation);
-            // _markEstimation[i].Fit(markObservation);
             _markFitMethod(_markEstimation[i], channelObservation, markObservation);
         }
 
@@ -265,11 +261,11 @@ public class ClusterlessMarkEncoder : IEncoder
         using var _ = NewDisposeScope();
 
         var markConditionalIntensities = new Tensor[_markChannels];
-        var mask = inputs.sum(dim: 1) > 0;
+        var mask = ~inputs.isnan().all(dim: 1);
 
         for (int i = 0; i < _markChannels; i++)
         {
-            var jointDensity = ones([inputs.shape[0], _stateSpace.Points.shape[0]]) * double.NaN;
+            var jointDensity = empty([inputs.shape[0], _stateSpace.Points.shape[0]]);
 
             if (mask[TensorIndex.Colon, i].sum().item<long>() == 0)
             {
@@ -279,11 +275,6 @@ public class ClusterlessMarkEncoder : IEncoder
             }
 
             var marks = inputs[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i];
-            // var markEstimate = _markEstimation[i].Estimate(marks);
-            // var markDensity = markEstimate.matmul(_channelEstimates[i].T)
-            //     .log();
-
-            // jointDensity[mask[TensorIndex.Colon, i]] = markDensity + _channelConditionalIntensities[i].unsqueeze(0);
             jointDensity[mask[TensorIndex.Colon, i]] = _estimateMarkConditionalIntensityMethod(
                 _markEstimation[i], 
                 _channelEstimates[i], 
