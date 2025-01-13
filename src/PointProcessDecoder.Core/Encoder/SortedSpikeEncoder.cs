@@ -11,7 +11,13 @@ public class SortedSpikeEncoder : IEncoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
-    private Tensor _conditionalIntensities = empty(0);
+    private Tensor[] _conditionalIntensities = [empty(0)];
+    public Tensor[] ConditionalIntensities => _conditionalIntensities;
+
+    private IEstimation[] _estimations = [];
+    public IEstimation[] Estimations => _estimations;
+
+    private Tensor _unitConditionalIntensities = empty(0);
     private bool _updateConditionalIntensities = true;
     private readonly int _nUnits;
     private readonly IEstimation[] _unitEstimation;
@@ -63,6 +69,10 @@ public class SortedSpikeEncoder : IEncoder
                 scalarType: _scalarType
             );
         }
+
+        _estimations = new IEstimation[] { _observationEstimation}
+            .Concat(_unitEstimation)
+            .ToArray();
     }
 
     private static IEstimation GetEstimationMethod(
@@ -147,34 +157,36 @@ public class SortedSpikeEncoder : IEncoder
         }
 
         _updateConditionalIntensities = true;
-        _conditionalIntensities = Evaluate().First();
+        _unitConditionalIntensities = Evaluate().First();
     }
 
     public IEnumerable<Tensor> Evaluate(params Tensor[] inputs)
     {
-        if (_conditionalIntensities.numel() != 0 && !_updateConditionalIntensities)
+        if (_unitConditionalIntensities.numel() != 0 && !_updateConditionalIntensities)
         {
-            return [_conditionalIntensities];
+            _conditionalIntensities = [_unitConditionalIntensities];
+            return _conditionalIntensities;
         }
         
         using var _ = NewDisposeScope();
         var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
             .clamp_min(_eps)
             .log();
-        var conditionalIntensities = new Tensor[_nUnits];
+        var unitConditionalIntensities = new Tensor[_nUnits];
 
         for (int i = 0; i < _nUnits; i++)
         {
             var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
                 .clamp_min(_eps)
                 .log();
-            conditionalIntensities[i] = exp(_rates[i] + unitDensity - observationDensity)
+            unitConditionalIntensities[i] = exp(_rates[i] + unitDensity - observationDensity)
                 .reshape(_stateSpace.Shape);
         }
-        var output = stack(conditionalIntensities, dim: 0)
+        var output = stack(unitConditionalIntensities, dim: 0)
             .MoveToOuterDisposeScope();
         _updateConditionalIntensities = false;
-        return [output];
+        _conditionalIntensities = [output];
+        return _conditionalIntensities;
     }
 
     /// <inheritdoc/>
@@ -185,8 +197,10 @@ public class SortedSpikeEncoder : IEncoder
         {
             estimation.Dispose();
         }
+        _estimations = [];
         _updateConditionalIntensities = true;
-        _conditionalIntensities.Dispose();
+        _conditionalIntensities = [empty(0)];
+        _unitConditionalIntensities.Dispose();
         _spikeCounts.Dispose();
         _samples.Dispose();
         _rates.Dispose();

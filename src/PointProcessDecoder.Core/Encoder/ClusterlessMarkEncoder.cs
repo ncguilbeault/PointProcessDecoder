@@ -11,6 +11,12 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
+    private Tensor[] _conditionalIntensities = [empty(0)];
+    public Tensor[] ConditionalIntensities => _conditionalIntensities;
+
+    private IEstimation[] _estimations = [];
+    public IEstimation[] Estimations => _estimations;
+
     private readonly IEstimation _observationEstimation;
     private readonly IEstimation[] _channelEstimation;
     private readonly IEstimation[] _markEstimation;
@@ -136,6 +142,11 @@ public class ClusterlessMarkEncoder : IEncoder
             default:
                 throw new ArgumentException("Invalid estimation method.");
         };
+
+        _estimations = new IEstimation[] { _observationEstimation }
+            .Concat(_channelEstimation)
+            .Concat(_markEstimation)
+            .ToArray();
     }
 
     private static void FitMarksFactoredMethod(
@@ -333,7 +344,9 @@ public class ClusterlessMarkEncoder : IEncoder
                 .MoveToOuterDisposeScope();
         }
 
-        return [_channelConditionalIntensities, _markConditionalIntensities];
+        _conditionalIntensities = [_channelConditionalIntensities, _markConditionalIntensities];
+
+        return _conditionalIntensities;
     }
 
     public void Dispose()
@@ -347,7 +360,9 @@ public class ClusterlessMarkEncoder : IEncoder
         {
             estimation.Dispose();
         }
+        _estimations = [];
         _updateConditionalIntensities = true;
+        _conditionalIntensities = [empty(0)];
         _markConditionalIntensities.Dispose();
         _channelConditionalIntensities.Dispose();
         _spikeCounts.Dispose();

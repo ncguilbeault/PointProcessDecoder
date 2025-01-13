@@ -22,6 +22,8 @@ public interface IEstimation : IDisposable
     /// </summary>
     public Tensor KernelBandwidth { get; }
 
+    public Tensor Kernels { get; }
+
     /// <summary>
     /// Evaluate the density estimation at the given points.
     /// </summary>
