@@ -200,11 +200,20 @@ public class SortedSpikeEncoder : IEncoder
             estimation.Dispose();
         }
         _estimations = [];
+        
         _updateConditionalIntensities = true;
         _conditionalIntensities = [empty(0)];
+
         _unitConditionalIntensities.Dispose();
+        _unitConditionalIntensities = empty(0);
+
         _spikeCounts.Dispose();
+        _spikeCounts = empty(0);
+
         _samples.Dispose();
+        _samples = empty(0);
+
         _rates.Dispose();
+        _rates = empty(0);
     }
 }
