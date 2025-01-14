@@ -38,6 +38,7 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly double _eps;
     private readonly Action<IEstimation, Tensor, Tensor> _markFitMethod;
     private readonly Func<IEstimation, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor> _estimateMarkConditionalIntensityMethod;
+    private readonly Func<IEstimation, Tensor> _estimateStateSpaceKernelMethod;
 
     public ClusterlessMarkEncoder(
         EstimationMethod estimationMethod, 
@@ -101,6 +102,7 @@ public class ClusterlessMarkEncoder : IEncoder
 
                 _markFitMethod = FitMarksFactoredMethod;
                 _estimateMarkConditionalIntensityMethod = EstimateMarksFactoredMethod;
+                _estimateStateSpaceKernelMethod = (_) => empty(0);
 
                 break;
 
@@ -137,6 +139,8 @@ public class ClusterlessMarkEncoder : IEncoder
 
                 _markFitMethod = FitMarksUnfactoredMethod;
                 _estimateMarkConditionalIntensityMethod = EstimateMarksUnfactoredMethod;
+                _estimateStateSpaceKernelMethod = (IEstimation estimation) => 
+                    estimation.Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions);
 
                 break;
 
@@ -197,7 +201,6 @@ public class ClusterlessMarkEncoder : IEncoder
         using var _ = NewDisposeScope();
 
         var markKernelEstimate = markEstimation.Estimate(marks, _stateSpace.Dimensions);
-        // var stateSpaceKernelEstimate = markEstimation.Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions);
 
         var markDensity = stateSpaceEstimate.matmul(markKernelEstimate.T)
             .nan_to_num()
@@ -328,9 +331,8 @@ public class ClusterlessMarkEncoder : IEncoder
 
             channelConditionalIntensities[i] = exp(_rates[i] + channelDensity - _observationDensity);
             
-            _stateSpaceKernelEstimates[i] = _markEstimation[i].Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions)
+            _stateSpaceKernelEstimates[i] = _estimateStateSpaceKernelMethod(_markEstimation[i])
                 .MoveToOuterDisposeScope();
-
         }
 
         _observationDensity.MoveToOuterDisposeScope();
