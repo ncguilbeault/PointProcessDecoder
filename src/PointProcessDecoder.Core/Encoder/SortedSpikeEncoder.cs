@@ -157,7 +157,9 @@ public class SortedSpikeEncoder : IEncoder
         }
 
         _updateConditionalIntensities = true;
-        _unitConditionalIntensities = Evaluate().First();
+        _unitConditionalIntensities = Evaluate()
+            .First()
+            .MoveToOuterDisposeScope();
     }
 
     public IEnumerable<Tensor> Evaluate(params Tensor[] inputs)
