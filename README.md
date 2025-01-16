@@ -23,7 +23,7 @@ For the transitions, $p(x_t | x_{t-1})$, we can specify how the latent variable 
 For the likelihood measure, $p(O_t | x_t)$, the method selected will depend on the data being encoded as a point process. There are currently 2 types of likelihoods: `PoissonLikelihood` and `ClusterlessLikelihood`. The `PoissonLikelihood` is used in conjunction with the sorted spike encoder and performs the following calculation:
 
 $$
-p(O_t | x_t) = p(\Delta N^{1:U}_t | x_t) \propto \prod^U_{i=1}[\lambda_i(t | x_t)\Delta_t]^{N^i_{t}}exp[-\lambda_i(t | x_t)\Delta_t]
+p(O_t | x_t) = p( \Delta N ^{1:U} _{t} | x_t) \propto \prod ^U _{i=1} [ \lambda _i (t | x_t) \Delta _t] ^{\Delta N ^i _{t}} exp[ - \lambda _i (t | x_t) \Delta _t]
 $$
 
 Here, $N^i_{t}$ represents whether unit $i$ has produced a spike/event at time $t$, $\Delta_t$ is the time difference, and $\lambda_i(t | x_t)$ is the conditional intensity, or instantaneous rate of events of unit $i$ given the observations of the state $x$ at time $t$. The conditional intensity of unit $i$ can be estimated using kernel density approaches described below.
@@ -31,10 +31,10 @@ Here, $N^i_{t}$ represents whether unit $i$ has produced a spike/event at time $
 The `ClusterlessLikelihood` method is used in conjunction with the clusterless mark encoder and performs the following computation:
 
 $$
-p(O_t | x_t) = p(\Delta N^{1:C}_t, \vec{m}^c_{t,j}) \propto \prod^C_{c=1} \prod^{\Delta N^C_t}_j=1 [\lambda_c(t, \vec{m}^c_{t,j} | x_t) \Delta_t]^{N^c_{t}} exp[-\Lambda_c(t | x_t)\Delta_t]
+p(O_t | x_t) = p( \Delta N ^{1:C} _t, \vec{m} ^c _{t,j}) \propto \prod ^C _{c=1} \prod ^{\Delta N ^C _t} _{j=1} [ \lambda _c (t, \vec{m} ^c _{t,j} | x_t) \Delta _t ] ^{N ^c _{t}} exp [ - \Lambda _c (t | x_t) \Delta _t]
 $$
 
-Here, $N^{1:C}_t$ represents whether a mark was detected on channel $c$, and $\vec{m}^c_{t,f}$ represents the marks $\vec{m}$ detected on channel $c$ at time $t$ with marks detected through times $j$. Again, $\Delta_t$ is the time difference. The clusterless likelihood is comprised of two seperate conditional intensity functions. The conditional intensity $\lambda_c(t, \vec{m}^c_{t,j} | x_t)$ represents the firing rate of unique sets of marks $\vec{m}$ on channel $c$, whereas $\Lambda_c(t | x_t)$ represents the rate at which all events occur on channel $c$.
+Here, $N_{t}^{1:C}$ represents whether a mark was detected on channel $c$, and $\vec{m}^c_{t,j}$ represents the marks $\vec{m}$ detected on channel $c$ at time $t$ with marks detected through times $j$. Again, $\Delta_t$ is the time difference. The clusterless likelihood is comprised of two seperate conditional intensity functions. The conditional intensity $\lambda_c(t, \vec{m}^c_{t,j} | x_t)$ represents the firing rate of unique sets of marks $\vec{m}$ on channel $c$, whereas $\Lambda_c(t | x_t)$ represents the rate at which all events occur on channel $c$.
 
 During the encoding process, activity of sorted units sorted or clusterless marks gives rise to unique conditional intensity functions. The conditional intensity function describes the rate of events occurring with respect to the observation of the state. In the case of the `SortedSpikesEncoder`, the conditional intensity function for each sorted unit takes the form:
 
@@ -61,7 +61,7 @@ Where $p_c(x_t)$ is just the distribution of state observations when events occu
 Since we do not have access to the true probability distributions $p_c(x_t,\vec{m}^c_{t,j})$, $p_c(x_t)$, $p_i(x_k)$ or $\pi(x)$, we can approximate them using methods for kernel density estimation. The software provides 2 methods for kernel density estimation: `KernelDensity` and `KernelCompression`. The `KernelDensity` estimation method can be formalized as follows:
 
 $$
-p(x) = \frac{1}{N} \sum^{N}_{i=1} \frac{1}{\prod^d_{j=1} h_j \sqrt{(2\pi)^d}} exp(-\frac{1}{2} (\frac{X_i - x}{h_d})^T (\frac{X_i - x}{h_d}))
+p(x) = \frac{1}{N} \sum ^{N} _{i=1} \frac{1}{ \prod ^d _{j=1} h_j \sqrt{(2 \pi ) ^d}} exp \left( -\frac{1}{2} \left( \frac{X_i - x}{h_d} \right) ^T \left( \frac{X_i - x}{h_d} \right) \right)
 $$
 
 The probability distribution $p(x)$ can be calculated by taking a given set of points $X_i = {X_1, \dots, X_N}$ with dimensionality $D$ and evaluating them over all gaussian kernels associated with the data $x$ saved during the encoding procedure. In this method, every point, $x$, observed during encoding is used to compute a gaussian kernel along the dimension $d$. This method of density estimation relies heavily on the kernel bandwidth parameter $h$, which describes the variance of the gaussian at dimension $d$. While this method works well for estimating probability distributions, the inference speed is quite slow and scales linearly with the number of observations encoded. At the cost of a small amount of accuracy, the `KernelCompression` estimation method is much faster and uses a gaussian mixture model to represent $p(x)$, which takes the following form:
@@ -73,10 +73,10 @@ $$
 In this case, significantly fewer gaussian components $C$ are needed to achieve similar accuracy. Each component $i$ is assigned a unique weight $w_i$ and set of parameters $\phi_i$. The parameters define a gaussian kernel of the form:
 
 $$
-\phi_i(x) = \frac{1}{\sqrt{(2\pi)^d\prod^d_{j=1}h^2_{i,j}}}exp(-\frac{1}{2}\sum^d_{j=1}\frac{(x_j-\mu_{i,j})^2}{h^2_{i,j}})
+\phi_i(x) = \frac{1}{\sqrt{(2\pi)^d\prod^d_{j=1}h^2_{i,j}}}exp\left(-\frac{1}{2}\sum^d_{j=1}\frac{(x_j-\mu_{i,j})^2}{h^2_{i,j}}\right)
 $$
 
-Where $\mu_{i,j}$ represents the mean of kernel $i$ along dimension $j$, and since we only use the diagonal of the covariance matrix, $\Sigma$ for kernel $i$, the term $h^2$ defines the variance of our kernel $i$ at dimension $j$.
+Where $\mu_{i,j}$ represents the mean of kernel $i$ along dimension $j$, and since we only use the diagonal of the covariance matrix, $\Sigma$ for kernel $i$, the term $h^2$ defines the variance of our kernel $i$ at dimension $j$. To determine whether new data points should lead to the creation of a new kernel or whether an existing kernel should be updated, the mahalanobis distance is calculated between existing kernels and the data point. The distance is then compared against the `DistanceThreshold` parameter, with further values leading to new kernels and nearer values leading to kernels being updated. While some information is lost when using kernel compression, there is a dramatic increase in performance, particularly when the number of observations is very large. 
 
 ## Steps to Build
 
