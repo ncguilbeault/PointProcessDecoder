@@ -232,12 +232,14 @@ public class ClusterlessMarkEncoder : IEncoder
 
         if (_spikeCounts.numel() == 0)
         {
-            _spikeCounts = (marks.sum(dim: 1) > 0).sum(dim: 0);
+            _spikeCounts = (marks.sum(dim: 1) > 0)
+                .sum(dim: 0);
             _samples = observations.shape[0];
         }
         else
         {
-            _spikeCounts += (marks.sum(dim: 1) > 0).sum(dim: 0);
+            _spikeCounts += (marks.sum(dim: 1) > 0)
+                .sum(dim: 0);
             _samples += observations.shape[0];
         }
 

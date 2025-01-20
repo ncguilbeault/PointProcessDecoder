@@ -104,11 +104,11 @@ public class KernelCompression : IEstimation
         if (data.shape[0] == 0) return;
 
         using var _ = NewDisposeScope();
-        // data = data.to_type(_scalarType).to(_device);
 
         if (_kernels.numel() == 0)
         {
-            _kernels = stack([_weight, data[0], _kernelBandwidth], dim: 1).unsqueeze(0);
+            _kernels = stack([_weight, data[0], _kernelBandwidth], dim: 1)
+                .unsqueeze(0);
             if (data.shape[0] == 1) 
             {
                 _kernels.MoveToOuterDisposeScope();
@@ -142,11 +142,13 @@ public class KernelCompression : IEstimation
 
     private static Tensor MergeKernels(Tensor kernel1, Tensor kernel2)
     {
+        using var _ = NewDisposeScope();
         var weightSum = kernel1[TensorIndex.Ellipsis, 0] + kernel2[TensorIndex.Ellipsis, 0];
         var mean = (kernel1[TensorIndex.Ellipsis, 1] * kernel1[TensorIndex.Ellipsis, 0] + kernel2[TensorIndex.Ellipsis, 1] * kernel2[TensorIndex.Ellipsis, 0]) / weightSum;
         var variance = (kernel1[TensorIndex.Ellipsis, 2] + pow(kernel1[TensorIndex.Ellipsis, 1], 2)) * kernel1[TensorIndex.Ellipsis, 0] + (kernel2[TensorIndex.Ellipsis, 2] + pow(kernel2[TensorIndex.Ellipsis, 1], 2)) * kernel2[TensorIndex.Ellipsis, 0];
         var diagonalCovariance = variance / weightSum - pow(mean, 2);
-        return stack([weightSum, mean, diagonalCovariance], dim: 1);
+        return stack([weightSum, mean, diagonalCovariance], dim: 1)
+            .MoveToOuterDisposeScope();
     }
 
     public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null)

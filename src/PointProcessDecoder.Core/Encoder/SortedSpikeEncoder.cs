@@ -53,7 +53,9 @@ public class SortedSpikeEncoder : IEncoder
             estimationMethod, 
             bandwidth, 
             _stateSpace.Dimensions, 
-            distanceThreshold
+            distanceThreshold,
+            device: device,
+            scalarType: scalarType
         );
 
         _unitEstimation = new IEstimation[_nUnits];
@@ -65,14 +67,12 @@ public class SortedSpikeEncoder : IEncoder
                 bandwidth, 
                 _stateSpace.Dimensions, 
                 distanceThreshold,
-                device: _device,
-                scalarType: _scalarType
+                device: device,
+                scalarType: scalarType
             );
         }
 
-        _estimations = new IEstimation[] { _observationEstimation}
-            .Concat(_unitEstimation)
-            .ToArray();
+        _estimations = [_observationEstimation, .. _unitEstimation];
     }
 
     private static IEstimation GetEstimationMethod(
@@ -121,35 +121,33 @@ public class SortedSpikeEncoder : IEncoder
             throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
         }
 
-        using var _ = NewDisposeScope();
         _observationEstimation.Fit(observations);
 
         if (_spikeCounts.numel() == 0)
         {
             _spikeCounts = inputs.nan_to_num()
-                .sum([0])
-                .to_type(_scalarType)
-                .to(_device)
-                .MoveToOuterDisposeScope();                
-            
+                .sum(dim: 0);                
             _samples = observations.shape[0];
         }
         else
         {
             _spikeCounts += inputs.nan_to_num()
-                .sum([0])
-                .to_type(_scalarType)
-                .to(_device)
-                .MoveToOuterDisposeScope();
-                
+                .sum(dim: 0);
             _samples += observations.shape[0];
         }
 
-        _samples.MoveToOuterDisposeScope();
+        _spikeCounts = _spikeCounts
+            .to(_device)
+            .MoveToOuterDisposeScope();
+
+        _samples = _samples
+            .to(_device)
+            .MoveToOuterDisposeScope();
+
         _rates = (_spikeCounts.clamp_min(_eps).log() - _samples.clamp_min(_eps).log())
             .MoveToOuterDisposeScope();
 
-        var inputMask = inputs.isnan().logical_not();
+        var inputMask = inputs.to_type(ScalarType.Bool);
 
         for (int i = 0; i < _nUnits; i++)
         {
