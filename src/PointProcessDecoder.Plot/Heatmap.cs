@@ -7,21 +7,23 @@ namespace PointProcessDecoder.Plot;
 
 public class Heatmap : OxyPlotBase
 {
-    public override PlotModel Plot => plot;
-    private PlotModel plot;
+    public override PlotModel Plot => _plot;
+    private readonly PlotModel _plot;
     public double XMin { get; } = double.NaN;
     public double XMax { get; } = double.NaN;
     public double YMin { get; } = double.NaN;
     public double YMax { get; } = double.NaN;
     public double ValMin { get; } = double.NaN;
     public double ValMax { get; } = double.NaN;
+    public string XAxisTitle { get; } = "X Axis";
+    public string YAxisTitle { get; } = "Y Axis";
     public string Title { get; } = "Heatmap";
 
     public Heatmap()
     {
         FigureName = Title;
 
-        plot = new PlotModel 
+        _plot = new PlotModel 
         { 
             Title = Title,
             TitleFont = "DejaVu Sans",
@@ -39,6 +41,8 @@ public class Heatmap : OxyPlotBase
         double? yMax = null, 
         double? valMin = null,
         double? valMax = null,
+        string? xAxisTitle = null,
+        string? yAxisTitle = null,
         string? title = null, 
         string? figureName = null
     )
@@ -49,10 +53,12 @@ public class Heatmap : OxyPlotBase
         YMax = yMax ?? YMax;
         ValMin = valMin ?? ValMin;
         ValMax = valMax ?? ValMax;
+        XAxisTitle = xAxisTitle ?? XAxisTitle;
+        YAxisTitle = yAxisTitle ?? YAxisTitle;
         Title = title ?? Title;
         FigureName = figureName ?? Title;
 
-        plot = new PlotModel 
+        _plot = new PlotModel 
         { 
             Title = Title,
             TitleFont = "DejaVu Sans",
@@ -63,12 +69,12 @@ public class Heatmap : OxyPlotBase
         Initialize();
     }
 
-    public override void Initialize()
+    private void Initialize()
     {
         var xAxis = new LinearAxis 
         { 
             Position = AxisPosition.Bottom, 
-            Title = "X Axis",
+            Title = XAxisTitle,
             TitleFont = "DejaVu Sans",
             Minimum = XMin,
             Maximum = XMax
@@ -77,7 +83,7 @@ public class Heatmap : OxyPlotBase
         var yAxis = new LinearAxis 
         { 
             Position = AxisPosition.Left, 
-            Title = "Y Axis",
+            Title = YAxisTitle,
             TitleFont = "DejaVu Sans",
             Minimum = YMin,
             Maximum = YMax
@@ -99,13 +105,13 @@ public class Heatmap : OxyPlotBase
             Key = "scatterColor"
         };
 
-        plot.Axes.Add(colorAxis);
-        plot.Axes.Add(scatterColorAxis);
-        plot.Axes.Add(xAxis);
-        plot.Axes.Add(yAxis);
+        _plot.Axes.Add(colorAxis);
+        _plot.Axes.Add(scatterColorAxis);
+        _plot.Axes.Add(xAxis);
+        _plot.Axes.Add(yAxis);
     }
 
-    public void Show(Tensor density, Tensor? points = null)
+    public void Show(Tensor density, Tensor? points = null, bool addLine = false)
     {
         var densityArray = density.data<double>().ToNDArray();
         var densityData = new double[density.shape[0], density.shape[1]];
@@ -122,15 +128,15 @@ public class Heatmap : OxyPlotBase
             ColorAxisKey = "color"
         };
 
-        plot.Series.Add(heatMapSeries);
+        _plot.Series.Add(heatMapSeries);
 
         if (points is not null)
         {
-            AddPoints(points);
+            AddPoints(points, addLine);
         }
     }
 
-    public void Show<T>(Tensor density, Tensor? points = null) where T : unmanaged
+    public void Show<T>(Tensor density, Tensor? points = null, bool addLine = false) where T : unmanaged
     {
         var densityArray = density.data<T>().ToNDArray();
         var densityData = new double[density.shape[0], density.shape[1]];
@@ -147,16 +153,37 @@ public class Heatmap : OxyPlotBase
             ColorAxisKey = "color"
         };
 
-        plot.Series.Add(heatMapSeries);
+        _plot.Series.Add(heatMapSeries);
 
         if (points is not null)
         {
-            AddPoints(points);
+            AddPoints(points, addLine);
         }
     }
 
-    private void AddPoints(Tensor points)
+    public void Show(double[,] density)
     {
+        var heatMapSeries = new HeatMapSeries
+        {
+            X0 = XMin,
+            X1 = XMax,
+            Y0 = YMin,
+            Y1 = YMax,
+            Interpolate = true,
+            Data = density,
+            ColorAxisKey = "color"
+        };
+
+        _plot.Series.Add(heatMapSeries);
+    }
+
+    private void AddPoints(Tensor points, bool addLine = false)
+    {
+        if (points.dim() != 2)
+        {
+            throw new ArgumentException("Points must have 2 dimensions.");
+        }
+
         if (points.shape[1] != 2)
         {
             throw new ArgumentException("Points must have 2 columns.");
@@ -171,6 +198,13 @@ public class Heatmap : OxyPlotBase
             ColorAxisKey = "scatterColor"
         };
 
+        var lineSeries = addLine ? new LineSeries
+        {
+            Color = OxyColors.Red,
+            StrokeThickness = 1,
+            MarkerType = MarkerType.None
+        } : null;
+
         var pointsArray = points.to_type(ScalarType.Float64)
             .data<double>()
             .ToNDArray();
@@ -181,8 +215,12 @@ public class Heatmap : OxyPlotBase
         for (int i = 0; i < points.shape[0]; i++)
         {
             scatterSeries.Points.Add(new ScatterPoint(pointsData[i,0], pointsData[i,1], double.NaN, 0));
+            lineSeries?.Points.Add(new DataPoint(pointsData[i,0], pointsData[i,1]));
         }
-
-        plot.Series.Add(scatterSeries);
+        _plot.Series.Add(scatterSeries);
+        if (addLine)
+        {
+            _plot.Series.Add(lineSeries);
+        }
     }
 }

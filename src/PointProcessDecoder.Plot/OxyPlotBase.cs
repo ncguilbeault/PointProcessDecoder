@@ -13,7 +13,6 @@ public abstract class OxyPlotBase
     public int Width { get; set; } = 600;
     public int Height { get; set; } = 600;
     public abstract PlotModel Plot { get; }
-    public abstract void Initialize();
 
     public void Save(bool png = false, bool pdf = false, bool svg = false)
     {
@@ -55,39 +54,36 @@ public abstract class OxyPlotBase
     {
         var exporter = new PngExporter() {Width = Width, Height = Height};
         var path = Path.Combine(OutputDirectory, $"{FigureName}.png");
-        using (var stream = File.Create(path))
-        {
-            exporter.Export(Plot, stream);
-        }
+        using var stream = File.Create(path);
+        exporter.Export(Plot, stream);
     }
 
     public void SavePlotAsPdf()
     {
         var exporter = new OxyPlot.SkiaSharp.PdfExporter() {Width = 600, Height = 600};
         var path = Path.Combine(OutputDirectory, $"{FigureName}.pdf");
-        using (var stream = File.Create(path))
-        {
-            exporter.Export(Plot, stream);
-        }
+        using var stream = File.Create(path);
+        exporter.Export(Plot, stream);
     }
 
     public void SavePlotAsSvg()
     {
         var exporter = new OxyPlot.SkiaSharp.SvgExporter() {Width = 600, Height = 600};
         var path = Path.Combine(OutputDirectory, $"{FigureName}.svg");
-        using (var stream = File.Create(path))
-        {
-            exporter.Export(Plot, stream);
-        }
+        using var stream = File.Create(path);
+        exporter.Export(Plot, stream);
     }
 
     public byte[] ToBytes()
     {
         var exporter = new PngExporter() {Width = Width, Height = Height};
-        using (var stream = new MemoryStream())
-        {
-            exporter.Export(Plot, stream);
-            return stream.ToArray();
-        }
+        using var stream = new MemoryStream();
+        exporter.Export(Plot, stream);
+        return stream.ToArray();
+    }
+
+    public string EncodeToHtml()
+    {
+        return $"<img src=\"data:image/png;base64,{Convert.ToBase64String(ToBytes())}\">";
     }
 }
