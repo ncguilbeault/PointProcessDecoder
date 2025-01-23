@@ -7,7 +7,7 @@ namespace PointProcessDecoder.Plot;
 /// </summary>
 public static class Utilities
 {
-    private static Random random = new Random();
+    private static Random random = new();
 
     /// <summary>
     /// Generates a list of colors.
@@ -28,9 +28,7 @@ public static class Utilities
         for (int i = 0; i < n; i++)
         {
             int j = random.Next(i, n);
-            var temp = colors[i];
-            colors[i] = colors[j];
-            colors[j] = temp;
+            (colors[j], colors[i]) = (colors[i], colors[j]);
         }
 
         return colors;
