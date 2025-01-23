@@ -111,7 +111,7 @@ public class Heatmap : OxyPlotBase
         _plot.Axes.Add(yAxis);
     }
 
-    public void Show(Tensor density, Tensor? points = null)
+    public void Show(Tensor density, Tensor? points = null, bool addLine = false)
     {
         var densityArray = density.data<double>().ToNDArray();
         var densityData = new double[density.shape[0], density.shape[1]];
@@ -132,11 +132,11 @@ public class Heatmap : OxyPlotBase
 
         if (points is not null)
         {
-            AddPoints(points);
+            AddPoints(points, addLine);
         }
     }
 
-    public void Show<T>(Tensor density, Tensor? points = null) where T : unmanaged
+    public void Show<T>(Tensor density, Tensor? points = null, bool addLine = false) where T : unmanaged
     {
         var densityArray = density.data<T>().ToNDArray();
         var densityData = new double[density.shape[0], density.shape[1]];
@@ -157,12 +157,17 @@ public class Heatmap : OxyPlotBase
 
         if (points is not null)
         {
-            AddPoints(points);
+            AddPoints(points, addLine);
         }
     }
 
-    private void AddPoints(Tensor points)
+    private void AddPoints(Tensor points, bool addLine = false)
     {
+        if (points.dim() != 2)
+        {
+            throw new ArgumentException("Points must have 2 dimensions.");
+        }
+
         if (points.shape[1] != 2)
         {
             throw new ArgumentException("Points must have 2 columns.");
@@ -177,6 +182,13 @@ public class Heatmap : OxyPlotBase
             ColorAxisKey = "scatterColor"
         };
 
+        var lineSeries = addLine ? new LineSeries
+        {
+            Color = OxyColors.Red,
+            StrokeThickness = 1,
+            MarkerType = MarkerType.None
+        } : null;
+
         var pointsArray = points.to_type(ScalarType.Float64)
             .data<double>()
             .ToNDArray();
@@ -187,7 +199,12 @@ public class Heatmap : OxyPlotBase
         for (int i = 0; i < points.shape[0]; i++)
         {
             scatterSeries.Points.Add(new ScatterPoint(pointsData[i,0], pointsData[i,1], double.NaN, 0));
+            lineSeries?.Points.Add(new DataPoint(pointsData[i,0], pointsData[i,1]));
         }
         _plot.Series.Add(scatterSeries);
+        if (addLine)
+        {
+            _plot.Series.Add(lineSeries);
+        }
     }
 }

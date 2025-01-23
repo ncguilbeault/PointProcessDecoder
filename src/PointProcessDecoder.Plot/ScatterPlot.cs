@@ -103,7 +103,7 @@ public class ScatterPlot : OxyPlotBase
         _plot.Axes.Add(yAxis);
     }
 
-    public void Show(Tensor positionData, OxyColor? color = null)
+    public void Show(Tensor data, OxyColor? color = null, bool addLine = false)
     {
         
         var scatterSeries = new ScatterSeries
@@ -114,18 +114,33 @@ public class ScatterPlot : OxyPlotBase
             MarkerStrokeThickness = 1,
         };
         
-        for (int i = 0; i < positionData.shape[0]; i++)
+        var lineSeries = addLine ? new LineSeries
+        {
+            Color = color ?? OxyColors.Red,
+            StrokeThickness = 1,
+            MarkerType = MarkerType.None
+        } : null;
+        
+        for (int i = 0; i < data.shape[0]; i++)
         {
             scatterSeries.Points.Add(new ScatterPoint(
-                positionData[i,0].item<double>(), 
-                positionData[i,1].item<double>()
+                data[i,0].item<double>(), 
+                data[i,1].item<double>()
+            ));
+            lineSeries?.Points.Add(new DataPoint(
+                data[i,0].item<double>(), 
+                data[i,1].item<double>()
             ));
         }
 
         _plot.Series.Add(scatterSeries);
+        if (addLine)
+        {
+            _plot.Series.Add(lineSeries);
+        }
     }
 
-    public void Show<T>(Tensor positionData, OxyColor? color = null) where T : unmanaged
+    public void Show<T>(Tensor data, OxyColor? color = null, bool addLine = false) where T : unmanaged
     {
         
         var scatterSeries = new ScatterSeries
@@ -135,15 +150,31 @@ public class ScatterPlot : OxyPlotBase
             MarkerSize = 4,
             MarkerStrokeThickness = 1,
         };
+
+        var lineSeries = addLine ? new LineSeries
+        {
+            Color = color ?? OxyColors.Red,
+            StrokeThickness = 1,
+            MarkerType = MarkerType.None
+        } : null;
         
-        for (int i = 0; i < positionData.shape[0]; i++)
+        for (int i = 0; i < data.shape[0]; i++)
         {
             scatterSeries.Points.Add(new ScatterPoint(
-                Convert.ToDouble(positionData[i,0].item<T>()), 
-                Convert.ToDouble(positionData[i,1].item<T>())
+                Convert.ToDouble(data[i,0].item<T>()), 
+                Convert.ToDouble(data[i,1].item<T>())
+            ));
+
+            lineSeries?.Points.Add(new DataPoint(
+                Convert.ToDouble(data[i,0].item<T>()), 
+                Convert.ToDouble(data[i,1].item<T>())
             ));
         }
 
         _plot.Series.Add(scatterSeries);
+        if (addLine)
+        {
+            _plot.Series.Add(lineSeries);
+        }
     }
 }
