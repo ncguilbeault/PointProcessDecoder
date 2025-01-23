@@ -15,6 +15,8 @@ public class Heatmap : OxyPlotBase
     public double YMax { get; } = double.NaN;
     public double ValMin { get; } = double.NaN;
     public double ValMax { get; } = double.NaN;
+    public string XAxisTitle { get; } = "X Axis";
+    public string YAxisTitle { get; } = "Y Axis";
     public string Title { get; } = "Heatmap";
 
     public Heatmap()
@@ -39,6 +41,8 @@ public class Heatmap : OxyPlotBase
         double? yMax = null, 
         double? valMin = null,
         double? valMax = null,
+        string? xAxisTitle = null,
+        string? yAxisTitle = null,
         string? title = null, 
         string? figureName = null
     )
@@ -49,6 +53,8 @@ public class Heatmap : OxyPlotBase
         YMax = yMax ?? YMax;
         ValMin = valMin ?? ValMin;
         ValMax = valMax ?? ValMax;
+        XAxisTitle = xAxisTitle ?? XAxisTitle;
+        YAxisTitle = yAxisTitle ?? YAxisTitle;
         Title = title ?? Title;
         FigureName = figureName ?? Title;
 
@@ -68,7 +74,7 @@ public class Heatmap : OxyPlotBase
         var xAxis = new LinearAxis 
         { 
             Position = AxisPosition.Bottom, 
-            Title = "X Axis",
+            Title = XAxisTitle,
             TitleFont = "DejaVu Sans",
             Minimum = XMin,
             Maximum = XMax
@@ -77,7 +83,7 @@ public class Heatmap : OxyPlotBase
         var yAxis = new LinearAxis 
         { 
             Position = AxisPosition.Left, 
-            Title = "Y Axis",
+            Title = YAxisTitle,
             TitleFont = "DejaVu Sans",
             Minimum = YMin,
             Maximum = YMax

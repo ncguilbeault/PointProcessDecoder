@@ -13,6 +13,8 @@ public class ScatterPlot : OxyPlotBase
     public double XMax { get; } = 100;
     public double YMin { get; } = 0;
     public double YMax { get; } = 100;
+    public string XAxisTitle { get; } = "X Axis";
+    public string YAxisTitle { get; } = "Y Axis";
     public string Title { get; } = "ScatterPlot";
 
     public ScatterPlot()
@@ -35,6 +37,8 @@ public class ScatterPlot : OxyPlotBase
         double? xMax = null, 
         double? yMin = null, 
         double? yMax = null, 
+        string? xAxisTitle = null,
+        string? yAxisTitle = null,
         string? title = null, 
         string? figureName = null
     )
@@ -43,6 +47,8 @@ public class ScatterPlot : OxyPlotBase
         XMax = xMax ?? XMax;
         YMin = yMin ?? YMin;
         YMax = yMax ?? YMax;
+        XAxisTitle = xAxisTitle ?? XAxisTitle;
+        YAxisTitle = yAxisTitle ?? YAxisTitle;
         Title = title ?? Title;
         FigureName = figureName ?? Title;
 
@@ -62,7 +68,7 @@ public class ScatterPlot : OxyPlotBase
         var xAxis = new LinearAxis 
         { 
             Position = AxisPosition.Bottom, 
-            Title = "X Axis",
+            Title = XAxisTitle,
             TitleFont = "DejaVu Sans",
             Minimum = XMin,
             Maximum = XMax
@@ -71,7 +77,7 @@ public class ScatterPlot : OxyPlotBase
         var yAxis = new LinearAxis 
         { 
             Position = AxisPosition.Left, 
-            Title = "Y Axis",
+            Title = YAxisTitle,
             TitleFont = "DejaVu Sans",
             Minimum = YMin,
             Maximum = YMax
