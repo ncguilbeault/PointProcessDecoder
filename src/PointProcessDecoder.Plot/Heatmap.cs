@@ -161,6 +161,22 @@ public class Heatmap : OxyPlotBase
         }
     }
 
+    public void Show(double[,] density)
+    {
+        var heatMapSeries = new HeatMapSeries
+        {
+            X0 = XMin,
+            X1 = XMax,
+            Y0 = YMin,
+            Y1 = YMax,
+            Interpolate = true,
+            Data = density,
+            ColorAxisKey = "color"
+        };
+
+        _plot.Series.Add(heatMapSeries);
+    }
+
     private void AddPoints(Tensor points, bool addLine = false)
     {
         if (points.dim() != 2)
