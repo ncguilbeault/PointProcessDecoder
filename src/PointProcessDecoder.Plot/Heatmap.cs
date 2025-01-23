@@ -7,8 +7,8 @@ namespace PointProcessDecoder.Plot;
 
 public class Heatmap : OxyPlotBase
 {
-    public override PlotModel Plot => plot;
-    private PlotModel plot;
+    public override PlotModel Plot => _plot;
+    private readonly PlotModel _plot;
     public double XMin { get; } = double.NaN;
     public double XMax { get; } = double.NaN;
     public double YMin { get; } = double.NaN;
@@ -21,7 +21,7 @@ public class Heatmap : OxyPlotBase
     {
         FigureName = Title;
 
-        plot = new PlotModel 
+        _plot = new PlotModel 
         { 
             Title = Title,
             TitleFont = "DejaVu Sans",
@@ -52,7 +52,7 @@ public class Heatmap : OxyPlotBase
         Title = title ?? Title;
         FigureName = figureName ?? Title;
 
-        plot = new PlotModel 
+        _plot = new PlotModel 
         { 
             Title = Title,
             TitleFont = "DejaVu Sans",
@@ -99,10 +99,10 @@ public class Heatmap : OxyPlotBase
             Key = "scatterColor"
         };
 
-        plot.Axes.Add(colorAxis);
-        plot.Axes.Add(scatterColorAxis);
-        plot.Axes.Add(xAxis);
-        plot.Axes.Add(yAxis);
+        _plot.Axes.Add(colorAxis);
+        _plot.Axes.Add(scatterColorAxis);
+        _plot.Axes.Add(xAxis);
+        _plot.Axes.Add(yAxis);
     }
 
     public void Show(Tensor density, Tensor? points = null)
@@ -122,7 +122,7 @@ public class Heatmap : OxyPlotBase
             ColorAxisKey = "color"
         };
 
-        plot.Series.Add(heatMapSeries);
+        _plot.Series.Add(heatMapSeries);
 
         if (points is not null)
         {
@@ -147,7 +147,7 @@ public class Heatmap : OxyPlotBase
             ColorAxisKey = "color"
         };
 
-        plot.Series.Add(heatMapSeries);
+        _plot.Series.Add(heatMapSeries);
 
         if (points is not null)
         {
@@ -182,7 +182,6 @@ public class Heatmap : OxyPlotBase
         {
             scatterSeries.Points.Add(new ScatterPoint(pointsData[i,0], pointsData[i,1], double.NaN, 0));
         }
-
-        plot.Series.Add(scatterSeries);
+        _plot.Series.Add(scatterSeries);
     }
 }

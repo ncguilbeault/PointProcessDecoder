@@ -7,8 +7,8 @@ namespace PointProcessDecoder.Plot;
 
 public class ScatterPlot : OxyPlotBase
 {
-    public override PlotModel Plot => plot;
-    private PlotModel plot;
+    public override PlotModel Plot => _plot;
+    private readonly PlotModel _plot;
     public double XMin { get; } = 0;
     public double XMax { get; } = 100;
     public double YMin { get; } = 0;
@@ -19,7 +19,7 @@ public class ScatterPlot : OxyPlotBase
     {
         FigureName = Title;
 
-        plot = new PlotModel 
+        _plot = new PlotModel 
         { 
             Title = Title,
             TitleFont = "DejaVu Sans",
@@ -46,7 +46,7 @@ public class ScatterPlot : OxyPlotBase
         Title = title ?? Title;
         FigureName = figureName ?? Title;
 
-        plot = new PlotModel 
+        _plot = new PlotModel 
         { 
             Title = Title,
             TitleFont = "DejaVu Sans",
@@ -77,8 +77,8 @@ public class ScatterPlot : OxyPlotBase
             Maximum = YMax
         };
 
-        plot.Axes.Add(xAxis);
-        plot.Axes.Add(yAxis);
+        _plot.Axes.Add(xAxis);
+        _plot.Axes.Add(yAxis);
     }
 
     public void Show(Tensor positionData, OxyColor? color = null)
@@ -100,7 +100,7 @@ public class ScatterPlot : OxyPlotBase
             ));
         }
 
-        plot.Series.Add(scatterSeries);
+        _plot.Series.Add(scatterSeries);
     }
 
     public void Show<T>(Tensor positionData, OxyColor? color = null) where T : unmanaged
@@ -122,6 +122,6 @@ public class ScatterPlot : OxyPlotBase
             ));
         }
 
-        plot.Series.Add(scatterSeries);
+        _plot.Series.Add(scatterSeries);
     }
 }
