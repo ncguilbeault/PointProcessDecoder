@@ -81,4 +81,9 @@ public abstract class OxyPlotBase
         exporter.Export(Plot, stream);
         return stream.ToArray();
     }
+
+    public string EncodeToHtml()
+    {
+        return $"<img src=\"data:image/png;base64,{Convert.ToBase64String(ToBytes())}\">";
+    }
 }
