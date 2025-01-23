@@ -69,7 +69,7 @@ public class Heatmap : OxyPlotBase
         Initialize();
     }
 
-    public override void Initialize()
+    private void Initialize()
     {
         var xAxis = new LinearAxis 
         { 

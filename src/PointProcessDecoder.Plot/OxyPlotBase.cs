@@ -13,7 +13,6 @@ public abstract class OxyPlotBase
     public int Width { get; set; } = 600;
     public int Height { get; set; } = 600;
     public abstract PlotModel Plot { get; }
-    public abstract void Initialize();
 
     public void Save(bool png = false, bool pdf = false, bool svg = false)
     {

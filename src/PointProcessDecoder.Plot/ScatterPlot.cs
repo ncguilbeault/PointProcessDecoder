@@ -40,7 +40,9 @@ public class ScatterPlot : OxyPlotBase
         string? xAxisTitle = null,
         string? yAxisTitle = null,
         string? title = null, 
-        string? figureName = null
+        string? figureName = null,
+        bool logX = false,
+        bool logY = false
     )
     {
         XMin = xMin ?? XMin;
@@ -60,12 +62,19 @@ public class ScatterPlot : OxyPlotBase
             Background = OxyColors.White
         };
 
-        Initialize();
+        Initialize(logX, logY);
     }
 
-    public override void Initialize()
+    private void Initialize(bool logX = false, bool logY = false)
     {
-        var xAxis = new LinearAxis 
+        Axis xAxis = logX ? new LogarithmicAxis 
+        { 
+            Position = AxisPosition.Bottom, 
+            Title = XAxisTitle,
+            TitleFont = "DejaVu Sans",
+            Minimum = XMin,
+            Maximum = XMax
+        } : new LinearAxis 
         { 
             Position = AxisPosition.Bottom, 
             Title = XAxisTitle,
@@ -74,7 +83,14 @@ public class ScatterPlot : OxyPlotBase
             Maximum = XMax
         };
 
-        var yAxis = new LinearAxis 
+        Axis yAxis = logY ? new LogarithmicAxis 
+        { 
+            Position = AxisPosition.Bottom, 
+            Title = YAxisTitle,
+            TitleFont = "DejaVu Sans",
+            Minimum = XMin,
+            Maximum = XMax
+        } : new LinearAxis 
         { 
             Position = AxisPosition.Left, 
             Title = YAxisTitle,
