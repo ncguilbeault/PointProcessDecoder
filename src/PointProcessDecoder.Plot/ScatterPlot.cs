@@ -85,11 +85,11 @@ public class ScatterPlot : OxyPlotBase
 
         Axis yAxis = logY ? new LogarithmicAxis 
         { 
-            Position = AxisPosition.Bottom, 
+            Position = AxisPosition.Left, 
             Title = YAxisTitle,
             TitleFont = "DejaVu Sans",
-            Minimum = XMin,
-            Maximum = XMax
+            Minimum = YMin,
+            Maximum = YMax
         } : new LinearAxis 
         { 
             Position = AxisPosition.Left, 
