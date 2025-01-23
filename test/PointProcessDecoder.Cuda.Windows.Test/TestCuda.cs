@@ -21,5 +21,6 @@ public class TestCuda
         var cudaAvailable = cuda.is_available();
         var deviceCount = cuda.device_count();
         var cudnnAvailable = cuda.is_cudnn_available();
+        Assert.IsTrue(cudaAvailable && deviceCount > 0 && cudnnAvailable);
     }
 }
