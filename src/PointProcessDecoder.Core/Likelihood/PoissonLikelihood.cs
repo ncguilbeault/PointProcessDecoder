@@ -16,6 +16,9 @@ public class PoissonLikelihood : ILikelihood
             .nan_to_num()
             .sum(dim: -1);
         logLikelihood -= logLikelihood.max(dim: -1, keepdim: true).values;
-        return logLikelihood.MoveToOuterDisposeScope();
+        return logLikelihood
+            .exp()
+            .nan_to_num()
+            .MoveToOuterDisposeScope();
     }
 }

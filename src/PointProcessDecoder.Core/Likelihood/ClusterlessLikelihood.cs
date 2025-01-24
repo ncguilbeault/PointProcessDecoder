@@ -17,6 +17,9 @@ public class ClusterlessLikelihood : ILikelihood
             .sum(dim: 0);
         logLikelihood -= logLikelihood.max(dim: -1, keepdim: true)
             .values;
-        return logLikelihood.MoveToOuterDisposeScope();
+        return logLikelihood
+            .exp()
+            .nan_to_num()
+            .MoveToOuterDisposeScope();
     }
 }
