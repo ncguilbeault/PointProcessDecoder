@@ -15,7 +15,7 @@ public class ClusterlessLikelihood : ILikelihood
         var logLikelihood = (markConditionalIntensities - channelConditionalIntensities.unsqueeze(1))
             .nan_to_num()
             .sum(dim: 0);
-        logLikelihood -= logLikelihood.max(dim: 0, keepdim: true)
+        logLikelihood -= logLikelihood.max(dim: -1, keepdim: true)
             .values;
         return logLikelihood.MoveToOuterDisposeScope();
     }
