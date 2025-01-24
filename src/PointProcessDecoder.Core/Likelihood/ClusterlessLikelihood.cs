@@ -12,10 +12,7 @@ public class ClusterlessLikelihood : ILikelihood
         using var _ = NewDisposeScope();
         var channelConditionalIntensities = conditionalIntensities.ElementAt(0);
         var markConditionalIntensities = conditionalIntensities.ElementAt(1);
-        var mask = ~inputs.isnan()
-            .all(dim: 1)
-            .unsqueeze(0).T;
-        var logLikelihood = (markConditionalIntensities * mask - channelConditionalIntensities.unsqueeze(1))
+        var logLikelihood = (markConditionalIntensities - channelConditionalIntensities.unsqueeze(1))
             .nan_to_num()
             .sum(dim: 0);
         logLikelihood -= logLikelihood.max(dim: 0, keepdim: true)
