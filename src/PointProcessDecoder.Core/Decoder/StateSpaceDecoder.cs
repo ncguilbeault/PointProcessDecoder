@@ -56,7 +56,7 @@ public class StateSpaceDecoder : IDecoder
 
         var n = _stateSpace.Points.shape[0];
         _initialState = ones(n, dtype: _scalarType, device: _device) / n;
-        _posterior = _initialState.clone();
+        _posterior = empty(0);
     }
 
     /// <summary>
@@ -79,7 +79,13 @@ public class StateSpaceDecoder : IDecoder
 
         var output = zeros(outputShape, dtype: _scalarType, device: _device);
 
-        for (int i = 0; i < inputs.shape[0]; i++)
+        if (_posterior.numel() == 0) {
+            _posterior = _initialState * likelihood[0].flatten();
+            _posterior /= _posterior.sum();
+            output[0] = _posterior.reshape(_stateSpace.Shape);
+        }
+
+        for (int i = 1; i < inputs.shape[0]; i++)
         {
             var update = _stateTransitions.Transitions.matmul(_posterior)
                 .nan_to_num()
