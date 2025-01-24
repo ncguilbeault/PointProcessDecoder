@@ -24,7 +24,7 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly IStateSpace _stateSpace;
     private bool _updateConditionalIntensities = true;
 
-    private Tensor[] _stateSpaceKernelEstimates = [];
+    private Tensor[] _markStateSpaceKernelEstimates = [];
     private Tensor _markConditionalIntensities = empty(0);
     private Tensor[] _channelEstimates = [];
     private Tensor _channelConditionalIntensities = empty(0);
@@ -38,7 +38,7 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly double _eps;
     private readonly Action<IEstimation, Tensor, Tensor> _markFitMethod;
     private readonly Func<IEstimation, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor> _estimateMarkConditionalIntensityMethod;
-    private readonly Func<IEstimation, Tensor> _estimateStateSpaceKernelMethod;
+    private readonly Func<IEstimation, Tensor> _estimateMarkStateSpaceKernelMethod;
 
     public ClusterlessMarkEncoder(
         EstimationMethod estimationMethod, 
@@ -102,7 +102,7 @@ public class ClusterlessMarkEncoder : IEncoder
 
                 _markFitMethod = FitMarksFactoredMethod;
                 _estimateMarkConditionalIntensityMethod = EstimateMarksFactoredMethod;
-                _estimateStateSpaceKernelMethod = (_) => empty(0);
+                _estimateMarkStateSpaceKernelMethod = (_) => empty(0);
 
                 break;
 
@@ -139,7 +139,7 @@ public class ClusterlessMarkEncoder : IEncoder
 
                 _markFitMethod = FitMarksUnfactoredMethod;
                 _estimateMarkConditionalIntensityMethod = EstimateMarksUnfactoredMethod;
-                _estimateStateSpaceKernelMethod = (IEstimation estimation) => 
+                _estimateMarkStateSpaceKernelMethod = (IEstimation estimation) => 
                     estimation.Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions);
 
                 break;
@@ -148,10 +148,7 @@ public class ClusterlessMarkEncoder : IEncoder
                 throw new ArgumentException("Invalid estimation method.");
         };
 
-        _estimations = new IEstimation[] { _observationEstimation }
-            .Concat(_channelEstimation)
-            .Concat(_markEstimation)
-            .ToArray();
+        _estimations = [_observationEstimation, .. _channelEstimation, .. _markEstimation];
     }
 
     private static void FitMarksFactoredMethod(
@@ -172,7 +169,7 @@ public class ClusterlessMarkEncoder : IEncoder
         markEstimation.Fit(concat([observations, marks], dim: 1));
     }
 
-    private static Tensor EstimateMarksFactoredMethod(
+    private Tensor EstimateMarksFactoredMethod(
         IEstimation markEstimation,
         Tensor stateSpaceEstimate,
         Tensor channelEstimate, 
@@ -185,6 +182,7 @@ public class ClusterlessMarkEncoder : IEncoder
         var markEstimate = markEstimation.Estimate(marks);
         var markDensity = markEstimate.matmul(channelEstimate.T);
         return (markDensity * channelConditionalIntensity.unsqueeze(0))
+            .nan_to_num()
             .log()
             .MoveToOuterDisposeScope();
     }
@@ -298,7 +296,7 @@ public class ClusterlessMarkEncoder : IEncoder
             var marks = inputs[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i];
             jointDensity[mask[TensorIndex.Colon, i]] = _estimateMarkConditionalIntensityMethod(
                 _markEstimation[i],
-                _stateSpaceKernelEstimates[i],
+                _markStateSpaceKernelEstimates[i],
                 _channelEstimates[i], 
                 _channelConditionalIntensities[i],
                 _rates[i],
@@ -321,7 +319,7 @@ public class ClusterlessMarkEncoder : IEncoder
 
         var channelConditionalIntensities = new Tensor[_markChannels];
         _channelEstimates = new Tensor[_markChannels];
-        _stateSpaceKernelEstimates = new Tensor[_markChannels];
+        _markStateSpaceKernelEstimates = new Tensor[_markChannels];
 
         for (int i = 0; i < _markChannels; i++)
         {
@@ -333,7 +331,7 @@ public class ClusterlessMarkEncoder : IEncoder
 
             channelConditionalIntensities[i] = exp(_rates[i] + channelDensity - _observationDensity);
             
-            _stateSpaceKernelEstimates[i] = _estimateStateSpaceKernelMethod(_markEstimation[i])
+            _markStateSpaceKernelEstimates[i] = _estimateMarkStateSpaceKernelMethod(_markEstimation[i])
                 .MoveToOuterDisposeScope();
         }
 
