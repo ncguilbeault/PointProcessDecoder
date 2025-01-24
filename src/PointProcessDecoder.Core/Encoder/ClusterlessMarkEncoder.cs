@@ -36,6 +36,7 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly int _markDimensions;
     private int _markChannels;
     private readonly double _eps;
+    private readonly bool _ignoreNoSpikes;
     private readonly Action<IEstimation, Tensor, Tensor> _markFitMethod;
     private readonly Func<IEstimation, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor> _estimateMarkConditionalIntensityMethod;
     private readonly Func<IEstimation, Tensor> _estimateMarkStateSpaceKernelMethod;
@@ -47,7 +48,8 @@ public class ClusterlessMarkEncoder : IEncoder
         int markChannels,
         double[] markBandwidth,
         IStateSpace stateSpace,
-        double? distanceThreshold = null, 
+        double? distanceThreshold = null,
+        bool ignoreNoSpikes = false, 
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -68,6 +70,7 @@ public class ClusterlessMarkEncoder : IEncoder
         _markChannels = markChannels;
         _eps = finfo(_scalarType).eps;
         _stateSpace = stateSpace;
+        _ignoreNoSpikes = ignoreNoSpikes;
 
         _channelEstimation = new IEstimation[_markChannels];
         _markEstimation = new IEstimation[_markChannels];
@@ -282,9 +285,12 @@ public class ClusterlessMarkEncoder : IEncoder
 
         for (int i = 0; i < _markChannels; i++)
         {
-            var jointDensity = empty([inputs.shape[0], _stateSpace.Points.shape[0]])
+            var jointDensity = _ignoreNoSpikes ? ones([inputs.shape[0], _stateSpace.Points.shape[0]])
                 .to_type(_scalarType)
-                .to(_device);
+                .to(_device) / _stateSpace.Points.shape[0]
+                : _channelConditionalIntensities[i]
+                    .tile([inputs.shape[0], 1])
+                    .log();
 
             if (mask[TensorIndex.Colon, i].sum().item<long>() == 0)
             {
