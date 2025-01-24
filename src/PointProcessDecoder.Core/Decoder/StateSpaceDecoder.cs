@@ -87,10 +87,7 @@ public class StateSpaceDecoder : IDecoder
 
         for (int i = 1; i < inputs.shape[0]; i++)
         {
-            var update = _stateTransitions.Transitions.matmul(_posterior)
-                .nan_to_num()
-                .log();
-            _posterior = exp(likelihood[i].flatten() + update)
+            _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i].flatten())
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
             output[i] = _posterior.reshape(_stateSpace.Shape);
