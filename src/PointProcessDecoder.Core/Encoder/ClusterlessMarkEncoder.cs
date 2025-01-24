@@ -327,6 +327,7 @@ public class ClusterlessMarkEncoder : IEncoder
                 .MoveToOuterDisposeScope();
 
             var channelDensity = _channelEstimation[i].Normalize(_channelEstimates[i])
+                .clamp_min(_eps)
                 .log();
 
             channelConditionalIntensities[i] = exp(_rates[i] + channelDensity - _observationDensity);
