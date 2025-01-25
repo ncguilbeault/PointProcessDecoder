@@ -80,8 +80,7 @@ public class PointProcessModel : IModel
                 markChannels: markChannels ?? 1,
                 markBandwidth: markBandwidth ?? observationBandwidth,
                 stateSpace: _stateSpace,
-                distanceThreshold: distanceThreshold, 
-                ignoreNoSpikes: ignoreNoSpikes,
+                distanceThreshold: distanceThreshold,
                 device: _device,
                 scalarType: _scalarType
             ),
@@ -113,7 +112,9 @@ public class PointProcessModel : IModel
         _likelihood = likelihoodType switch
         {
             LikelihoodType.Poisson => new PoissonLikelihood(),
-            LikelihoodType.Clusterless => new ClusterlessLikelihood(),
+            LikelihoodType.Clusterless => new ClusterlessLikelihood(
+                ignoreNoSpikes: ignoreNoSpikes
+            ),
             _ => throw new ArgumentException("Invalid likelihood type.")
         };
 
