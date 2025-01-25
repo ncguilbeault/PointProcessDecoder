@@ -30,6 +30,7 @@ public class ClusterlessMarkEncoder : IEncoder
     private Tensor[] _channelDensities = [];
     private Tensor _channelConditionalIntensities = empty(0);
     private Tensor _observationDensity = empty(0);
+    private Tensor _summedGroundProcessIntensity = empty(0);
 
     private Tensor _spikeCounts = empty(0);
     private Tensor _samples = empty(0);
@@ -288,12 +289,15 @@ public class ClusterlessMarkEncoder : IEncoder
 
         for (int i = 0; i < _markChannels; i++)
         {
-            var jointDensity = _ignoreNoSpikes ? ones([inputs.shape[0], _stateSpace.Points.shape[0]])
+            var jointDensity = _ignoreNoSpikes ? zeros([inputs.shape[0], _stateSpace.Points.shape[0]])
                 .to_type(_scalarType)
                 .to(_device) / _stateSpace.Points.shape[0]
-                : _observationDensity
+                : -_summedGroundProcessIntensity
                     .unsqueeze(0)
                     .tile([inputs.shape[0], 1]);
+            // var jointDensity = zeros([inputs.shape[0], _stateSpace.Points.shape[0]])
+            //     .to_type(_scalarType)
+            //     .to(_device) / _stateSpace.Points.shape[0];
 
             if (mask[TensorIndex.Colon, i].sum().item<long>() == 0)
             {
@@ -356,6 +360,10 @@ public class ClusterlessMarkEncoder : IEncoder
         if (_updateConditionalIntensities)
         {
             _channelConditionalIntensities = EvaluateChannelConditionalIntensities()
+                .MoveToOuterDisposeScope();
+            _summedGroundProcessIntensity = _channelConditionalIntensities
+                .sum(dim: 0)
+                .clamp_min(_eps)
                 .MoveToOuterDisposeScope();
         }
 
