@@ -27,10 +27,8 @@ public class ClusterlessMarkEncoder : IEncoder
     private Tensor[] _markStateSpaceKernelEstimates = [];
     private Tensor _markConditionalIntensities = empty(0);
     private Tensor[] _channelEstimates = [];
-    private Tensor[] _channelDensities = [];
     private Tensor _channelConditionalIntensities = empty(0);
     private Tensor _observationDensity = empty(0);
-    private Tensor _summedGroundProcessIntensity = empty(0);
 
     private Tensor _spikeCounts = empty(0);
     private Tensor _samples = empty(0);
@@ -184,11 +182,11 @@ public class ClusterlessMarkEncoder : IEncoder
     )
     {
         using var _ = NewDisposeScope();
-        var markEstimate = markEstimation.Estimate(marks);
-        var markDensity = markEstimate.matmul(channelEstimate.T);
-        return (markDensity * channelConditionalIntensity.unsqueeze(0))
+        var markKernelEstimate = markEstimation.Estimate(marks);
+        var markDensity = markKernelEstimate.matmul(channelEstimate.T) / 
+            markKernelEstimate.shape[1];
+        return (rate + markDensity.log() - _observationDensity)
             .nan_to_num()
-            .log()
             .MoveToOuterDisposeScope();
     }
 
@@ -204,15 +202,10 @@ public class ClusterlessMarkEncoder : IEncoder
         using var _ = NewDisposeScope();
 
         var markKernelEstimate = markEstimation.Estimate(marks, _stateSpace.Dimensions);
-
-        var markDensity = stateSpaceEstimate.matmul(markKernelEstimate.T)
-            .nan_to_num()
-            .sum(dim: 1)
-            .clamp_min(_eps);
-
-        markDensity /= markDensity.sum();
-
+        var markDensity = markKernelEstimate.matmul(stateSpaceEstimate.T) /
+            markKernelEstimate.shape[1];
         return (rate + markDensity.log() - _observationDensity)
+            .nan_to_num()
             .MoveToOuterDisposeScope();
     }
 
@@ -289,25 +282,25 @@ public class ClusterlessMarkEncoder : IEncoder
 
         for (int i = 0; i < _markChannels; i++)
         {
-            var jointDensity = _ignoreNoSpikes ? zeros([inputs.shape[0], _stateSpace.Points.shape[0]])
-                .to_type(_scalarType)
-                .to(_device) / _stateSpace.Points.shape[0]
-                : -_summedGroundProcessIntensity
-                    .unsqueeze(0)
-                    .tile([inputs.shape[0], 1]);
-            // var jointDensity = zeros([inputs.shape[0], _stateSpace.Points.shape[0]])
+            // var jointDensity = _ignoreNoSpikes ? zeros([inputs.shape[0], _stateSpace.Points.shape[0]])
             //     .to_type(_scalarType)
-            //     .to(_device) / _stateSpace.Points.shape[0];
+            //     .to(_device) / _stateSpace.Points.shape[0]
+            //     : -_summedGroundProcessIntensity
+            //         .unsqueeze(0)
+            //         .tile([inputs.shape[0], 1]);
+            var markConditionalIntensity = zeros([inputs.shape[0], _stateSpace.Points.shape[0]])
+                .to_type(_scalarType)
+                .to(_device) / _stateSpace.Points.shape[0];
 
             if (mask[TensorIndex.Colon, i].sum().item<long>() == 0)
             {
-                markConditionalIntensities[i] = jointDensity
+                markConditionalIntensities[i] = markConditionalIntensity
                     .MoveToOuterDisposeScope();
                 continue;
             }
 
             var marks = inputs[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i];
-            jointDensity[mask[TensorIndex.Colon, i]] = _estimateMarkConditionalIntensityMethod(
+            markConditionalIntensity[mask[TensorIndex.Colon, i]] = _estimateMarkConditionalIntensityMethod(
                 _markEstimation[i],
                 _markStateSpaceKernelEstimates[i],
                 _channelEstimates[i], 
@@ -316,7 +309,7 @@ public class ClusterlessMarkEncoder : IEncoder
                 marks
             );
 
-            markConditionalIntensities[i] = jointDensity;
+            markConditionalIntensities[i] = markConditionalIntensity;
         }
         return stack(markConditionalIntensities, dim: 0)
             .MoveToOuterDisposeScope();
@@ -331,7 +324,7 @@ public class ClusterlessMarkEncoder : IEncoder
 
         var channelConditionalIntensities = new Tensor[_markChannels];
         _channelEstimates = new Tensor[_markChannels];
-        _channelDensities = new Tensor[_markChannels];
+        // _channelDensities = new Tensor[_markChannels];
         _markStateSpaceKernelEstimates = new Tensor[_markChannels];
 
         for (int i = 0; i < _markChannels; i++)
@@ -339,10 +332,13 @@ public class ClusterlessMarkEncoder : IEncoder
             _channelEstimates[i] = _channelEstimation[i].Estimate(_stateSpace.Points)
                 .MoveToOuterDisposeScope();
 
-            _channelDensities[i] = _channelEstimation[i].Normalize(_channelEstimates[i])
+            var channelDensity = _channelEstimation[i].Normalize(_channelEstimates[i])
                 .log();
 
-            channelConditionalIntensities[i] = exp(_rates[i] + _channelDensities[i] - _observationDensity);
+            // var channelDensity = _channelEstimation[i].Evaluate(_stateSpace.Points)
+            //     .log();
+
+            channelConditionalIntensities[i] = exp(_rates[i] + channelDensity - _observationDensity);
             
             _markStateSpaceKernelEstimates[i] = _estimateMarkStateSpaceKernelMethod(_markEstimation[i])
                 .MoveToOuterDisposeScope();
@@ -360,10 +356,6 @@ public class ClusterlessMarkEncoder : IEncoder
         if (_updateConditionalIntensities)
         {
             _channelConditionalIntensities = EvaluateChannelConditionalIntensities()
-                .MoveToOuterDisposeScope();
-            _summedGroundProcessIntensity = _channelConditionalIntensities
-                .sum(dim: 0)
-                .clamp_min(_eps)
                 .MoveToOuterDisposeScope();
         }
 
