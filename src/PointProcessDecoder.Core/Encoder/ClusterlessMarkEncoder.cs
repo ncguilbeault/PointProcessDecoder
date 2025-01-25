@@ -27,6 +27,7 @@ public class ClusterlessMarkEncoder : IEncoder
     private Tensor[] _markStateSpaceKernelEstimates = [];
     private Tensor _markConditionalIntensities = empty(0);
     private Tensor[] _channelEstimates = [];
+    private Tensor[] _channelDensities = [];
     private Tensor _channelConditionalIntensities = empty(0);
     private Tensor _observationDensity = empty(0);
 
@@ -206,9 +207,11 @@ public class ClusterlessMarkEncoder : IEncoder
         var markDensity = stateSpaceEstimate.matmul(markKernelEstimate.T)
             .nan_to_num()
             .sum(dim: 1)
-            .log();
+            .clamp_min(_eps);
 
-        return (rate + markDensity - _observationDensity)
+        markDensity /= markDensity.sum();
+
+        return (rate + markDensity.log() - _observationDensity)
             .MoveToOuterDisposeScope();
     }
 
@@ -288,9 +291,9 @@ public class ClusterlessMarkEncoder : IEncoder
             var jointDensity = _ignoreNoSpikes ? ones([inputs.shape[0], _stateSpace.Points.shape[0]])
                 .to_type(_scalarType)
                 .to(_device) / _stateSpace.Points.shape[0]
-                : _channelConditionalIntensities[i]
-                    .tile([inputs.shape[0], 1])
-                    .log();
+                : _observationDensity
+                    .unsqueeze(0)
+                    .tile([inputs.shape[0], 1]);
 
             if (mask[TensorIndex.Colon, i].sum().item<long>() == 0)
             {
@@ -320,11 +323,11 @@ public class ClusterlessMarkEncoder : IEncoder
         using var _ = NewDisposeScope();
 
         _observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
-            .clamp_min(_eps)
             .log();
 
         var channelConditionalIntensities = new Tensor[_markChannels];
         _channelEstimates = new Tensor[_markChannels];
+        _channelDensities = new Tensor[_markChannels];
         _markStateSpaceKernelEstimates = new Tensor[_markChannels];
 
         for (int i = 0; i < _markChannels; i++)
@@ -332,11 +335,10 @@ public class ClusterlessMarkEncoder : IEncoder
             _channelEstimates[i] = _channelEstimation[i].Estimate(_stateSpace.Points)
                 .MoveToOuterDisposeScope();
 
-            var channelDensity = _channelEstimation[i].Normalize(_channelEstimates[i])
-                .clamp_min(_eps)
+            _channelDensities[i] = _channelEstimation[i].Normalize(_channelEstimates[i])
                 .log();
 
-            channelConditionalIntensities[i] = exp(_rates[i] + channelDensity - _observationDensity);
+            channelConditionalIntensities[i] = exp(_rates[i] + _channelDensities[i] - _observationDensity);
             
             _markStateSpaceKernelEstimates[i] = _estimateMarkStateSpaceKernelMethod(_markEstimation[i])
                 .MoveToOuterDisposeScope();

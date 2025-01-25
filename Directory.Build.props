@@ -8,7 +8,7 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <UseArtifactsOutput>true</UseArtifactsOutput>
         <LangVersion>12</LangVersion>
-        <PackageVersion>0.1.3</PackageVersion>
+        <PackageVersion>0.1.4</PackageVersion>
     </PropertyGroup>
     <ItemGroup>
         <None Include="$(SolutionDir)/LICENSE.txt" Pack="true" PackagePath="" />

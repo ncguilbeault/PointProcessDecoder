@@ -36,6 +36,7 @@ public class KernelDensity : IEstimation
     /// </summary>
     public Tensor Kernels => _kernels;
     
+    private readonly double _eps;    
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KernelDensity"/> class.
@@ -53,6 +54,7 @@ public class KernelDensity : IEstimation
         _dimensions = dimensions ?? 1;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _eps = finfo(_scalarType).eps;
         _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType)
             .repeat(_dimensions);
     }
@@ -79,6 +81,7 @@ public class KernelDensity : IEstimation
         _dimensions = dimensions;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _eps = finfo(_scalarType).eps;
         _kernelBandwidth = tensor(bandwidth, device: _device, dtype: _scalarType);
     }
 
@@ -127,10 +130,10 @@ public class KernelDensity : IEstimation
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
-        var density = mean(points, [1]) / _kernelBandwidth.prod();
+        var density = (mean(points, [1]) / _kernelBandwidth.prod())
+            .clamp_min(_eps);
         density /= sum(density);
         return density
-            .nan_to_num()
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();

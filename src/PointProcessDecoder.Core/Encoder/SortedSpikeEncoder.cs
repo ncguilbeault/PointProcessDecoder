@@ -170,15 +170,14 @@ public class SortedSpikeEncoder : IEncoder
         
         using var _ = NewDisposeScope();
         var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
-            .clamp_min(_eps)
             .log();
         var unitConditionalIntensities = new Tensor[_nUnits];
 
         for (int i = 0; i < _nUnits; i++)
         {
             var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
-                .clamp_min(_eps)
                 .log();
+                
             unitConditionalIntensities[i] = exp(_rates[i] + unitDensity - observationDensity)
                 .reshape(_stateSpace.Shape);
         }

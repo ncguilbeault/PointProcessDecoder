@@ -41,6 +41,8 @@ public class KernelCompression : IEstimation
     /// </summary>
     public int Dimensions => _dimensions;
 
+    private readonly double _eps;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="KernelCompression"/> class.
     /// </summary>
@@ -58,6 +60,7 @@ public class KernelCompression : IEstimation
     {
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _dimensions = dimensions ?? 1;
         _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType)
@@ -88,6 +91,7 @@ public class KernelCompression : IEstimation
 
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _dimensions = dimensions;
         _kernelBandwidth = tensor(bandwidth, device: _device, dtype: _scalarType);
@@ -173,10 +177,10 @@ public class KernelCompression : IEstimation
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
-        var density = points.sum(dim: -1);
+        var density = points.sum(dim: -1)
+            .clamp_min(_eps);
         density /= density.sum();
         return density
-            .nan_to_num()
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();
