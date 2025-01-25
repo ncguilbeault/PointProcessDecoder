@@ -1,6 +1,9 @@
 using PointProcessDecoder.Core.Transitions;
 using PointProcessDecoder.Core.Estimation;
 using PointProcessDecoder.Test.Common;
+using PointProcessDecoder.Core;
+using static TorchSharp.torch;
+using System.Drawing;
 
 namespace PointProcessDecoder.Cpu.Test;
 
@@ -18,7 +21,7 @@ public class TestModel
     {
         SortedUnitsUtilities.BayesianStateSpaceSortedUnitsSimulatedData(
             transitionsType: TransitionsType.RandomWalk,
-            sigma: 0.1,
+            sigma: 0.5,
             modelDirectory: "SimulatedData1D"
         );
     }
@@ -29,7 +32,7 @@ public class TestModel
         SortedUnitsUtilities.BayesianStateSpaceSortedUnitsSimulatedData(
             transitionsType: TransitionsType.RandomWalk,
             estimationMethod: EstimationMethod.KernelCompression,
-            sigma: 0.1,
+            sigma: 0.5,
             distanceThreshold: 1.5,
             modelDirectory: "SimulatedData1D"
         );
@@ -122,10 +125,10 @@ public class TestModel
     {
         ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.Uniform,
-            observationBandwidth: [1],
-            markBandwidth: [0.5,0.5,0.5,0.5],
-            firingThreshold: 0.5,
-            noiseScale: 0.5,
+            observationBandwidth: [2],
+            markBandwidth: [1,1,1,1],
+            firingThreshold: 0.8,
+            noiseScale: 2.0,
             modelDirectory: "SimulatedData"
         );
     }
@@ -283,5 +286,78 @@ public class TestModel
             trainingFraction: 0.8,
             modelDirectory: "RealData2D"
         );
+    }
+
+    Tensor ReadBinaryFile(
+        string binary_file
+    )
+    {
+        byte[] fileBytes = File.ReadAllBytes(binary_file);
+        int elementCount = fileBytes.Length / sizeof(double);
+        double[] doubleArray = new double[elementCount];
+        Buffer.BlockCopy(fileBytes, 0, doubleArray, 0, fileBytes.Length);
+        Tensor t = tensor(doubleArray);
+        return t;
+    }
+
+    (Tensor, Tensor) InitializeRealData(
+        string positionFile,
+        string marksFile
+    )
+    {
+        var position = ReadBinaryFile(positionFile);
+        var marks = ReadBinaryFile(marksFile);
+        return (position, marks);
+    }
+
+    [TestMethod]
+    public void TestPointProcessModelClusterlessMarksRandomWalkCompressionRealData2DBatchedProcessing()
+    {
+        string positionFile = "../../../../data/positions_2D.bin";
+        string marksFile = "../../../../data/marks.bin";
+
+        int markDimensions = 4;
+        int markChannels = 28;
+
+        var (position, marks) = InitializeRealData(
+            positionFile: positionFile,
+            marksFile: marksFile
+        );
+
+        position = position.reshape(-1, 2);
+        marks = marks.reshape(position.shape[0], markDimensions, markChannels);
+
+        var pointProcessModel = new PointProcessModel(
+            estimationMethod: EstimationMethod.KernelCompression,
+            transitionsType: TransitionsType.RandomWalk,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
+            minStateSpace: [0, 0],
+            maxStateSpace: [120, 120],
+            stepsStateSpace: [50, 50],
+            observationBandwidth: [2, 2],
+            stateSpaceDimensions: 2,
+            markDimensions: markDimensions,
+            markChannels: markChannels,
+            markBandwidth: [1, 1, 1, 1],
+            distanceThreshold: 1.5,
+            sigmaRandomWalk: 5
+        );
+
+        int batchSize = 60;
+
+        for (int i = 0; i < 10; i++) {
+            pointProcessModel.Encode(
+                position[TensorIndex.Slice(i * batchSize, (i + 1) * batchSize)],
+                marks[TensorIndex.Slice(i * batchSize, (i + 1) * batchSize)]
+            );
+        }
+
+        var prediction = pointProcessModel.Decode(marks[TensorIndex.Slice(10 * batchSize, 11 * batchSize)])
+            .sum(dim: 0);
+
+        Assert.IsFalse(prediction.isnan().any().item<bool>());
     }
 }
