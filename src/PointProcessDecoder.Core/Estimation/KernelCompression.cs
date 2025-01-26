@@ -166,11 +166,13 @@ public class KernelCompression : IEstimation
                 .MoveToOuterDisposeScope();
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
-        var diff = pow(kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
-        var gaussian = exp(-0.5 * sum(diff / kernels[TensorIndex.Ellipsis, 2], dim: -1));
-        var sumWeights = kernels[TensorIndex.Ellipsis, 0, 0];
+        var dist = (kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1)) / kernels[TensorIndex.Ellipsis, 2];
+        var sumSquaredDiff = dist
+            .pow(exponent: 2)
+            .sum(dim: -1);
+        var estimate = exp(-0.5 * sumSquaredDiff);
         var sqrtDiagonalCovariance = sqrt(pow(2 * Math.PI, _dimensions) * kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
-        return (sumWeights * gaussian / sqrtDiagonalCovariance)
+        return (kernels[TensorIndex.Ellipsis, 0, 0] * estimate / sqrtDiagonalCovariance)
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();
@@ -179,7 +181,8 @@ public class KernelCompression : IEstimation
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
-        var density = points.sum(dim: -1)
+        var density = (points.sum(dim: -1)
+            / points.shape[1])
             .clamp_min(_eps);
         density /= density.sum();
         return density

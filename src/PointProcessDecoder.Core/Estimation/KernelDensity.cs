@@ -122,8 +122,13 @@ public class KernelDensity : IEstimation
                 .MoveToOuterDisposeScope();
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
-        var diff = (kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
-        return (exp(-0.5 * diff.pow(2).sum(2)) / sqrt(pow(2 * Math.PI, _dimensions) * _kernelBandwidth.prod()))
+        var dist = (kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
+        var sumSquaredDiff = dist
+            .pow(exponent: 2)
+            .sum(dim: -1);
+        var estimate = exp(-0.5 * sumSquaredDiff);
+        var sqrtDiagonalCovariance = sqrt(pow(2 * Math.PI, _dimensions) * _kernelBandwidth.prod(dim: -1));
+        return (estimate / sqrtDiagonalCovariance)
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();
@@ -132,10 +137,9 @@ public class KernelDensity : IEstimation
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
-        // var density = (mean(points, [1]) / _kernelBandwidth.prod())
-        //     .clamp_min(_eps);
-        // density /= sum(density);
-        var density = points.sum(dim: -1)
+
+        var density = (points.sum(dim: -1)
+            / points.shape[1])
             .clamp_min(_eps);
         density /= density.sum();
         return density
@@ -206,6 +210,8 @@ public class KernelDensity : IEstimation
         var estimate = Estimate(points);
         return Normalize(estimate)
             .MoveToOuterDisposeScope();
+        // return estimate
+        //     .MoveToOuterDisposeScope();
     }
 
     /// <inheritdoc/>

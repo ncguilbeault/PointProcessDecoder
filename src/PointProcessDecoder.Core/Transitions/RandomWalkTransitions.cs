@@ -58,12 +58,14 @@ public class RandomWalkTransitions : IStateTransitions
         using var _ = NewDisposeScope();
         var points = stateSpace.Points;
 
-        var dist = cdist(points, points);
+        var dist = points.unsqueeze(0) - points.unsqueeze(1);
         var bandwidth = sigma is null ? dist.mean() / 2 : sigma;
-        var weights = exp(-dist.pow(2) / (2 * bandwidth.pow(2))) / sqrt(pow(2 * Math.PI, stateSpace.Dimensions) * bandwidth.prod());
-        var transitions = weights / stateSpace.Points.shape[0];
-        // var transitions = exp(-dist.pow(2) / (2 * bandwidth.pow(2))) / sqrt(pow(2 * Math.PI, stateSpace.Dimensions) * bandwidth.prod());
-
+        var sumSquaredDiff = dist
+            .pow(exponent: 2)
+            .sum(dim: 2);
+        var estimate = exp(-0.5 * sumSquaredDiff / bandwidth);
+        var weights = estimate / sqrt(pow(2 * Math.PI, stateSpace.Dimensions) * bandwidth);
+        var transitions = weights / points.shape[1];
 
         return transitions
             .to_type(type: scalarType)
