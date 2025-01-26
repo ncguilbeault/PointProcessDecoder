@@ -150,7 +150,7 @@ public static class SortedUnitsUtilities
         EstimationMethod estimationMethod = EstimationMethod.KernelDensity,
         TransitionsType transitionsType = TransitionsType.Uniform,
         string positionFile = "../../../../data/positions_2D.bin",
-        string spikesFile = "../../../../data/spike_times.bin"
+        string spikesFile = "../../../../data/spike_counts.bin"
     )
     {
         bandwidth ??= [5, 5];
