@@ -11,6 +11,8 @@ public class SortedSpikeEncoder : IEncoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
+    public EncoderType EncoderType => EncoderType.SortedSpikeEncoder;
+
     private Tensor[] _conditionalIntensities = [empty(0)];
     public Tensor[] ConditionalIntensities => _conditionalIntensities;
 

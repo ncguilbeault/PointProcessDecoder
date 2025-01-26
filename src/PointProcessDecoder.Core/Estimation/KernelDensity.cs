@@ -18,6 +18,8 @@ public class KernelDensity : IEstimation
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
+    public EstimationMethod EstimationMethod => EstimationMethod.KernelDensity;
+
     private readonly Tensor _kernelBandwidth;
     /// <summary>
     /// The kernel bandwidth.

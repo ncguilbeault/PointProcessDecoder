@@ -13,6 +13,8 @@ public class StateSpaceDecoder : IDecoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
+    public DecoderType DecoderType => DecoderType.StateSpaceDecoder;
+
     private readonly Tensor _initialState = empty(0);
     public Tensor InitialState => _initialState;
 

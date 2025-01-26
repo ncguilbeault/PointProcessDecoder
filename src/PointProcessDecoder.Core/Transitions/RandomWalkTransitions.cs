@@ -13,6 +13,8 @@ public class RandomWalkTransitions : IStateTransitions
     /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    public TransitionsType TransitionsType => TransitionsType.RandomWalk;
+
     private readonly Tensor _transitions;
     /// <inheritdoc/>
     public Tensor Transitions => _transitions;

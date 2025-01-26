@@ -20,7 +20,7 @@ public class PointProcessModel : IModel
     public ScalarType ScalarType => _scalarType;
 
     private readonly LikelihoodType _likelihoodType;
-    public LikelihoodType Likelihood => _likelihoodType;
+    public LikelihoodType LikelihoodType => _likelihoodType;
     private readonly ILikelihood _likelihood;
 
     private readonly IEncoder _encoderModel;

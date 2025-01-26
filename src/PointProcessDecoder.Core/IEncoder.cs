@@ -6,6 +6,7 @@ public interface IEncoder : IDisposable
 {
     public Device Device { get; }
     public ScalarType ScalarType { get; }
+    public Encoder.EncoderType EncoderType { get; }
     public Tensor[] ConditionalIntensities { get; }
     public IEstimation[] Estimations { get; }
     public IEnumerable<Tensor> Evaluate(params Tensor[] inputs);

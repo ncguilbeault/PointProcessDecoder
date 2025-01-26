@@ -16,6 +16,8 @@ public class DiscreteUniformStateSpace : IStateSpace
     /// </summary>
     public ScalarType ScalarType => _scalarType;
 
+    public StateSpaceType StateSpaceType => StateSpaceType.DiscreteUniformStateSpace;
+
     private readonly int _dimensions;
     /// <summary>
     /// The number of dimensions in the latent space.

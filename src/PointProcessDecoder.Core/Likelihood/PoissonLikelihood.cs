@@ -4,6 +4,8 @@ namespace PointProcessDecoder.Core.Likelihood;
 
 public class PoissonLikelihood : ILikelihood
 {
+    public LikelihoodType LikelihoodType => LikelihoodType.Poisson;
+    
     public Tensor LogLikelihood(
         Tensor inputs, 
         IEnumerable<Tensor> conditionalIntensities

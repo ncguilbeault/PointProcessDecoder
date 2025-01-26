@@ -17,6 +17,8 @@ public interface IEstimation : IDisposable
     /// </summary>
     public ScalarType ScalarType { get; }
 
+    public Estimation.EstimationMethod EstimationMethod { get; }
+
     /// <summary>
     /// The kernel bandwidth used for the density estimation.
     /// </summary>

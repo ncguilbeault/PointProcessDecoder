@@ -11,6 +11,8 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
+    public EncoderType EncoderType => EncoderType.ClusterlessMarkEncoder;
+
     private Tensor[] _conditionalIntensities = [empty(0)];
     public Tensor[] ConditionalIntensities => _conditionalIntensities;
 

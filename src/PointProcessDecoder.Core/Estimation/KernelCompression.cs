@@ -17,6 +17,8 @@ public class KernelCompression : IEstimation
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
+    public EstimationMethod EstimationMethod => EstimationMethod.KernelCompression;
+
     private Tensor _kernels = empty(0);
     /// <summary>
     /// The weighted gaussian components.

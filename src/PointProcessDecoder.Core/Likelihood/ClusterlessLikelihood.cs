@@ -5,6 +5,9 @@ namespace PointProcessDecoder.Core.Likelihood;
 public class ClusterlessLikelihood(bool ignoreNoSpikes = false) : ILikelihood
 {
     private readonly bool _ignoreNoSpikes = ignoreNoSpikes;
+    public bool IgnoreNoSpikes => _ignoreNoSpikes;
+
+    public LikelihoodType LikelihoodType => LikelihoodType.Clusterless;
 
     public Tensor LogLikelihood(
         Tensor inputs, 
