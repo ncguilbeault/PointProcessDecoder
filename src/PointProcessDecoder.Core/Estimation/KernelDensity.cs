@@ -121,7 +121,7 @@ public class KernelDensity : IEstimation
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
         var diff = (kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
-        return exp(-0.5 * diff.pow(2).sum(2)) / sqrt(pow(2 * Math.PI, _dimensions) * _kernelBandwidth.prod())
+        return (exp(-0.5 * diff.pow(2).sum(2)) / sqrt(pow(2 * Math.PI, _dimensions) * _kernelBandwidth.prod()))
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();
