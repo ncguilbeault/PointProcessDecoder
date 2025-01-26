@@ -121,7 +121,7 @@ public class KernelDensity : IEstimation
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
         var diff = (kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
-        return exp(-0.5 * diff.pow(2).sum(2))
+        return exp(-0.5 * diff.pow(2).sum(2)) / sqrt(pow(2 * Math.PI, _dimensions) * _kernelBandwidth.prod())
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();
@@ -130,9 +130,12 @@ public class KernelDensity : IEstimation
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
-        var density = (mean(points, [1]) / _kernelBandwidth.prod())
+        // var density = (mean(points, [1]) / _kernelBandwidth.prod())
+        //     .clamp_min(_eps);
+        // density /= sum(density);
+        var density = points.sum(dim: -1)
             .clamp_min(_eps);
-        density /= sum(density);
+        density /= density.sum();
         return density
             .to_type(_scalarType)
             .to(_device)

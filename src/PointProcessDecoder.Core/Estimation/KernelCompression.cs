@@ -167,7 +167,7 @@ public class KernelCompression : IEstimation
         var diff = pow(kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
         var gaussian = exp(-0.5 * sum(diff / kernels[TensorIndex.Ellipsis, 2], dim: -1));
         var sumWeights = kernels[TensorIndex.Ellipsis, 0, 0];
-        var sqrtDiagonalCovariance = sqrt(2 * Math.PI * kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
+        var sqrtDiagonalCovariance = sqrt(pow(2 * Math.PI, _dimensions) * kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
         return (sumWeights * gaussian / sqrtDiagonalCovariance)
             .to_type(_scalarType)
             .to(_device)
