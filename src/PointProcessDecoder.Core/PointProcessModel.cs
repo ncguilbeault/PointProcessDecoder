@@ -19,9 +19,8 @@ public class PointProcessModel : IModel
     /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
-    private readonly LikelihoodType _likelihoodType;
-    public LikelihoodType LikelihoodType => _likelihoodType;
     private readonly ILikelihood _likelihood;
+    public ILikelihood Likelihood => _likelihood;
 
     private readonly IEncoder _encoderModel;
     public IEncoder Encoder => _encoderModel;
@@ -108,7 +107,6 @@ public class PointProcessModel : IModel
             _ => throw new ArgumentException("Invalid decoder type.")
         };
 
-        _likelihoodType = likelihoodType;
         _likelihood = likelihoodType switch
         {
             LikelihoodType.Poisson => new PoissonLikelihood(),

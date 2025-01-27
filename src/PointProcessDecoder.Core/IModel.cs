@@ -25,6 +25,11 @@ public interface IModel : IDisposable
     public IDecoder Decoder { get; }
 
     /// <summary>
+    /// The likelihood of the model.
+    /// </summary>
+    public ILikelihood Likelihood { get; }
+
+    /// <summary>
     /// The state space of the model.
     /// </summary>
     public IStateSpace StateSpace { get; }
