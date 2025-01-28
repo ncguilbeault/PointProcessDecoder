@@ -3,18 +3,28 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Encoder;
 
+/// <summary>
+/// Represents a sorted spike encoder.
+/// </summary>
 public class SortedSpikeEncoder : IEncoder
 {
     private readonly Device _device;
+    /// <inheritdoc/>
     public Device Device => _device;
 
     private readonly ScalarType _scalarType;
+    /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
+    public EncoderType EncoderType => EncoderType.SortedSpikeEncoder;
+
     private Tensor[] _conditionalIntensities = [empty(0)];
+    /// <inheritdoc/>
     public Tensor[] ConditionalIntensities => _conditionalIntensities;
 
     private IEstimation[] _estimations = [];
+    /// <inheritdoc/>
     public IEstimation[] Estimations => _estimations;
 
     private Tensor _unitConditionalIntensities = empty(0);
@@ -28,6 +38,17 @@ public class SortedSpikeEncoder : IEncoder
     private readonly IStateSpace _stateSpace;
     private readonly double _eps;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SortedSpikeEncoder"/> class.
+    /// </summary>
+    /// <param name="estimationMethod"></param>
+    /// <param name="bandwidth"></param>
+    /// <param name="nUnits"></param>
+    /// <param name="stateSpace"></param>
+    /// <param name="distanceThreshold"></param>
+    /// <param name="device"></param>
+    /// <param name="scalarType"></param>
+    /// <exception cref="ArgumentException"></exception>
     public SortedSpikeEncoder(
         EstimationMethod estimationMethod, 
         double[] bandwidth,
@@ -103,12 +124,7 @@ public class SortedSpikeEncoder : IEncoder
         };
     }
 
-    /// <summary>
-    /// Encode the observations and inputs.
-    /// </summary>
-    /// <param name="observations"></param>
-    /// <param name="inputs"></param>
-    /// <exception cref="ArgumentException"></exception>
+    /// <inheritdoc/>
     public void Encode(Tensor observations, Tensor inputs)
     {
         if (inputs.shape[1] != _nUnits)
@@ -144,7 +160,7 @@ public class SortedSpikeEncoder : IEncoder
             .to(_device)
             .MoveToOuterDisposeScope();
 
-        _rates = (_spikeCounts.clamp_min(_eps).log() - _samples.clamp_min(_eps).log())
+        _rates = (_spikeCounts.log() - _samples.log())
             .MoveToOuterDisposeScope();
 
         var inputMask = inputs.to_type(ScalarType.Bool);
@@ -160,6 +176,7 @@ public class SortedSpikeEncoder : IEncoder
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public IEnumerable<Tensor> Evaluate(params Tensor[] inputs)
     {
         if (_unitConditionalIntensities.numel() != 0 && !_updateConditionalIntensities)
@@ -170,15 +187,14 @@ public class SortedSpikeEncoder : IEncoder
         
         using var _ = NewDisposeScope();
         var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
-            .clamp_min(_eps)
             .log();
         var unitConditionalIntensities = new Tensor[_nUnits];
 
         for (int i = 0; i < _nUnits; i++)
         {
             var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
-                .clamp_min(_eps)
                 .log();
+                
             unitConditionalIntensities[i] = exp(_rates[i] + unitDensity - observationDensity)
                 .reshape(_stateSpace.Shape);
         }

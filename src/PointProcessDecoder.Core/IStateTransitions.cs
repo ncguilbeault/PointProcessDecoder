@@ -2,9 +2,18 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core;
 
-public interface IStateTransitions : IDisposable
+/// <summary>
+/// Represents the state transitions of the model.
+/// </summary>
+public interface IStateTransitions : IModelComponent
 {
-    public Device Device { get; }
-    public ScalarType ScalarType { get; }
+    /// <summary>
+    /// The transitions type of the model.
+    /// </summary>
+    public Transitions.TransitionsType TransitionsType { get; }
+
+    /// <summary>
+    /// The state transitions of the model.
+    /// </summary>
     public Tensor Transitions { get; }
 }

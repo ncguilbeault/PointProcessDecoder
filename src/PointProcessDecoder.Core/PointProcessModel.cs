@@ -19,9 +19,8 @@ public class PointProcessModel : IModel
     /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
-    private readonly LikelihoodType _likelihoodType;
-    public LikelihoodType Likelihood => _likelihoodType;
     private readonly ILikelihood _likelihood;
+    public ILikelihood Likelihood => _likelihood;
 
     private readonly IEncoder _encoderModel;
     public IEncoder Encoder => _encoderModel;
@@ -49,6 +48,7 @@ public class PointProcessModel : IModel
         double[]? markBandwidth = null,
         int? nUnits = null,
         double? distanceThreshold = null,
+        bool ignoreNoSpikes = false,
         double? sigmaRandomWalk = null,
         Device? device = null,
         ScalarType? scalarType = null
@@ -60,12 +60,12 @@ public class PointProcessModel : IModel
         _stateSpace = stateSpaceType switch
         {
             StateSpaceType.DiscreteUniformStateSpace => new DiscreteUniformStateSpace(
-                stateSpaceDimensions,
-                minStateSpace,
-                maxStateSpace,
-                stepsStateSpace,
-                _device,
-                _scalarType
+                dimensions: stateSpaceDimensions,
+                min: minStateSpace,
+                max: maxStateSpace,
+                steps: stepsStateSpace,
+                device: _device,
+                scalarType: _scalarType
             ),
             _ => throw new ArgumentException("Invalid state space type.")
         };
@@ -73,22 +73,22 @@ public class PointProcessModel : IModel
         _encoderModel = encoderType switch
         {
             EncoderType.ClusterlessMarkEncoder => new ClusterlessMarkEncoder(
-                estimationMethod, 
-                observationBandwidth,
-                markDimensions ?? 1, 
-                markChannels ?? 1,
-                markBandwidth ?? observationBandwidth,
-                _stateSpace,
-                distanceThreshold, 
+                estimationMethod: estimationMethod, 
+                observationBandwidth: observationBandwidth,
+                markDimensions: markDimensions ?? 1, 
+                markChannels: markChannels ?? 1,
+                markBandwidth: markBandwidth ?? observationBandwidth,
+                stateSpace: _stateSpace,
+                distanceThreshold: distanceThreshold,
                 device: _device,
                 scalarType: _scalarType
             ),
             EncoderType.SortedSpikeEncoder => new SortedSpikeEncoder(
-                estimationMethod, 
-                observationBandwidth,
-                nUnits ?? 1,
-                _stateSpace,
-                distanceThreshold, 
+                estimationMethod: estimationMethod, 
+                bandwidth: observationBandwidth,
+                nUnits: nUnits ?? 1,
+                stateSpace: _stateSpace,
+                distanceThreshold: distanceThreshold, 
                 device: _device,
                 scalarType: _scalarType
             ),
@@ -98,20 +98,26 @@ public class PointProcessModel : IModel
         _decoderModel = decoderType switch
         {
             DecoderType.StateSpaceDecoder => new StateSpaceDecoder(
-                transitionsType,
-                _stateSpace,
-                sigmaRandomWalk,
+                transitionsType: transitionsType,
+                stateSpace: _stateSpace,
+                sigmaRandomWalk: sigmaRandomWalk,
                 device: _device,
                 scalarType: _scalarType
             ),
             _ => throw new ArgumentException("Invalid decoder type.")
         };
 
-        _likelihoodType = likelihoodType;
         _likelihood = likelihoodType switch
         {
-            LikelihoodType.Poisson => new PoissonLikelihood(),
-            LikelihoodType.Clusterless => new ClusterlessLikelihood(),
+            LikelihoodType.Poisson => new PoissonLikelihood(
+                device: _device,
+                scalarType: _scalarType
+            ),
+            LikelihoodType.Clusterless => new ClusterlessLikelihood(
+                ignoreNoSpikes: ignoreNoSpikes,
+                device: _device,
+                scalarType: _scalarType
+            ),
             _ => throw new ArgumentException("Invalid likelihood type.")
         };
 
@@ -158,6 +164,7 @@ public class PointProcessModel : IModel
     {
         _encoderModel.Dispose();
         _decoderModel.Dispose();
+        _likelihood.Dispose();
         _stateSpace.Dispose();
     }
 }

@@ -15,13 +15,14 @@ public class KernelCompression : IEstimation
     public Device Device => _device;
 
     private readonly ScalarType _scalarType;
+    /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
+    public EstimationMethod EstimationMethod => EstimationMethod.KernelCompression;
+
     private Tensor _kernels = empty(0);
-    /// <summary>
-    /// The weighted gaussian components.
-    /// </summary>
-    // public List<WeightedGaussian> GaussianKernels => _kernels;
+    /// <inheritdoc/>
     public Tensor Kernels => _kernels;
 
     private readonly Tensor _kernelBandwidth;
@@ -29,17 +30,22 @@ public class KernelCompression : IEstimation
     public Tensor KernelBandwidth => _kernelBandwidth;
 
     private readonly double _distanceThreshold;
+    /// <summary>
+    /// The distance threshold for merging kernels.
+    /// </summary>
     public double DistanceThreshold => _distanceThreshold;
 
     private readonly Tensor _weight;
+    /// <summary>
+    /// The initial weight of the kernels.
+    /// </summary>
     public Tensor InitialWeight => _weight;
 
-
     private readonly int _dimensions;
-    /// <summary>
-    /// The number of dimensions of the observations.
-    /// </summary>
+    /// <inheritdoc/>
     public int Dimensions => _dimensions;
+
+    private readonly double _eps;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KernelCompression"/> class.
@@ -58,6 +64,7 @@ public class KernelCompression : IEstimation
     {
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _dimensions = dimensions ?? 1;
         _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType)
@@ -88,6 +95,7 @@ public class KernelCompression : IEstimation
 
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _dimensions = dimensions;
         _kernelBandwidth = tensor(bandwidth, device: _device, dtype: _scalarType);
@@ -151,6 +159,7 @@ public class KernelCompression : IEstimation
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null)
     {
         using var _ = NewDisposeScope();
@@ -160,23 +169,27 @@ public class KernelCompression : IEstimation
                 .MoveToOuterDisposeScope();
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
-        var diff = pow(kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1), 2);
-        var gaussian = exp(-0.5 * sum(diff / kernels[TensorIndex.Ellipsis, 2], dim: -1));
-        var sumWeights = kernels[TensorIndex.Ellipsis, 0, 0];
-        var sqrtDiagonalCovariance = sqrt(2 * Math.PI * kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
-        return (sumWeights * gaussian / sqrtDiagonalCovariance)
+        var dist = (kernels[TensorIndex.Ellipsis, 1].unsqueeze(0) - points.unsqueeze(1)) / kernels[TensorIndex.Ellipsis, 2];
+        var sumSquaredDiff = dist
+            .pow(exponent: 2)
+            .sum(dim: -1);
+        var estimate = exp(-0.5 * sumSquaredDiff);
+        var sqrtDiagonalCovariance = sqrt(pow(2 * Math.PI, _dimensions) * kernels[TensorIndex.Ellipsis, 2].prod(dim: -1));
+        return (kernels[TensorIndex.Ellipsis, 0, 0] * estimate / sqrtDiagonalCovariance)
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
-        var density = points.sum(dim: -1);
+        var density = (points.sum(dim: -1)
+            / points.shape[1])
+            .clamp_min(_eps);
         density /= density.sum();
         return density
-            .nan_to_num()
             .to_type(_scalarType)
             .to(_device)
             .MoveToOuterDisposeScope();
@@ -237,6 +250,7 @@ public class KernelCompression : IEstimation
     public void Dispose()
     {
         _kernels.Dispose();
+        _kernels = empty(0);
     }
 }
 

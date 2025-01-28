@@ -13,6 +13,9 @@ public class RandomWalkTransitions : IStateTransitions
     /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
+    public TransitionsType TransitionsType => TransitionsType.RandomWalk;
+
     private readonly Tensor _transitions;
     /// <inheritdoc/>
     public Tensor Transitions => _transitions;
@@ -45,8 +48,6 @@ public class RandomWalkTransitions : IStateTransitions
         );
     }
 
-    // Define a function to compute a random walk transition matrix (gaussian) across the latent space. 
-    // It should compute this efficiently with tensor broadcasting and it should be able to handle multiple dimensions.
     private static Tensor ComputeRandomWalkTransitions(
         IStateSpace stateSpace,
         Device device,
@@ -56,10 +57,14 @@ public class RandomWalkTransitions : IStateTransitions
         using var _ = NewDisposeScope();
         var points = stateSpace.Points;
 
-        var dist = cdist(points, points);
+        var dist = points.unsqueeze(0) - points.unsqueeze(1);
         var bandwidth = sigma is null ? dist.mean() / 2 : sigma;
-        var weights = exp(-dist.pow(2) / (2 * bandwidth.pow(2)));
-        var transitions = weights / weights.sum(1, true);
+        var sumSquaredDiff = dist
+            .pow(exponent: 2)
+            .sum(dim: 2);
+        var estimate = exp(-0.5 * sumSquaredDiff / bandwidth);
+        var weights = estimate / sqrt(pow(2 * Math.PI, stateSpace.Dimensions) * bandwidth);
+        var transitions = weights / points.shape[1];
 
         return transitions
             .to_type(type: scalarType)
@@ -67,7 +72,6 @@ public class RandomWalkTransitions : IStateTransitions
             .MoveToOuterDisposeScope();
     }
 
-    /// <inheritdoc/>
     public void Dispose()
     {
         _transitions.Dispose();

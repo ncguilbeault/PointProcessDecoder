@@ -5,33 +5,26 @@ namespace PointProcessDecoder.Core.StateSpace;
 public class DiscreteUniformStateSpace : IStateSpace
 {
     private readonly Device _device;
-    /// <summary>
-    /// The device on which the tensor is stored.
-    /// </summary>
+    /// <inheritdoc/>
     public Device Device => _device;
 
     private readonly ScalarType _scalarType;
-    /// <summary>
-    /// The scalar type of the tensor.
-    /// </summary>
+    /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
+    public StateSpaceType StateSpaceType => StateSpaceType.DiscreteUniformStateSpace;
+
     private readonly int _dimensions;
-    /// <summary>
-    /// The number of dimensions in the latent space.
-    /// </summary>
+    /// <inheritdoc/>
     public int Dimensions => _dimensions;
 
     private readonly Tensor _points;
-    /// <summary>
-    /// The points in the state space. Points should be in the form of a tensor with shape (n, d) where n is the number of points and d is the dimensionality of the latent space.
-    /// </summary>
+    /// <inheritdoc/>
     public Tensor Points => _points;
 
     private readonly long[] _shape;
-    /// <summary>
-    /// The shape of the state space.
-    /// </summary>
+    /// <inheritdoc/>
     public long[] Shape => _shape;
 
     public DiscreteUniformStateSpace(

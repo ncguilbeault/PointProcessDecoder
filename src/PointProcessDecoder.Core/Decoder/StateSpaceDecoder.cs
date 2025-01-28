@@ -13,6 +13,8 @@ public class StateSpaceDecoder : IDecoder
     private readonly ScalarType _scalarType;
     public ScalarType ScalarType => _scalarType;
 
+    public DecoderType DecoderType => DecoderType.StateSpaceDecoder;
+
     private readonly Tensor _initialState = empty(0);
     public Tensor InitialState => _initialState;
 
@@ -56,7 +58,7 @@ public class StateSpaceDecoder : IDecoder
 
         var n = _stateSpace.Points.shape[0];
         _initialState = ones(n, dtype: _scalarType, device: _device) / n;
-        _posterior = _initialState.clone();
+        _posterior = empty(0);
     }
 
     /// <summary>
@@ -79,12 +81,18 @@ public class StateSpaceDecoder : IDecoder
 
         var output = zeros(outputShape, dtype: _scalarType, device: _device);
 
-        for (int i = 0; i < inputs.shape[0]; i++)
-        {
-            var update = _stateTransitions.Transitions.matmul(_posterior)
+        if (_posterior.numel() == 0) {
+            _posterior = (_initialState * likelihood[0].flatten())
                 .nan_to_num()
-                .log();
-            _posterior = exp(likelihood[i].flatten() + update)
+                .clamp_min(_eps);
+            _posterior /= _posterior.sum();
+            output[0] = _posterior.reshape(_stateSpace.Shape);
+        }
+
+        for (int i = 1; i < inputs.shape[0]; i++)
+        {
+            _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i].flatten())
+                .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
             output[i] = _posterior.reshape(_stateSpace.Shape);
