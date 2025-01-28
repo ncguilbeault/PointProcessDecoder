@@ -10,32 +10,26 @@ namespace PointProcessDecoder.Core.Estimation;
 public class KernelDensity : IEstimation
 {
     private readonly Device _device;
-    /// <summary>
-    /// The device on which the data is stored.
-    /// </summary>
+    /// <inheritdoc/>
     public Device Device => _device;
 
     private readonly ScalarType _scalarType;
+    /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
     public EstimationMethod EstimationMethod => EstimationMethod.KernelDensity;
 
     private readonly Tensor _kernelBandwidth;
-    /// <summary>
-    /// The kernel bandwidth.
-    /// </summary>
+    /// <inheritdoc/>
     public Tensor KernelBandwidth => _kernelBandwidth;
 
     private readonly int _dimensions;
-    /// <summary>
-    /// The number of dimensions of the observations.
-    /// </summary>
+    /// <inheritdoc/>
     public int Dimensions => _dimensions;
 
     private Tensor _kernels = empty(0);
-    /// <summary>
-    /// The kernels.
-    /// </summary>
+    /// <inheritdoc/>
     public Tensor Kernels => _kernels;
     
     private readonly double _eps;    
@@ -87,11 +81,7 @@ public class KernelDensity : IEstimation
         _kernelBandwidth = tensor(bandwidth, device: _device, dtype: _scalarType);
     }
 
-    /// <summary>
-    /// Add a new data point to the density estimation.
-    /// </summary>
-    /// <param name="data"></param>
-    /// <exception cref="ArgumentException"></exception>
+    /// <inheritdoc/>
     public void Fit(Tensor data) 
     {
         if (data.shape[1] != _dimensions)
@@ -101,18 +91,17 @@ public class KernelDensity : IEstimation
 
         using var _ = NewDisposeScope();
 
-        // Check if the kernels are empty
         if (_kernels.numel() == 0)
         {
             _kernels = data.MoveToOuterDisposeScope();
             return;      
         }
 
-        // Concatenate the data points with the kernels
         _kernels = cat([ _kernels, data ], dim: 0)
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null)
     {
         using var _ = NewDisposeScope();
@@ -134,6 +123,7 @@ public class KernelDensity : IEstimation
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
@@ -148,13 +138,7 @@ public class KernelDensity : IEstimation
             .MoveToOuterDisposeScope();
     }
 
-    /// <summary>
-    /// Evaluate the density estimation at the given points.
-    /// </summary>
-    /// <param name="min"></param>
-    /// <param name="max"></param>
-    /// <param name="steps"></param>
-    /// <returns></returns>
+    /// <inheritdoc/>
     public Tensor Evaluate(Tensor min, Tensor max, Tensor steps)
     {
         if (min.shape[0] != _dimensions || max.shape[0] != _dimensions || steps.shape[0] != _dimensions)
@@ -189,11 +173,7 @@ public class KernelDensity : IEstimation
             .MoveToOuterDisposeScope();
     }
 
-    /// <summary>
-    /// Evaluate the density estimation at the given points.
-    /// </summary>
-    /// <param name="points"></param>
-    /// <returns></returns>
+    /// <inheritdoc/>
     public Tensor Evaluate(Tensor points)
     {
         if (points.shape[1] != _dimensions)
@@ -210,8 +190,6 @@ public class KernelDensity : IEstimation
         var estimate = Estimate(points);
         return Normalize(estimate)
             .MoveToOuterDisposeScope();
-        // return estimate
-        //     .MoveToOuterDisposeScope();
     }
 
     /// <inheritdoc/>

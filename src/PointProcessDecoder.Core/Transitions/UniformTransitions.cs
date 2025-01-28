@@ -13,6 +13,7 @@ public class UniformTransitions : IStateTransitions
     /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
     public TransitionsType TransitionsType => TransitionsType.Uniform;
 
     private readonly Tensor _transitions;

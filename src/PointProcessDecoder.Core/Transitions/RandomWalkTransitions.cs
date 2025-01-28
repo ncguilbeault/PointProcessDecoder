@@ -13,6 +13,7 @@ public class RandomWalkTransitions : IStateTransitions
     /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
     public TransitionsType TransitionsType => TransitionsType.RandomWalk;
 
     private readonly Tensor _transitions;
@@ -47,8 +48,6 @@ public class RandomWalkTransitions : IStateTransitions
         );
     }
 
-    // Define a function to compute a random walk transition matrix (gaussian) across the latent space. 
-    // It should compute this efficiently with tensor broadcasting and it should be able to handle multiple dimensions.
     private static Tensor ComputeRandomWalkTransitions(
         IStateSpace stateSpace,
         Device device,
@@ -73,7 +72,6 @@ public class RandomWalkTransitions : IStateTransitions
             .MoveToOuterDisposeScope();
     }
 
-    /// <inheritdoc/>
     public void Dispose()
     {
         _transitions.Dispose();

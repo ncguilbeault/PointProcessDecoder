@@ -3,20 +3,28 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Encoder;
 
+/// <summary>
+/// Represents a clusterless mark encoder.
+/// </summary>
 public class ClusterlessMarkEncoder : IEncoder
 {
     private readonly Device _device;
+    /// <inheritdoc/>
     public Device Device => _device;
 
     private readonly ScalarType _scalarType;
+    /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
     public EncoderType EncoderType => EncoderType.ClusterlessMarkEncoder;
 
     private Tensor[] _conditionalIntensities = [empty(0)];
+    /// <inheritdoc/>
     public Tensor[] ConditionalIntensities => _conditionalIntensities;
 
     private IEstimation[] _estimations = [];
+    /// <inheritdoc/>
     public IEstimation[] Estimations => _estimations;
 
     private readonly IEstimation _observationEstimation;
@@ -41,6 +49,19 @@ public class ClusterlessMarkEncoder : IEncoder
     private readonly Func<int, Tensor, Tensor> _estimateMarkConditionalIntensityMethod;
     private readonly Func<IEstimation, Tensor> _estimateMarkStateSpaceKernelMethod;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ClusterlessMarkEncoder"/> class.
+    /// </summary>
+    /// <param name="estimationMethod"></param>
+    /// <param name="observationBandwidth"></param>
+    /// <param name="markDimensions"></param>
+    /// <param name="markChannels"></param>
+    /// <param name="markBandwidth"></param>
+    /// <param name="stateSpace"></param>
+    /// <param name="distanceThreshold"></param>
+    /// <param name="device"></param>
+    /// <param name="scalarType"></param>
+    /// <exception cref="ArgumentException"></exception>
     public ClusterlessMarkEncoder(
         EstimationMethod estimationMethod, 
         double[] observationBandwidth, 
@@ -197,6 +218,7 @@ public class ClusterlessMarkEncoder : IEncoder
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public void Encode(Tensor observations, Tensor marks)
     {
         if (marks.shape[1] != _markDimensions)
@@ -324,6 +346,7 @@ public class ClusterlessMarkEncoder : IEncoder
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public IEnumerable<Tensor> Evaluate(params Tensor[] inputs)
     {
         if (_updateConditionalIntensities)
@@ -343,6 +366,7 @@ public class ClusterlessMarkEncoder : IEncoder
         return _conditionalIntensities;
     }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         _observationEstimation.Dispose();

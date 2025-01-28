@@ -15,15 +15,14 @@ public class KernelCompression : IEstimation
     public Device Device => _device;
 
     private readonly ScalarType _scalarType;
+    /// <inheritdoc/>
     public ScalarType ScalarType => _scalarType;
 
+    /// <inheritdoc/>
     public EstimationMethod EstimationMethod => EstimationMethod.KernelCompression;
 
     private Tensor _kernels = empty(0);
-    /// <summary>
-    /// The weighted gaussian components.
-    /// </summary>
-    // public List<WeightedGaussian> GaussianKernels => _kernels;
+    /// <inheritdoc/>
     public Tensor Kernels => _kernels;
 
     private readonly Tensor _kernelBandwidth;
@@ -31,16 +30,19 @@ public class KernelCompression : IEstimation
     public Tensor KernelBandwidth => _kernelBandwidth;
 
     private readonly double _distanceThreshold;
+    /// <summary>
+    /// The distance threshold for merging kernels.
+    /// </summary>
     public double DistanceThreshold => _distanceThreshold;
 
     private readonly Tensor _weight;
+    /// <summary>
+    /// The initial weight of the kernels.
+    /// </summary>
     public Tensor InitialWeight => _weight;
 
-
     private readonly int _dimensions;
-    /// <summary>
-    /// The number of dimensions of the observations.
-    /// </summary>
+    /// <inheritdoc/>
     public int Dimensions => _dimensions;
 
     private readonly double _eps;
@@ -157,6 +159,7 @@ public class KernelCompression : IEstimation
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null)
     {
         using var _ = NewDisposeScope();
@@ -178,6 +181,7 @@ public class KernelCompression : IEstimation
             .MoveToOuterDisposeScope();
     }
 
+    /// <inheritdoc/>
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
