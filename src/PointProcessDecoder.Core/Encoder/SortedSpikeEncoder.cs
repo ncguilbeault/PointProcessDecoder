@@ -160,7 +160,7 @@ public class SortedSpikeEncoder : IEncoder
             .to(_device)
             .MoveToOuterDisposeScope();
 
-        _rates = (_spikeCounts.clamp_min(_eps).log() - _samples.clamp_min(_eps).log())
+        _rates = (_spikeCounts.log() - _samples.log())
             .MoveToOuterDisposeScope();
 
         var inputMask = inputs.to_type(ScalarType.Bool);
