@@ -250,6 +250,7 @@ public class KernelCompression : IEstimation
     public void Dispose()
     {
         _kernels.Dispose();
+        _kernels = empty(0);
     }
 }
 
