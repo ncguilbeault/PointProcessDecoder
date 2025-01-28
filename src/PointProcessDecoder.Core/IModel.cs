@@ -2,18 +2,11 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core;
 
-public interface IModel : IDisposable
+/// <summary>
+/// Represents the model of the point process decoder.
+/// </summary>
+public interface IModel : IModelComponent
 {    
-    /// <summary>
-    /// The device on which the model is running.
-    /// </summary>
-    public Device Device { get; }
-
-    /// <summary>
-    /// The scalar type of the model.
-    /// </summary>
-    public ScalarType ScalarType { get; }
-
     /// <summary>
     /// The encoder of the model.
     /// </summary>

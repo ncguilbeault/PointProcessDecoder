@@ -2,12 +2,31 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core;
 
-public interface IDecoder : IDisposable
+/// <summary>
+/// Represents the decoder of the model.
+/// </summary>
+public interface IDecoder : IModelComponent
 {
-    public Device Device { get; }
-    public ScalarType ScalarType { get; }
+    /// <summary>
+    /// The decoder type of the model.
+    /// </summary>
     public Decoder.DecoderType DecoderType { get; }
+
+    /// <summary>
+    /// The initial state of the model.
+    /// </summary>
     public Tensor InitialState { get; }
+
+    /// <summary>
+    /// The state transitions of the model.
+    /// </summary>
     public IStateTransitions Transitions { get; }
+
+    /// <summary>
+    /// Decodes the observations into the latent state based on the joint distribution of the observations and the inputs.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="likelihood"></param>
+    /// <returns></returns>
     public Tensor Decode(Tensor input, Tensor likelihood);
 }

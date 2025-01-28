@@ -2,12 +2,28 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core;
 
-public interface IStateSpace : IDisposable
+/// <summary>
+/// Represents the state space of the model.
+/// </summary>
+public interface IStateSpace : IModelComponent
 {
-    public Device Device { get; }
-    public ScalarType ScalarType { get; }
+    /// <summary>
+    /// The state space type of the model.
+    /// </summary>
     public StateSpace.StateSpaceType StateSpaceType { get; }
+
+    /// <summary>
+    /// The points of the state space.
+    /// </summary>
     public Tensor Points { get; }
+
+    /// <summary>
+    /// The shape of the state space.
+    /// </summary>
     public long[] Shape { get; }
+
+    /// <summary>
+    /// The dimensions of the state space.
+    /// </summary>
     public int Dimensions { get; }
 }

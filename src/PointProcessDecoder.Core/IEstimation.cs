@@ -3,20 +3,13 @@ using static TorchSharp.torch;
 namespace PointProcessDecoder.Core;
 
 /// <summary>
-/// Interface for density estimation.
+/// Represents the density estimation of the model.
 /// </summary>
-public interface IEstimation : IDisposable
+public interface IEstimation : IModelComponent
 {
     /// <summary>
-    /// The device on which the density estimation is performed.
+    /// The estimation method used for the density estimation.
     /// </summary>
-    public Device Device { get; }
-
-    /// <summary>
-    /// The scalar type of the density estimation.
-    /// </summary>
-    public ScalarType ScalarType { get; }
-
     public Estimation.EstimationMethod EstimationMethod { get; }
 
     /// <summary>
@@ -24,17 +17,20 @@ public interface IEstimation : IDisposable
     /// </summary>
     public Tensor KernelBandwidth { get; }
 
+    /// <summary>
+    /// The kernels used for the density estimation.
+    /// </summary>
     public Tensor Kernels { get; }
 
     /// <summary>
-    /// Evaluate the density estimation at the given points.
+    /// Evaluates the density estimation at the given points.
     /// </summary>
     /// <param name="points"></param>
     /// <returns></returns>
     public Tensor Evaluate(Tensor points);
 
     /// <summary>
-    /// Evaluate the density estimation at the given points.
+    /// Evaluates the density estimation at the given points.
     /// </summary>
     /// <param name="min"></param>
     /// <param name="max"></param>
@@ -42,8 +38,20 @@ public interface IEstimation : IDisposable
     /// <returns></returns>
     public Tensor Evaluate(Tensor min, Tensor max, Tensor steps);
 
+    /// <summary>
+    /// Estimates the density at the given points.
+    /// </summary>
+    /// <param name="points"></param>
+    /// <param name="dimensionStart"></param>
+    /// <param name="dimensionEnd"></param>
+    /// <returns></returns>
     public Tensor Estimate(Tensor points, int? dimensionStart = null, int? dimensionEnd = null);
 
+    /// <summary>
+    /// Normalizes the density estimation.
+    /// </summary>
+    /// <param name="points"></param>
+    /// <returns></returns>
     public Tensor Normalize(Tensor points);
 
     /// <summary>
