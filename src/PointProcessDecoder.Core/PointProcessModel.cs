@@ -109,9 +109,14 @@ public class PointProcessModel : IModel
 
         _likelihood = likelihoodType switch
         {
-            LikelihoodType.Poisson => new PoissonLikelihood(),
+            LikelihoodType.Poisson => new PoissonLikelihood(
+                device: _device,
+                scalarType: _scalarType
+            ),
             LikelihoodType.Clusterless => new ClusterlessLikelihood(
-                ignoreNoSpikes: ignoreNoSpikes
+                ignoreNoSpikes: ignoreNoSpikes,
+                device: _device,
+                scalarType: _scalarType
             ),
             _ => throw new ArgumentException("Invalid likelihood type.")
         };
@@ -159,6 +164,7 @@ public class PointProcessModel : IModel
     {
         _encoderModel.Dispose();
         _decoderModel.Dispose();
+        _likelihood.Dispose();
         _stateSpace.Dispose();
     }
 }
