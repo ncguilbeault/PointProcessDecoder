@@ -241,8 +241,10 @@ public class ClusterlessMarkEncoder : IEncoder
         if (_spikeCounts.numel() == 0)
         {
             _spikeCounts = (marks.sum(dim: 1) > 0)
-                .sum(dim: 0);
-            _samples = observations.shape[0];
+                .sum(dim: 0)
+                .to(_device);
+            _samples = tensor(observations.shape[0], device: _device);
+
         }
         else
         {
@@ -250,14 +252,6 @@ public class ClusterlessMarkEncoder : IEncoder
                 .sum(dim: 0);
             _samples += observations.shape[0];
         }
-
-        _spikeCounts = _spikeCounts
-            .to(_device)
-            .MoveToOuterDisposeScope();
-
-        _samples = _samples
-            .to(_device)
-            .MoveToOuterDisposeScope();
 
         _rates = (_spikeCounts.log() - _samples.log())
             .MoveToOuterDisposeScope();
@@ -287,9 +281,11 @@ public class ClusterlessMarkEncoder : IEncoder
     {
         using var _ = NewDisposeScope();
 
-        var markConditionalIntensities = zeros([_markChannels, inputs.shape[0], _stateSpace.Points.shape[0]])
-            .to_type(_scalarType)
-            .to(_device);
+         var markConditionalIntensities = zeros(
+            [_markChannels, inputs.shape[0], _stateSpace.Points.shape[0]],
+            device: _device,
+            dtype: _scalarType
+        );
 
         var mask = ~inputs.isnan().all(dim: 1);
 
@@ -318,9 +314,11 @@ public class ClusterlessMarkEncoder : IEncoder
         _observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
             .log();
 
-        var channelConditionalIntensities = zeros([_markChannels, _stateSpace.Points.shape[0]])
-            .to_type(_scalarType)
-            .to(_device);
+        var channelConditionalIntensities = zeros(
+            [_markChannels, _stateSpace.Points.shape[0]],
+            device: _device,
+            dtype: _scalarType
+        );
 
         _channelEstimates = new Tensor[_markChannels];
         _markStateSpaceKernelEstimates = new Tensor[_markChannels];
