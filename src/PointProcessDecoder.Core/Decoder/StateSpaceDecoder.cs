@@ -1,5 +1,4 @@
 using static TorchSharp.torch;
-using TorchSharp;
 
 using PointProcessDecoder.Core.Transitions;
 
@@ -8,25 +7,41 @@ namespace PointProcessDecoder.Core.Decoder;
 public class StateSpaceDecoder : ModelComponent, IDecoder
 {
     private readonly Device _device;
+    /// <inheritdoc/>
     public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
+    /// <inheritdoc/>
     public override ScalarType ScalarType => _scalarType;
 
     public DecoderType DecoderType => DecoderType.StateSpaceDecoder;
 
     private readonly Tensor _initialState = empty(0);
+    /// <inheritdoc/>
     public Tensor InitialState => _initialState;
 
     private readonly IStateTransitions _stateTransitions;
+    /// <inheritdoc/>
     public IStateTransitions Transitions => _stateTransitions;
 
     private Tensor _posterior;
+    /// <summary>
+    /// The posterior distribution over the latent space.
+    /// </summary>
     public Tensor Posterior => _posterior;
 
     private readonly IStateSpace _stateSpace;
     private readonly double _eps;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StateSpaceDecoder"/> class.
+    /// </summary>
+    /// <param name="transitionsType"></param>
+    /// <param name="stateSpace"></param>
+    /// <param name="sigmaRandomWalk"></param>
+    /// <param name="device"></param>
+    /// <param name="scalarType"></param>
+    /// <exception cref="ArgumentException"></exception>
     public StateSpaceDecoder(
         TransitionsType transitionsType,
         IStateSpace stateSpace,
@@ -61,16 +76,7 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
         _posterior = empty(0);
     }
 
-    /// <summary>
-    /// Decodes the input into the latent space using a bayesian state space decoder.
-    /// Input tensor should be of shape (m, n) where m is the number of observations and n is the number of units.
-    /// Conditional intensities should be a list of tensors which can be used to compute the likelihood of the observations given the inputs.
-    /// </summary>
-    /// <param name="inputs"></param>
-    /// <param name="conditionalIntensities"></param>
-    /// <returns>
-    /// A tensor of shape (m, p) where m is the number of observations and p is the number of points in the latent space.
-    /// </returns>
+    /// <inheritdoc/>
     public Tensor Decode(Tensor inputs, Tensor likelihood)
     {
         using var _ = NewDisposeScope();
@@ -100,33 +106,6 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
         _posterior.MoveToOuterDisposeScope();
         return output.MoveToOuterDisposeScope();
     }
-
-    // /// <inheritdoc/>
-    // public override void Save(string basePath)
-    // {
-    //     var path = Path.Combine(basePath, "decoder");
-
-    //     if (!Directory.Exists(path))
-    //     {
-    //         Directory.CreateDirectory(path);
-    //     }
-
-    //     _posterior.Save(Path.Combine(path, "posterior.bin"));
-    // }
-
-    // /// <inheritdoc/>
-    // public override IModelComponent Load(string basePath)
-    // {
-    //     var path = Path.Combine(basePath, "decoder");
-
-    //     if (!Directory.Exists(path))
-    //     {
-    //         throw new ArgumentException("The decoder directory does not exist.");
-    //     }
-
-    //     _posterior = Tensor.Load(Path.Combine(path, "posterior.bin"));
-    //     return this;
-    // }
 
     /// <inheritdoc/>
     public override void Dispose()

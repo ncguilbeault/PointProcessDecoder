@@ -2,6 +2,10 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Likelihood;
 
+/// <summary>
+/// Represents a clusterless likelihood.
+/// Expected to be used when the encoder is set to the <see cref="Encoder.EncoderType.ClusterlessMarkEncoder"/>.
+/// </summary>
 public class ClusterlessLikelihood : ModelComponent, ILikelihood
 {
     private readonly Device _device;
