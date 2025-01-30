@@ -50,6 +50,7 @@ public class PointProcessModel : IModel
         double? distanceThreshold = null,
         bool ignoreNoSpikes = false,
         double? sigmaRandomWalk = null,
+        int? kernelLimit = null,
         Device? device = null,
         ScalarType? scalarType = null
     )

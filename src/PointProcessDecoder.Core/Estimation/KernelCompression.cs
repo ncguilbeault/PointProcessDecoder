@@ -35,6 +35,12 @@ public class KernelCompression : IEstimation
     /// </summary>
     public double DistanceThreshold => _distanceThreshold;
 
+    private readonly int _kernelLimit;
+    /// <summary>
+    /// The maximum number of kernels to maintain in memory.
+    /// </summary>
+    public int KernelLimit => _kernelLimit;
+
     private readonly Tensor _weight;
     /// <summary>
     /// The initial weight of the kernels.
@@ -58,6 +64,7 @@ public class KernelCompression : IEstimation
         double? bandwidth = null, 
         int? dimensions = null,
         double? distanceThreshold = null,
+        int? kernelLimit = null,
         Device? device = null, 
         ScalarType? scalarType = null
     )
@@ -66,6 +73,7 @@ public class KernelCompression : IEstimation
         _scalarType = scalarType ?? ScalarType.Float32;
         _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
+        _kernelLimit = kernelLimit ?? int.MaxValue;
         _dimensions = dimensions ?? 1;
         _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType)
             .repeat(_dimensions);
@@ -84,6 +92,7 @@ public class KernelCompression : IEstimation
         double[] bandwidth, 
         int dimensions, 
         double? distanceThreshold = null,
+        int? kernelLimit = null,
         Device? device = null, 
         ScalarType? scalarType = null
     )
@@ -97,6 +106,7 @@ public class KernelCompression : IEstimation
         _scalarType = scalarType ?? ScalarType.Float32;
         _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
+        _kernelLimit = kernelLimit ?? int.MaxValue;
         _dimensions = dimensions;
         _kernelBandwidth = tensor(bandwidth, device: _device, dtype: _scalarType);
         _weight = ones(_dimensions, dtype: _scalarType, device: _device);
@@ -130,7 +140,8 @@ public class KernelCompression : IEstimation
             var kernel = stack([_weight, data[i], _kernelBandwidth], dim: 1);
             var dist = CalculateMahalanobisDistance(data[i]);
             var (minDist, argminDist) = dist.min(0);
-            if ((minDist > _distanceThreshold).item<bool>())
+            if ((minDist > _distanceThreshold).item<bool>()
+                && _kernels.shape[0] < _kernelLimit)
             {
                 _kernels = concat([_kernels, kernel.unsqueeze(0)], dim: 0);
                 continue;

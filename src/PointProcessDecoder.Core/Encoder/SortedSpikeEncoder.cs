@@ -54,7 +54,8 @@ public class SortedSpikeEncoder : IEncoder
         double[] bandwidth,
         int nUnits,
         IStateSpace stateSpace,
-        double? distanceThreshold = null, 
+        double? distanceThreshold = null,
+        int? kernelLimit = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -71,10 +72,11 @@ public class SortedSpikeEncoder : IEncoder
         _nUnits = nUnits;
         
         _observationEstimation = GetEstimationMethod(
-            estimationMethod, 
-            bandwidth, 
-            _stateSpace.Dimensions, 
-            distanceThreshold,
+            estimationMethod: estimationMethod, 
+            bandwidth: bandwidth, 
+            dimensions: _stateSpace.Dimensions, 
+            distanceThreshold: distanceThreshold,
+            kernelLimit: kernelLimit,
             device: device,
             scalarType: scalarType
         );
@@ -84,10 +86,11 @@ public class SortedSpikeEncoder : IEncoder
         for (int i = 0; i < _nUnits; i++)
         {
             _unitEstimation[i] = GetEstimationMethod(
-                estimationMethod, 
-                bandwidth, 
-                _stateSpace.Dimensions, 
-                distanceThreshold,
+                estimationMethod: estimationMethod, 
+                bandwidth: bandwidth, 
+                dimensions: _stateSpace.Dimensions, 
+                distanceThreshold: distanceThreshold,
+                kernelLimit: kernelLimit,
                 device: device,
                 scalarType: scalarType
             );
@@ -101,6 +104,7 @@ public class SortedSpikeEncoder : IEncoder
         double[] bandwidth, 
         int dimensions, 
         double? distanceThreshold = null,
+        int? kernelLimit = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -108,15 +112,16 @@ public class SortedSpikeEncoder : IEncoder
         return estimationMethod switch
         {
             EstimationMethod.KernelDensity => new KernelDensity(
-                bandwidth, 
-                dimensions, 
+                bandwidth: bandwidth, 
+                dimensions: dimensions, 
                 device: device,
                 scalarType: scalarType
             ),
             EstimationMethod.KernelCompression => new KernelCompression(
-                bandwidth, 
-                dimensions, 
-                distanceThreshold, 
+                bandwidth: bandwidth, 
+                dimensions: dimensions, 
+                distanceThreshold: distanceThreshold,
+                kernelLimit: kernelLimit,
                 device: device,
                 scalarType: scalarType
             ),
