@@ -6,6 +6,8 @@ using PointProcessDecoder.Core.Encoder;
 using PointProcessDecoder.Core.Decoder;
 using PointProcessDecoder.Core.StateSpace;
 using PointProcessDecoder.Core.Likelihood;
+using PointProcessDecoder.Core.Configuration;
+using Newtonsoft.Json;
 
 namespace PointProcessDecoder.Core;
 
@@ -30,6 +32,8 @@ public class PointProcessModel : IModel
 
     private readonly IStateSpace _stateSpace;
     public IStateSpace StateSpace => _stateSpace;
+
+    private readonly PointProcessModelConfiguration _configuration;
 
     public PointProcessModel(
         EstimationMethod estimationMethod,
@@ -124,6 +128,28 @@ public class PointProcessModel : IModel
             _ => throw new ArgumentException("Invalid likelihood type.")
         };
 
+        _configuration = new PointProcessModelConfiguration
+        {
+            EstimationMethod = estimationMethod,
+            TransitionsType = transitionsType,
+            EncoderType = encoderType,
+            DecoderType = decoderType,
+            StateSpaceType = stateSpaceType,
+            LikelihoodType = likelihoodType,
+            MinStateSpace = minStateSpace,
+            MaxStateSpace = maxStateSpace,
+            StepsStateSpace = stepsStateSpace,
+            ObservationBandwidth = observationBandwidth,
+            StateSpaceDimensions = stateSpaceDimensions,
+            MarkDimensions = markDimensions,
+            MarkChannels = markChannels,
+            MarkBandwidth = markBandwidth,
+            NUnits = nUnits,
+            DistanceThreshold = distanceThreshold,
+            IgnoreNoSpikes = ignoreNoSpikes,
+            SigmaRandomWalk = sigmaRandomWalk,
+            ScalarType = scalarType
+        };
     }
 
     /// <summary>
@@ -160,6 +186,78 @@ public class PointProcessModel : IModel
         var conditionalIntensities = _encoderModel.Evaluate(inputs);
         var likelihood = _likelihood.LogLikelihood(inputs, conditionalIntensities);
         return _decoderModel.Decode(inputs, likelihood);
+    }
+
+    public void Save(string basePath)
+    {
+        JsonSerializer serializer = new()
+        {
+            Formatting = Formatting.Indented
+        };
+
+        Directory.CreateDirectory(basePath);
+        
+        string path = Path.Combine(basePath, "PointProcessModelConfiguration.json");
+        using StreamWriter sw = new(path);
+        using JsonWriter writer = new JsonTextWriter(sw);
+        serializer.Serialize(writer, _configuration);
+
+        _encoderModel.Save(basePath);
+        _decoderModel.Save(basePath);
+        _likelihood.Save(basePath);
+        _stateSpace.Save(basePath);
+    }
+
+    public static PointProcessModel Load(string basePath)
+    {
+        // Check that the base path exists
+        if (!Directory.Exists(basePath))
+        {
+            throw new ArgumentException("The base path does not exist.");
+        }
+
+        JsonSerializer serializer = new()
+        {
+            Formatting = Formatting.Indented
+        };
+
+        string path = Path.Combine(basePath, "PointProcessModelConfiguration.json");
+
+        if (!File.Exists(path))
+        {
+            throw new ArgumentException("The configuration file does not exist.");
+        }
+
+        using StreamReader sr = new(path);
+        using JsonReader reader = new JsonTextReader(sr);
+        PointProcessModelConfiguration? configuration = serializer.Deserialize<PointProcessModelConfiguration>(reader) ?? throw new ArgumentException("The configuration file is empty.");
+        
+        var model = new PointProcessModel(
+            estimationMethod: configuration.EstimationMethod,
+            transitionsType: configuration.TransitionsType,
+            encoderType: configuration.EncoderType,
+            decoderType: configuration.DecoderType,
+            stateSpaceType: configuration.StateSpaceType,
+            likelihoodType: configuration.LikelihoodType,
+            minStateSpace: configuration.MinStateSpace,
+            maxStateSpace: configuration.MaxStateSpace,
+            stepsStateSpace: configuration.StepsStateSpace,
+            observationBandwidth: configuration.ObservationBandwidth,
+            stateSpaceDimensions: configuration.StateSpaceDimensions,
+            markDimensions: configuration.MarkDimensions,
+            markChannels: configuration.MarkChannels,
+            markBandwidth: configuration.MarkBandwidth,
+            nUnits: configuration.NUnits,
+            distanceThreshold: configuration.DistanceThreshold,
+            ignoreNoSpikes: configuration.IgnoreNoSpikes,
+            sigmaRandomWalk: configuration.SigmaRandomWalk,
+            scalarType: configuration.ScalarType
+        );
+
+        model.Encoder.Load(basePath);
+        model.Decoder.Load(basePath);
+        model.Likelihood.Load(basePath);
+        model.StateSpace.Load(basePath);
     }
 
     /// <inheritdoc/>
