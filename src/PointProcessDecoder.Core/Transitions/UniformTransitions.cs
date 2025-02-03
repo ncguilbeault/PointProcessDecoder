@@ -3,15 +3,15 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Transitions;
 
-public class UniformTransitions : IStateTransitions
+public class UniformTransitions : ModelComponent, IStateTransitions
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
     public TransitionsType TransitionsType => TransitionsType.Uniform;
@@ -56,7 +56,7 @@ public class UniformTransitions : IStateTransitions
     }
 
     /// <inheritdoc/>
-    public void Dispose()
+    public override void Dispose()
     {
         _transitions.Dispose();
     }

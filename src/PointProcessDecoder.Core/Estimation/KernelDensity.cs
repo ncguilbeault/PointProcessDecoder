@@ -7,15 +7,15 @@ namespace PointProcessDecoder.Core.Estimation;
 /// <summary>
 /// Kernel density estimation.
 /// </summary>
-public class KernelDensity : IEstimation
+public class KernelDensity : ModelComponent, IEstimation
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
     public EstimationMethod EstimationMethod => EstimationMethod.KernelDensity;
@@ -206,7 +206,20 @@ public class KernelDensity : IEstimation
     }
 
     /// <inheritdoc/>
-    public void Dispose()
+    public override void Save(string basePath)
+    {
+        _kernels.Save(Path.Combine(basePath, "kernels.bin"));
+    }
+
+    /// <inheritdoc/>
+    public override IModelComponent Load(string basePath)
+    {
+        _kernels = Tensor.Load(Path.Combine(basePath, "kernels.bin"));
+        return this;
+    }
+
+    /// <inheritdoc/>
+    public override void Dispose()
     {
         _kernels.Dispose();
         _kernels = empty(0);

@@ -2,15 +2,15 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.StateSpace;
 
-public class DiscreteUniformStateSpace : IStateSpace
+public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
     public StateSpaceType StateSpaceType => StateSpaceType.DiscreteUniformStateSpace;
@@ -80,7 +80,7 @@ public class DiscreteUniformStateSpace : IStateSpace
     }
 
     /// <inheritdoc/>
-    public void Dispose()
+    public override void Dispose()
     {
         _points.Dispose();
     }

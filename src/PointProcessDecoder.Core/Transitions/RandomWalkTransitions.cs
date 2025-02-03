@@ -1,17 +1,18 @@
+using TorchSharp;
 using TorchSharp.Modules;
 using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Transitions;
 
-public class RandomWalkTransitions : IStateTransitions
+public class RandomWalkTransitions : ModelComponent, IStateTransitions
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
     public TransitionsType TransitionsType => TransitionsType.RandomWalk;
@@ -72,7 +73,8 @@ public class RandomWalkTransitions : IStateTransitions
             .MoveToOuterDisposeScope();
     }
 
-    public void Dispose()
+    /// <inheritdoc/>
+    public override void Dispose()
     {
         _transitions.Dispose();
         _sigma?.Dispose();

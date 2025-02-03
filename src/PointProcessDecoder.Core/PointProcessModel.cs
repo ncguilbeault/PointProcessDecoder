@@ -11,15 +11,15 @@ using Newtonsoft.Json;
 
 namespace PointProcessDecoder.Core;
 
-public class PointProcessModel : IModel
+public class PointProcessModel : ModelComponent, IModel
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     private readonly ILikelihood _likelihood;
     public ILikelihood Likelihood => _likelihood;
@@ -188,7 +188,8 @@ public class PointProcessModel : IModel
         return _decoderModel.Decode(inputs, likelihood);
     }
 
-    public void Save(string basePath)
+    /// <inheritdoc/>
+    public override void Save(string basePath)
     {
         JsonSerializer serializer = new()
         {
@@ -197,8 +198,7 @@ public class PointProcessModel : IModel
 
         Directory.CreateDirectory(basePath);
         
-        string path = Path.Combine(basePath, "PointProcessModelConfiguration.json");
-        using StreamWriter sw = new(path);
+        using StreamWriter sw = new(Path.Combine(basePath, "configuration.json"));
         using JsonWriter writer = new JsonTextWriter(sw);
         serializer.Serialize(writer, _configuration);
 
@@ -208,7 +208,8 @@ public class PointProcessModel : IModel
         _stateSpace.Save(basePath);
     }
 
-    public static PointProcessModel Load(string basePath)
+    /// <inheritdoc/>
+    public new static IModelComponent Load(string basePath)
     {
         // Check that the base path exists
         if (!Directory.Exists(basePath))
@@ -221,7 +222,7 @@ public class PointProcessModel : IModel
             Formatting = Formatting.Indented
         };
 
-        string path = Path.Combine(basePath, "PointProcessModelConfiguration.json");
+        string path = Path.Combine(basePath, "configuration.json");
 
         if (!File.Exists(path))
         {
@@ -258,10 +259,12 @@ public class PointProcessModel : IModel
         model.Decoder.Load(basePath);
         model.Likelihood.Load(basePath);
         model.StateSpace.Load(basePath);
+
+        return model;
     }
 
     /// <inheritdoc/>
-    public void Dispose()
+    public override void Dispose()
     {
         _encoderModel.Dispose();
         _decoderModel.Dispose();
