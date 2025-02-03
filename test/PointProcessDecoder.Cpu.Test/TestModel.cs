@@ -318,7 +318,7 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksRandomWalkCompressionRealData2DBatchedProcessing()
     {
-        string positionFile = "../../../../data/positions_2D.bin";
+        string positionFile = "../../../../data/position.bin";
         string marksFile = "../../../../data/marks.bin";
 
         int markDimensions = 4;
@@ -369,7 +369,7 @@ public class TestModel
     [TestMethod]
     public void CompareClusterlessEncodingBatchSizes()
     {
-        string positionFile = "../../../../data/positions_2D.bin";
+        string positionFile = "../../../../data/position.bin";
         string marksFile = "../../../../data/marks.bin";
 
         int markDimensions = 4;
@@ -454,7 +454,7 @@ public class TestModel
     [TestMethod]
     public void CompareSortedUnitsEncodingBatchSizes()
     {
-        string positionFile = "../../../../data/positions_2D.bin";
+        string positionFile = "../../../../data/position.bin";
         string spikesFile = "../../../../data/spike_counts.bin";
 
         var (position, spikingData) = InitializeRealData(
@@ -534,7 +534,7 @@ public class TestModel
     [TestMethod]
     public void TestKernelLimit()
     {
-        string positionFile = "../../../../data/positions_2D.bin";
+        string positionFile = "../../../../data/position.bin";
         string marksFile = "../../../../data/marks.bin";
 
         int markDimensions = 4;
@@ -608,7 +608,7 @@ public class TestModel
             );
         }
 
-        var kernelCountsLimited = pointProcessModel.Encoder.Estimations.Select(e => e.Kernels.shape[0]).ToList();
+        var kernelCountsLimited = pointProcessModelLimited.Encoder.Estimations.Select(e => e.Kernels.shape[0]).ToList();
 
         Assert.IsTrue(kernelCountsLimited.All(k => k <= 100));
     }
