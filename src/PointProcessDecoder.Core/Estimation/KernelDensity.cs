@@ -32,7 +32,8 @@ public class KernelDensity : IEstimation
     /// <inheritdoc/>
     public Tensor Kernels => _kernels;
     
-    private readonly double _eps;    
+    private readonly double _eps;
+    private readonly int _kernelLimit;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KernelDensity"/> class.
@@ -42,7 +43,8 @@ public class KernelDensity : IEstimation
     /// <param name="device"></param>
     public KernelDensity(
         double? bandwidth = null, 
-        int? dimensions = null, 
+        int? dimensions = null,
+        int? kernelLimit = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -53,6 +55,7 @@ public class KernelDensity : IEstimation
         _eps = finfo(_scalarType).eps;
         _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType)
             .repeat(_dimensions);
+        _kernelLimit = kernelLimit ?? int.MaxValue;
     }
 
     /// <summary>
@@ -64,7 +67,8 @@ public class KernelDensity : IEstimation
     /// <exception cref="ArgumentException"></exception>
     public KernelDensity(
         double[] bandwidth, 
-        int dimensions, 
+        int dimensions,
+        int? kernelLimit = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -79,6 +83,7 @@ public class KernelDensity : IEstimation
         _scalarType = scalarType ?? ScalarType.Float32;
         _eps = finfo(_scalarType).eps;
         _kernelBandwidth = tensor(bandwidth, device: _device, dtype: _scalarType);
+        _kernelLimit = kernelLimit ?? int.MaxValue;
     }
 
     /// <inheritdoc/>
@@ -97,8 +102,16 @@ public class KernelDensity : IEstimation
             return;      
         }
 
-        _kernels = cat([ _kernels, data ], dim: 0)
-            .MoveToOuterDisposeScope();
+        _kernels = cat([ _kernels, data ], dim: 0);
+
+        if (_kernels.shape[0] > _kernelLimit)
+        {
+            var start = _kernels.shape[0] - _kernelLimit;
+            _kernels = _kernels[TensorIndex.Slice(start)];
+        }
+
+        
+        _kernels.MoveToOuterDisposeScope();
     }
 
     /// <inheritdoc/>
