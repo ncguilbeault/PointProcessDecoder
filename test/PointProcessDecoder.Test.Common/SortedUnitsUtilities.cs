@@ -149,7 +149,7 @@ public static class SortedUnitsUtilities
         string figureName = "Prediction",
         EstimationMethod estimationMethod = EstimationMethod.KernelDensity,
         TransitionsType transitionsType = TransitionsType.Uniform,
-        string positionFile = "../../../../data/positions_2D.bin",
+        string positionFile = "../../../../data/position.bin",
         string spikesFile = "../../../../data/spike_counts.bin"
     )
     {
