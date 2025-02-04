@@ -50,6 +50,7 @@ public class PointProcessModel : IModel
         double? distanceThreshold = null,
         bool ignoreNoSpikes = false,
         double? sigmaRandomWalk = null,
+        int? kernelLimit = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -80,6 +81,7 @@ public class PointProcessModel : IModel
                 markBandwidth: markBandwidth ?? observationBandwidth,
                 stateSpace: _stateSpace,
                 distanceThreshold: distanceThreshold,
+                kernelLimit: kernelLimit,
                 device: _device,
                 scalarType: _scalarType
             ),
@@ -88,7 +90,8 @@ public class PointProcessModel : IModel
                 bandwidth: observationBandwidth,
                 nUnits: nUnits ?? 1,
                 stateSpace: _stateSpace,
-                distanceThreshold: distanceThreshold, 
+                distanceThreshold: distanceThreshold,
+                kernelLimit: kernelLimit,
                 device: _device,
                 scalarType: _scalarType
             ),

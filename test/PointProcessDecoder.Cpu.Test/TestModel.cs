@@ -318,7 +318,7 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksRandomWalkCompressionRealData2DBatchedProcessing()
     {
-        string positionFile = "../../../../data/positions_2D.bin";
+        string positionFile = "../../../../data/position.bin";
         string marksFile = "../../../../data/marks.bin";
 
         int markDimensions = 4;
@@ -369,7 +369,7 @@ public class TestModel
     [TestMethod]
     public void CompareClusterlessEncodingBatchSizes()
     {
-        string positionFile = "../../../../data/positions_2D.bin";
+        string positionFile = "../../../../data/position.bin";
         string marksFile = "../../../../data/marks.bin";
 
         int markDimensions = 4;
@@ -454,7 +454,7 @@ public class TestModel
     [TestMethod]
     public void CompareSortedUnitsEncodingBatchSizes()
     {
-        string positionFile = "../../../../data/positions_2D.bin";
+        string positionFile = "../../../../data/position.bin";
         string spikesFile = "../../../../data/spike_counts.bin";
 
         var (position, spikingData) = InitializeRealData(
@@ -529,5 +529,87 @@ public class TestModel
             .sum(dim: 0);
 
         Assert.AreEqual(prediction1, prediction2);
+    }
+
+    [TestMethod]
+    public void TestKernelLimit()
+    {
+        string positionFile = "../../../../data/position.bin";
+        string marksFile = "../../../../data/marks.bin";
+
+        int markDimensions = 4;
+        int markChannels = 28;
+
+        var (position, marks) = InitializeRealData(
+            positionFile: positionFile,
+            marksFile: marksFile
+        );
+
+        position = position.reshape(-1, 2);
+        marks = marks.reshape(position.shape[0], markDimensions, markChannels);
+
+        var pointProcessModel = new PointProcessModel(
+            estimationMethod: EstimationMethod.KernelCompression,
+            transitionsType: TransitionsType.RandomWalk,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
+            minStateSpace: [0, 0],
+            maxStateSpace: [120, 120],
+            stepsStateSpace: [50, 50],
+            observationBandwidth: [2, 2],
+            stateSpaceDimensions: 2,
+            markDimensions: markDimensions,
+            markChannels: markChannels,
+            markBandwidth: [1, 1, 1, 1],
+            distanceThreshold: 1.5,
+            sigmaRandomWalk: 5
+        );
+
+        int nBatches = 10;
+        int batchSize = 1000;
+
+        for (int i = 0; i < nBatches; i++) {
+            pointProcessModel.Encode(
+                position[TensorIndex.Slice(i * batchSize, (i + 1) * batchSize)],
+                marks[TensorIndex.Slice(i * batchSize, (i + 1) * batchSize)]
+            );
+        }
+
+        var kernelCounts = pointProcessModel.Encoder.Estimations.Select(e => e.Kernels.shape[0]).ToList();
+
+        Assert.IsTrue(kernelCounts.Any(k => k > 100));
+
+        var pointProcessModelLimited = new PointProcessModel(
+            estimationMethod: EstimationMethod.KernelCompression,
+            transitionsType: TransitionsType.RandomWalk,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
+            minStateSpace: [0, 0],
+            maxStateSpace: [120, 120],
+            stepsStateSpace: [50, 50],
+            observationBandwidth: [2, 2],
+            stateSpaceDimensions: 2,
+            markDimensions: markDimensions,
+            markChannels: markChannels,
+            markBandwidth: [1, 1, 1, 1],
+            distanceThreshold: 1.5,
+            sigmaRandomWalk: 5,
+            kernelLimit: 100
+        );
+
+        for (int i = 0; i < nBatches; i++) {
+            pointProcessModelLimited.Encode(
+                position[TensorIndex.Slice(i * batchSize, (i + 1) * batchSize)],
+                marks[TensorIndex.Slice(i * batchSize, (i + 1) * batchSize)]
+            );
+        }
+
+        var kernelCountsLimited = pointProcessModelLimited.Encoder.Estimations.Select(e => e.Kernels.shape[0]).ToList();
+
+        Assert.IsTrue(kernelCountsLimited.All(k => k <= 100));
     }
 }

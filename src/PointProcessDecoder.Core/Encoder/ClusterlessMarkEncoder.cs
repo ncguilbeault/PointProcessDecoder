@@ -70,6 +70,7 @@ public class ClusterlessMarkEncoder : IEncoder
         double[] markBandwidth,
         IStateSpace stateSpace,
         double? distanceThreshold = null,
+        int? kernelLimit = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -98,8 +99,8 @@ public class ClusterlessMarkEncoder : IEncoder
             case EstimationMethod.KernelDensity:
 
                 _observationEstimation = new KernelDensity(
-                    observationBandwidth, 
-                    _stateSpace.Dimensions, 
+                    bandwidth: observationBandwidth, 
+                    dimensions: _stateSpace.Dimensions, 
                     device: device,
                     scalarType: scalarType
                 );
@@ -107,15 +108,15 @@ public class ClusterlessMarkEncoder : IEncoder
                 for (int i = 0; i < _markChannels; i++)
                 {
                     _channelEstimation[i] = new KernelDensity(
-                        observationBandwidth, 
-                        _stateSpace.Dimensions, 
+                        bandwidth: observationBandwidth, 
+                        dimensions: _stateSpace.Dimensions, 
                         device: device,
                         scalarType: scalarType
                     );
 
                     _markEstimation[i] = new KernelDensity(
-                        markBandwidth, 
-                        _markDimensions, 
+                        bandwidth: markBandwidth, 
+                        dimensions: _markDimensions, 
                         device: device,
                         scalarType: scalarType
                     );
@@ -129,9 +130,10 @@ public class ClusterlessMarkEncoder : IEncoder
 
             case EstimationMethod.KernelCompression:
                 _observationEstimation = new KernelCompression(
-                    observationBandwidth, 
-                    _stateSpace.Dimensions, 
-                    distanceThreshold,
+                    bandwidth: observationBandwidth, 
+                    dimensions: _stateSpace.Dimensions, 
+                    distanceThreshold: distanceThreshold,
+                    kernelLimit: kernelLimit,
                     device: device,
                     scalarType: scalarType
                 );
@@ -142,17 +144,19 @@ public class ClusterlessMarkEncoder : IEncoder
                 for (int i = 0; i < _markChannels; i++)
                 {
                     _channelEstimation[i] = new KernelCompression(
-                        observationBandwidth, 
-                        _stateSpace.Dimensions, 
-                        distanceThreshold,
+                        bandwidth: observationBandwidth, 
+                        dimensions: _stateSpace.Dimensions, 
+                        distanceThreshold: distanceThreshold,
+                        kernelLimit: kernelLimit,
                         device: device,
                         scalarType: scalarType
                     );
 
                     _markEstimation[i] = new KernelCompression(
-                        bandwidth, 
-                        jointDimensions, 
-                        distanceThreshold,
+                        bandwidth: bandwidth, 
+                        dimensions: jointDimensions, 
+                        distanceThreshold: distanceThreshold,
+                        kernelLimit: kernelLimit,
                         device: device,
                         scalarType: scalarType
                     );

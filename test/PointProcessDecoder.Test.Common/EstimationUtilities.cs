@@ -132,7 +132,7 @@ public static class EstimationUtilities
         var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
-        var positionKDE = new KernelDensity(bandwidth, numDimensions, device);
+        var positionKDE = new KernelDensity(bandwidth, numDimensions, device: device);
         positionKDE.Fit(position1D.to_type(ScalarType.Float64));
         var positionDensity = positionKDE.Evaluate(
             new double[] { yMin }, 
