@@ -170,7 +170,7 @@ public static class ClusterlessMarksUtilities
         string figureName = "Prediction",
         EstimationMethod estimationMethod = EstimationMethod.KernelDensity,
         TransitionsType transitionsType = TransitionsType.Uniform,
-        string positionFile = "../../../../data/positions_2D.bin",
+        string positionFile = "../../../../data/position.bin",
         string marksFile = "../../../../data/marks.bin"
     )
     {

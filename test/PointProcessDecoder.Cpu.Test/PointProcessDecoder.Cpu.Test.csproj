@@ -18,5 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PointProcessDecoder.Cpu\PointProcessDecoder.Cpu.csproj" />
     <ProjectReference Include="..\PointProcessDecoder.Test.Common\PointProcessDecoder.Test.Common.csproj" />
+    <ProjectReference Include="..\..\src\PointProcessDecoder.Plot.Linux\PointProcessDecoder.Plot.Linux.csproj" />
   </ItemGroup>
 </Project>
