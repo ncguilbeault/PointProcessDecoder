@@ -14,7 +14,7 @@ namespace PointProcessDecoder.Core;
 /// <summary>
 /// Represents a point process model.
 /// </summary>
-public class PointProcessModel : ModelComponent, IModel
+public class PointProcessModel : ModelBase, IModel
 {
     private readonly Device _device;
     /// <inheritdoc/>
@@ -26,19 +26,19 @@ public class PointProcessModel : ModelComponent, IModel
 
     private readonly ILikelihood _likelihood;
     /// <inheritdoc/>
-    public ILikelihood Likelihood => _likelihood;
+    public override ILikelihood Likelihood => _likelihood;
 
     private readonly IEncoder _encoderModel;
     /// <inheritdoc/>
-    public IEncoder Encoder => _encoderModel;
+    public override IEncoder Encoder => _encoderModel;
 
     private readonly IDecoder _decoderModel;
     /// <inheritdoc/>
-    public IDecoder Decoder => _decoderModel;
+    public override IDecoder Decoder => _decoderModel;
 
     private readonly IStateSpace _stateSpace;
     /// <inheritdoc/>
-    public IStateSpace StateSpace => _stateSpace;
+    public override IStateSpace StateSpace => _stateSpace;
 
     private readonly PointProcessModelConfiguration _configuration;
 
@@ -185,7 +185,7 @@ public class PointProcessModel : ModelComponent, IModel
     }
 
     /// <inheritdoc/>
-    public void Encode(Tensor observations, Tensor inputs)
+    public override void Encode(Tensor observations, Tensor inputs)
     {
         if (observations.shape[1] != _stateSpace.Dimensions)
         {
@@ -200,7 +200,7 @@ public class PointProcessModel : ModelComponent, IModel
     }
 
     /// <inheritdoc/>
-    public Tensor Decode(Tensor inputs)
+    public override Tensor Decode(Tensor inputs)
     {
         var conditionalIntensities = _encoderModel.Evaluate(inputs);
         var likelihood = _likelihood.LogLikelihood(inputs, conditionalIntensities);
@@ -228,7 +228,7 @@ public class PointProcessModel : ModelComponent, IModel
     }
 
     /// <inheritdoc/>
-    public new static IModelComponent Load(string basePath)
+    public new static IModelComponent Load(string basePath, Device? device)
     {
         // Check that the base path exists
         if (!Directory.Exists(basePath))
@@ -271,6 +271,7 @@ public class PointProcessModel : ModelComponent, IModel
             distanceThreshold: configuration.DistanceThreshold,
             ignoreNoSpikes: configuration.IgnoreNoSpikes,
             sigmaRandomWalk: configuration.SigmaRandomWalk,
+            device: device,
             scalarType: configuration.ScalarType
         );
 
