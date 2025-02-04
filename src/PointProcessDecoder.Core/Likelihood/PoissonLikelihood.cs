@@ -5,15 +5,15 @@ namespace PointProcessDecoder.Core.Likelihood;
 public class PoissonLikelihood(
     Device? device = null,
     ScalarType? scalarType = null
-) : ILikelihood
+) : ModelComponent, ILikelihood
 {
     private readonly Device _device = device ?? CPU;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType = scalarType ?? ScalarType.Float32;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc />
     public LikelihoodType LikelihoodType => LikelihoodType.Poisson;
@@ -35,10 +35,5 @@ public class PoissonLikelihood(
             .exp()
             .nan_to_num()
             .MoveToOuterDisposeScope();
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
     }
 }

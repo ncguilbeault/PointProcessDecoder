@@ -1,17 +1,17 @@
 using static TorchSharp.torch;
+using TorchSharp;
 
 using PointProcessDecoder.Core.Transitions;
-using PointProcessDecoder.Core.Likelihood;
 
 namespace PointProcessDecoder.Core.Decoder;
 
-public class StateSpaceDecoder : IDecoder
+public class StateSpaceDecoder : ModelComponent, IDecoder
 {
     private readonly Device _device;
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     public DecoderType DecoderType => DecoderType.StateSpaceDecoder;
 
@@ -101,8 +101,35 @@ public class StateSpaceDecoder : IDecoder
         return output.MoveToOuterDisposeScope();
     }
 
+    // /// <inheritdoc/>
+    // public override void Save(string basePath)
+    // {
+    //     var path = Path.Combine(basePath, "decoder");
+
+    //     if (!Directory.Exists(path))
+    //     {
+    //         Directory.CreateDirectory(path);
+    //     }
+
+    //     _posterior.Save(Path.Combine(path, "posterior.bin"));
+    // }
+
+    // /// <inheritdoc/>
+    // public override IModelComponent Load(string basePath)
+    // {
+    //     var path = Path.Combine(basePath, "decoder");
+
+    //     if (!Directory.Exists(path))
+    //     {
+    //         throw new ArgumentException("The decoder directory does not exist.");
+    //     }
+
+    //     _posterior = Tensor.Load(Path.Combine(path, "posterior.bin"));
+    //     return this;
+    // }
+
     /// <inheritdoc/>
-    public void Dispose()
+    public override void Dispose()
     {
         _stateTransitions.Dispose();
         _initialState.Dispose();

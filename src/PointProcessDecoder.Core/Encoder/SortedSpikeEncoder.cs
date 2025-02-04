@@ -1,4 +1,5 @@
 using PointProcessDecoder.Core.Estimation;
+using TorchSharp;
 using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Encoder;
@@ -6,15 +7,15 @@ namespace PointProcessDecoder.Core.Encoder;
 /// <summary>
 /// Represents a sorted spike encoder.
 /// </summary>
-public class SortedSpikeEncoder : IEncoder
+public class SortedSpikeEncoder : ModelComponent, IEncoder
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
     public EncoderType EncoderType => EncoderType.SortedSpikeEncoder;
@@ -211,7 +212,83 @@ public class SortedSpikeEncoder : IEncoder
     }
 
     /// <inheritdoc/>
-    public void Dispose()
+    public override void Save(string basePath)
+    {
+        var path = Path.Combine(basePath, "encoder");
+
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
+
+        _spikeCounts.Save(Path.Combine(path, "spikeCounts.bin"));
+        _samples.Save(Path.Combine(path, "samples.bin"));
+        _rates.Save(Path.Combine(path, "rates.bin"));
+        _unitConditionalIntensities.Save(Path.Combine(path, "unitConditionalIntensities.bin"));
+
+        var observationEstimationPath = Path.Combine(path, $"observationEstimation");
+
+        if (!Directory.Exists(observationEstimationPath))
+        {
+            Directory.CreateDirectory(observationEstimationPath);
+        }
+
+        _observationEstimation.Save(observationEstimationPath);
+
+        for (int i = 0; i < _unitEstimation.Length; i++)
+        {
+            var unitEstimationPath = Path.Combine(path, $"unitEstimation{i}");
+
+            if (!Directory.Exists(unitEstimationPath))
+            {
+                Directory.CreateDirectory(unitEstimationPath);
+            }
+            
+            _unitEstimation[i].Save(unitEstimationPath);
+        }
+    }
+
+    /// <inheritdoc/>
+    public override IModelComponent Load(string basePath)
+    {
+        var path = Path.Combine(basePath, "encoder");
+
+        if (!Directory.Exists(path))
+        {
+            throw new ArgumentException("The encoder directory does not exist.");
+        }
+
+        _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin"));
+        _samples = Tensor.Load(Path.Combine(path, "samples.bin"));
+        _rates = Tensor.Load(Path.Combine(path, "rates.bin"));
+        _unitConditionalIntensities = Tensor.Load(Path.Combine(path, "unitConditionalIntensities.bin"));
+
+        var observationEstimationPath = Path.Combine(path, $"observationEstimation");
+
+        if (!Directory.Exists(observationEstimationPath))
+        {
+            throw new ArgumentException("The observation estimation directory does not exist.");
+        }
+
+        _observationEstimation.Load(observationEstimationPath);
+
+        for (int i = 0; i < _unitEstimation.Length; i++)
+        {
+            var unitEstimationPath = Path.Combine(path, $"unitEstimation{i}");
+
+            if (!Directory.Exists(unitEstimationPath))
+            {
+                throw new ArgumentException("The unit estimation directory does not exist.");
+            }
+
+            _unitEstimation[i].Load(unitEstimationPath);
+        }
+
+        return this;
+    }
+
+    /// <inheritdoc/>
+    public override void Dispose()
     {
         _observationEstimation.Dispose();
         foreach (var estimation in _unitEstimation)

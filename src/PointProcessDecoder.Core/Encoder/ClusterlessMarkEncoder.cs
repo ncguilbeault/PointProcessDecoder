@@ -1,4 +1,5 @@
 using PointProcessDecoder.Core.Estimation;
+using TorchSharp;
 using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Encoder;
@@ -6,15 +7,15 @@ namespace PointProcessDecoder.Core.Encoder;
 /// <summary>
 /// Represents a clusterless mark encoder.
 /// </summary>
-public class ClusterlessMarkEncoder : IEncoder
+public class ClusterlessMarkEncoder : ModelComponent, IEncoder
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
     public EncoderType EncoderType => EncoderType.ClusterlessMarkEncoder;
@@ -93,6 +94,9 @@ public class ClusterlessMarkEncoder : IEncoder
 
         _channelEstimation = new IEstimation[_markChannels];
         _markEstimation = new IEstimation[_markChannels];
+
+        _channelEstimates = new Tensor[_markChannels];
+        _markStateSpaceKernelEstimates = new Tensor[_markChannels];
 
         switch (estimationMethod)
         {
@@ -324,9 +328,6 @@ public class ClusterlessMarkEncoder : IEncoder
             dtype: _scalarType
         );
 
-        _channelEstimates = new Tensor[_markChannels];
-        _markStateSpaceKernelEstimates = new Tensor[_markChannels];
-
         for (int i = 0; i < _markChannels; i++)
         {
             _channelEstimates[i] = _channelEstimation[i].Estimate(_stateSpace.Points)
@@ -369,7 +370,109 @@ public class ClusterlessMarkEncoder : IEncoder
     }
 
     /// <inheritdoc/>
-    public void Dispose()
+    public override void Save(string basePath)
+    {
+        var path = Path.Combine(basePath, "encoder");
+
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
+
+        _spikeCounts.Save(Path.Combine(path, "spikeCounts.bin"));
+        _samples.Save(Path.Combine(path, "samples.bin"));
+        _rates.Save(Path.Combine(path, "rates.bin"));
+        _observationDensity.Save(Path.Combine(path, "observationDensity.bin"));
+        _channelConditionalIntensities.Save(Path.Combine(path, "channelConditionalIntensities.bin"));
+
+        var observationEstimationPath = Path.Combine(path, $"observationEstimation");
+
+        if (!Directory.Exists(observationEstimationPath))
+        {
+            Directory.CreateDirectory(observationEstimationPath);
+        }
+
+        _observationEstimation.Save(observationEstimationPath);
+
+        for (int i = 0; i < _markChannels; i++)
+        {
+            var channelEstimationPath = Path.Combine(path, $"channelEstimation{i}");
+
+            if (!Directory.Exists(channelEstimationPath))
+            {
+                Directory.CreateDirectory(channelEstimationPath);
+            }
+            
+            _channelEstimation[i].Save(channelEstimationPath);
+
+            var markEstimationPath = Path.Combine(path, $"markEstimation{i}");
+
+            if (!Directory.Exists(markEstimationPath))
+            {
+                Directory.CreateDirectory(markEstimationPath);
+            }
+
+            _markEstimation[i].Save(markEstimationPath);
+
+            _channelEstimates[i].Save(Path.Combine(path, $"channelEstimates{i}.bin"));
+            _markStateSpaceKernelEstimates[i].Save(Path.Combine(path, $"markStateSpaceKernelEstimates{i}.bin"));
+        }
+    }
+
+    /// <inheritdoc/>
+    public override IModelComponent Load(string basePath)
+    {
+        var path = Path.Combine(basePath, "encoder");
+
+        if (!Directory.Exists(path))
+        {
+            throw new ArgumentException("The encoder directory does not exist.");
+        }
+
+        _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin"));
+        _samples = Tensor.Load(Path.Combine(path, "samples.bin"));
+        _rates = Tensor.Load(Path.Combine(path, "rates.bin"));
+        _observationDensity = Tensor.Load(Path.Combine(path, "observationDensity.bin"));
+        _channelConditionalIntensities = Tensor.Load(Path.Combine(path, "channelConditionalIntensities.bin"));
+
+        var observationEstimationPath = Path.Combine(path, $"observationEstimation");
+
+        if (!Directory.Exists(observationEstimationPath))
+        {
+            throw new ArgumentException("The observation estimation directory does not exist.");
+        }
+
+        _observationEstimation.Load(observationEstimationPath);
+
+        for (int i = 0; i < _markChannels; i++)
+        {
+            var channelEstimationPath = Path.Combine(path, $"channelEstimation{i}");
+
+            if (!Directory.Exists(channelEstimationPath))
+            {
+                throw new ArgumentException("The channel estimation directory does not exist.");
+            }
+
+            _channelEstimation[i].Load(channelEstimationPath);
+
+            var markEstimationPath = Path.Combine(path, $"markEstimation{i}");
+
+            if (!Directory.Exists(markEstimationPath))
+            {
+                throw new ArgumentException("The mark estimation directory does not exist.");
+            }
+
+            _markEstimation[i].Load(markEstimationPath);
+
+            _channelEstimates[i] = Tensor.Load(Path.Combine(path, $"channelEstimates{i}.bin"));
+            _markStateSpaceKernelEstimates[i] = Tensor.Load(Path.Combine(path, $"markStateSpaceKernelEstimates{i}.bin"));
+        }
+
+        return this;
+    }
+
+    /// <inheritdoc/>
+    public override void Dispose()
     {
         _observationEstimation.Dispose();
         foreach (var estimation in _channelEstimation)

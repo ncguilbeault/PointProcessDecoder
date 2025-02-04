@@ -2,15 +2,15 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Likelihood;
 
-public class ClusterlessLikelihood : ILikelihood
+public class ClusterlessLikelihood : ModelComponent, ILikelihood
 {
     private readonly Device _device;
     /// <inheritdoc/>
-    public Device Device => _device;
+    public override Device Device => _device;
 
     private readonly ScalarType _scalarType;
     /// <inheritdoc/>
-    public ScalarType ScalarType => _scalarType;
+    public override ScalarType ScalarType => _scalarType;
 
     private bool _ignoreNoSpikes;
     private Tensor _noSpikeLikelihood;
@@ -76,7 +76,7 @@ public class ClusterlessLikelihood : ILikelihood
     }
 
     /// <inheritdoc/>
-    public void Dispose()
+    public override void Dispose()
     {
         _noSpikeLikelihood.Dispose();
     }
