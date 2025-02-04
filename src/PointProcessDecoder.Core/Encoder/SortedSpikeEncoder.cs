@@ -258,10 +258,10 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
             throw new ArgumentException("The encoder directory does not exist.");
         }
 
-        _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin"));
-        _samples = Tensor.Load(Path.Combine(path, "samples.bin"));
-        _rates = Tensor.Load(Path.Combine(path, "rates.bin"));
-        _unitConditionalIntensities = Tensor.Load(Path.Combine(path, "unitConditionalIntensities.bin"));
+        _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin")).to(_device);
+        _samples = Tensor.Load(Path.Combine(path, "samples.bin")).to(_device);
+        _rates = Tensor.Load(Path.Combine(path, "rates.bin")).to(_device);
+        _unitConditionalIntensities = Tensor.Load(Path.Combine(path, "unitConditionalIntensities.bin")).to(_device);
 
         var observationEstimationPath = Path.Combine(path, $"observationEstimation");
 

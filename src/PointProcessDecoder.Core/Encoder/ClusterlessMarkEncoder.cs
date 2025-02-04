@@ -429,11 +429,11 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
             throw new ArgumentException("The encoder directory does not exist.");
         }
 
-        _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin"));
-        _samples = Tensor.Load(Path.Combine(path, "samples.bin"));
-        _rates = Tensor.Load(Path.Combine(path, "rates.bin"));
-        _observationDensity = Tensor.Load(Path.Combine(path, "observationDensity.bin"));
-        _channelConditionalIntensities = Tensor.Load(Path.Combine(path, "channelConditionalIntensities.bin"));
+        _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin")).to(_device);
+        _samples = Tensor.Load(Path.Combine(path, "samples.bin")).to(_device);
+        _rates = Tensor.Load(Path.Combine(path, "rates.bin")).to(_device);
+        _observationDensity = Tensor.Load(Path.Combine(path, "observationDensity.bin")).to(_device);
+        _channelConditionalIntensities = Tensor.Load(Path.Combine(path, "channelConditionalIntensities.bin")).to(_device);
 
         var observationEstimationPath = Path.Combine(path, $"observationEstimation");
 
@@ -464,8 +464,8 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
 
             _markEstimation[i].Load(markEstimationPath);
 
-            _channelEstimates[i] = Tensor.Load(Path.Combine(path, $"channelEstimates{i}.bin"));
-            _markStateSpaceKernelEstimates[i] = Tensor.Load(Path.Combine(path, $"markStateSpaceKernelEstimates{i}.bin"));
+            _channelEstimates[i] = Tensor.Load(Path.Combine(path, $"channelEstimates{i}.bin")).to(_device);
+            _markStateSpaceKernelEstimates[i] = Tensor.Load(Path.Combine(path, $"markStateSpaceKernelEstimates{i}.bin")).to(_device);
         }
 
         return this;

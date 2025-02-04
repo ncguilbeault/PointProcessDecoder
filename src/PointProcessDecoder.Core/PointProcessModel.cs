@@ -228,7 +228,7 @@ public class PointProcessModel : ModelBase, IModel
     }
 
     /// <inheritdoc/>
-    public new static IModelComponent Load(string basePath, Device? device)
+    public new static IModelComponent Load(string basePath, Device? device = null)
     {
         // Check that the base path exists
         if (!Directory.Exists(basePath))

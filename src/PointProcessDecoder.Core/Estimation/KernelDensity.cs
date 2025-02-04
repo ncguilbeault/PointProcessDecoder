@@ -214,7 +214,7 @@ public class KernelDensity : ModelComponent, IEstimation
     /// <inheritdoc/>
     public override IModelComponent Load(string basePath)
     {
-        _kernels = Tensor.Load(Path.Combine(basePath, "kernels.bin"));
+        _kernels = Tensor.Load(Path.Combine(basePath, "kernels.bin")).to(_device);
         return this;
     }
 
