@@ -2,6 +2,9 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.StateSpace;
 
+/// <summary>
+/// Represents a discrete uniform state space.
+/// </summary>
 public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
 {
     private readonly Device _device;
@@ -27,6 +30,16 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
     /// <inheritdoc/>
     public long[] Shape => _shape;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DiscreteUniformStateSpace"/> class.
+    /// </summary>
+    /// <param name="dimensions"></param>
+    /// <param name="min"></param>
+    /// <param name="max"></param>
+    /// <param name="steps"></param>
+    /// <param name="device"></param>
+    /// <param name="scalarType"></param>
+    /// <exception cref="ArgumentException"></exception>
     public DiscreteUniformStateSpace(
         int dimensions,
         double[] min,

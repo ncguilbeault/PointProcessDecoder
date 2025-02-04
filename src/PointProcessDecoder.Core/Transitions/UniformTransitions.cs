@@ -1,8 +1,10 @@
-using TorchSharp.Modules;
 using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Transitions;
 
+/// <summary>
+/// Represents uniform state transitions.
+/// </summary>
 public class UniformTransitions : ModelComponent, IStateTransitions
 {
     private readonly Device _device;
@@ -22,6 +24,12 @@ public class UniformTransitions : ModelComponent, IStateTransitions
 
     private readonly IStateSpace _stateSpace;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UniformTransitions"/> class.
+    /// </summary>
+    /// <param name="stateSpace"></param>
+    /// <param name="device"></param>
+    /// <param name="scalarType"></param>
     public UniformTransitions(
         IStateSpace stateSpace,
         Device? device = null,

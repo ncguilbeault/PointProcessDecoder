@@ -11,6 +11,9 @@ using Newtonsoft.Json;
 
 namespace PointProcessDecoder.Core;
 
+/// <summary>
+/// Represents a point process model.
+/// </summary>
 public class PointProcessModel : ModelComponent, IModel
 {
     private readonly Device _device;
@@ -22,19 +25,48 @@ public class PointProcessModel : ModelComponent, IModel
     public override ScalarType ScalarType => _scalarType;
 
     private readonly ILikelihood _likelihood;
+    /// <inheritdoc/>
     public ILikelihood Likelihood => _likelihood;
 
     private readonly IEncoder _encoderModel;
+    /// <inheritdoc/>
     public IEncoder Encoder => _encoderModel;
 
     private readonly IDecoder _decoderModel;
+    /// <inheritdoc/>
     public IDecoder Decoder => _decoderModel;
 
     private readonly IStateSpace _stateSpace;
+    /// <inheritdoc/>
     public IStateSpace StateSpace => _stateSpace;
 
     private readonly PointProcessModelConfiguration _configuration;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PointProcessModel"/> class.
+    /// </summary>
+    /// <param name="estimationMethod"></param>
+    /// <param name="transitionsType"></param>
+    /// <param name="encoderType"></param>
+    /// <param name="decoderType"></param>
+    /// <param name="stateSpaceType"></param>
+    /// <param name="likelihoodType"></param>
+    /// <param name="minStateSpace"></param>
+    /// <param name="maxStateSpace"></param>
+    /// <param name="stepsStateSpace"></param>
+    /// <param name="observationBandwidth"></param>
+    /// <param name="stateSpaceDimensions"></param>
+    /// <param name="markDimensions"></param>
+    /// <param name="markChannels"></param>
+    /// <param name="markBandwidth"></param>
+    /// <param name="nUnits"></param>
+    /// <param name="distanceThreshold"></param>
+    /// <param name="ignoreNoSpikes"></param>
+    /// <param name="sigmaRandomWalk"></param>
+    /// <param name="kernelLimit"></param>
+    /// <param name="device"></param>
+    /// <param name="scalarType"></param>
+    /// <exception cref="ArgumentException"></exception>
     public PointProcessModel(
         EstimationMethod estimationMethod,
         TransitionsType transitionsType,
@@ -152,15 +184,7 @@ public class PointProcessModel : ModelComponent, IModel
         };
     }
 
-    /// <summary>
-    /// Encodes the observations and data into the latent space.
-    /// The observations are in the latent space and are of shape (n, stateSpaceDimensions).
-    /// The inputs are in the neural space.
-    /// In the case of sorted units, the inputs are of shape (n, nUnits).
-    /// In the case of clusterless marks, the inputs are of shape (n, markDimensions, markChannels).
-    /// </summary>
-    /// <param name="observations"></param>
-    /// <param name="data"></param>
+    /// <inheritdoc/>
     public void Encode(Tensor observations, Tensor inputs)
     {
         if (observations.shape[1] != _stateSpace.Dimensions)
@@ -175,12 +199,7 @@ public class PointProcessModel : ModelComponent, IModel
         _encoderModel.Encode(observations, inputs);
     }
 
-    /// <summary>
-    /// Decodes the inputs into the latent space.
-    /// </summary>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
+    /// <inheritdoc/>
     public Tensor Decode(Tensor inputs)
     {
         var conditionalIntensities = _encoderModel.Evaluate(inputs);

@@ -1,9 +1,10 @@
-using TorchSharp;
-using TorchSharp.Modules;
 using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Transitions;
 
+/// <summary>
+/// Represents random walk state transitions.
+/// </summary>
 public class RandomWalkTransitions : ModelComponent, IStateTransitions
 {
     private readonly Device _device;
@@ -29,6 +30,13 @@ public class RandomWalkTransitions : ModelComponent, IStateTransitions
 
     private readonly IStateSpace _stateSpace;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RandomWalkTransitions"/> class.
+    /// </summary>
+    /// <param name="stateSpace"></param>
+    /// <param name="sigma"></param>
+    /// <param name="device"></param>
+    /// <param name="scalarType"></param>
     public RandomWalkTransitions(
         IStateSpace stateSpace,
         double? sigma = null, 

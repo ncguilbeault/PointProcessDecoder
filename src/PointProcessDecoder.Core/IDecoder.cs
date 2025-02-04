@@ -23,7 +23,7 @@ public interface IDecoder : IModelComponent
     public IStateTransitions Transitions { get; }
 
     /// <summary>
-    /// Decodes the observations into the latent state based on the joint distribution of the observations and the inputs.
+    /// Decodes the observations into the latent state based on the inputs and the likelihood.
     /// </summary>
     /// <param name="input"></param>
     /// <param name="likelihood"></param>

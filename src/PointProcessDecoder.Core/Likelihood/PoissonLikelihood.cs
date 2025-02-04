@@ -2,6 +2,12 @@ using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core.Likelihood;
 
+/// <summary>
+/// Represents the Poisson likelihood of the model.
+/// Expected to be used when the encoder is set to the <see cref="Encoder.EncoderType.SortedSpikeEncoder"/>.
+/// </summary>
+/// <param name="device"></param>
+/// <param name="scalarType"></param>
 public class PoissonLikelihood(
     Device? device = null,
     ScalarType? scalarType = null
