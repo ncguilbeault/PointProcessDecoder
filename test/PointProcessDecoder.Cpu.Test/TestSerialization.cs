@@ -342,4 +342,96 @@ public class TestSerialization
 
         Assert.IsTrue(sameValues);
     }
+
+
+    [TestMethod]
+    public void TestSortedEncodeAfterLoading()
+    {
+        var position = Simulate.Position(
+            200, 
+            10, 
+            0, 
+            100
+        );
+
+        var placeFieldCenters = Simulate.PlaceFieldCenters(
+            0, 
+            100, 
+            40,
+            seed: 0
+        );
+
+        var spikingData = Simulate.SpikesAtPosition(
+            position, 
+            placeFieldCenters,
+            8.0, 
+            0.2, 
+            seed: 0
+        );
+
+        var modelFull = new PointProcessModel(
+            estimationMethod: Core.Estimation.EstimationMethod.KernelDensity,
+            transitionsType: Core.Transitions.TransitionsType.Uniform,
+            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
+            minStateSpace: [0],
+            maxStateSpace: [100],
+            stepsStateSpace: [50],
+            observationBandwidth: [1],
+            stateSpaceDimensions: 1,
+            nUnits: 40
+        );
+
+        modelFull.Encode(position, spikingData);
+
+        var predictionFull = modelFull.Decode(spikingData);
+
+        var modelSplit = new PointProcessModel(
+            estimationMethod: Core.Estimation.EstimationMethod.KernelDensity,
+            transitionsType: Core.Transitions.TransitionsType.Uniform,
+            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
+            minStateSpace: [0],
+            maxStateSpace: [100],
+            stepsStateSpace: [50],
+            observationBandwidth: [1],
+            stateSpaceDimensions: 1,
+            nUnits: 40
+        );
+
+        var fractionFirstEncode = 0.5;
+        int nFirstEncode = (int)(fractionFirstEncode * spikingData.shape[0]);
+
+        modelSplit.Encode(position[TensorIndex.Slice(0, nFirstEncode)], spikingData[TensorIndex.Slice(0, nFirstEncode)]);
+
+        var predictionSplit = modelSplit.Decode(spikingData);
+
+        var notSameValues = predictionSplit
+            .eq(predictionFull)
+            .all()
+            .item<bool>();
+
+        Assert.IsFalse(notSameValues);
+
+        modelSplit.Save("TestSortedEncodeAfterLoading");
+
+        var loadedModel = PointProcessModel.Load("TestSortedEncodeAfterLoading") as PointProcessModel;
+
+        Assert.IsNotNull(loadedModel);
+
+        loadedModel.Encode(position[TensorIndex.Slice(nFirstEncode)], spikingData[TensorIndex.Slice(nFirstEncode)]);
+
+        var predictionLoaded = loadedModel.Decode(spikingData);
+
+        var sameValues = predictionLoaded
+            .eq(predictionFull)
+            .all()
+            .item<bool>();
+
+        Assert.IsTrue(sameValues);
+    }
 }
