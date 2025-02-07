@@ -73,9 +73,12 @@ public class ClusterlessLikelihood : ModelComponent, ILikelihood
         logLikelihood -= logLikelihood
             .max(dim: -1, keepdim: true)
             .values;
-        return logLikelihood
+        logLikelihood = logLikelihood
             .exp()
-            .nan_to_num()
+            .nan_to_num();
+        logLikelihood /= logLikelihood
+            .sum(dim: -1, keepdim: true);
+        return logLikelihood
             .MoveToOuterDisposeScope();
     }
 

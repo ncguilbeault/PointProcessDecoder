@@ -33,13 +33,18 @@ public class PoissonLikelihood(
         using var _ = NewDisposeScope();
         var conditionalIntensity = conditionalIntensities.First();
         var conditionalIntensityTensor = conditionalIntensity.flatten(1).T.unsqueeze(0);
-        var logLikelihood = (xlogy(inputs.unsqueeze(1), conditionalIntensityTensor) - conditionalIntensityTensor)
+        var logLikelihood = (inputs.unsqueeze(1) * conditionalIntensityTensor - conditionalIntensityTensor.exp())
             .nan_to_num()
             .sum(dim: -1);
-        logLikelihood -= logLikelihood.max(dim: -1, keepdim: true).values;
-        return logLikelihood
+        logLikelihood -= logLikelihood
+            .max(dim: -1, keepdim: true)
+            .values;
+        logLikelihood = logLikelihood
             .exp()
-            .nan_to_num()
+            .nan_to_num();
+        logLikelihood /= logLikelihood
+            .sum(dim: -1, keepdim: true);
+        return logLikelihood
             .MoveToOuterDisposeScope();
     }
 }
