@@ -148,26 +148,19 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         if (_spikeCounts.numel() == 0)
         {
             _spikeCounts = inputs.nan_to_num()
-                .sum(dim: 0);                
-            _samples = observations.shape[0];
+                .sum(dim: 0)
+                .to(_device);              
+            _samples = tensor(observations.shape[0], device: _device);
         }
         else
         {
             _spikeCounts += inputs.nan_to_num()
-                .sum(dim: 0);
+                .sum(dim: 0)
+                .to(_device);
             _samples += observations.shape[0];
         }
 
-        _spikeCounts = _spikeCounts
-            .to(_device)
-            .MoveToOuterDisposeScope();
-
-        _samples = _samples
-            .to(_device)
-            .MoveToOuterDisposeScope();
-
-        _rates = (_spikeCounts.log() - _samples.log())
-            .MoveToOuterDisposeScope();
+        _rates = _spikeCounts.log() - _samples.log();
 
         var inputMask = inputs.to_type(ScalarType.Bool);
 
@@ -201,7 +194,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
             var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
                 .log();
                 
-            unitConditionalIntensities[i] = exp(_rates[i] + unitDensity - observationDensity)
+            unitConditionalIntensities[i] = (_rates[i] + unitDensity - observationDensity)
                 .reshape(_stateSpace.Shape);
         }
         var output = stack(unitConditionalIntensities, dim: 0)

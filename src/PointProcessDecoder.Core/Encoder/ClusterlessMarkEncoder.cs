@@ -261,8 +261,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
             _samples += observations.shape[0];
         }
 
-        _rates = (_spikeCounts.log() - _samples.log())
-            .MoveToOuterDisposeScope();
+        _rates = _spikeCounts.log() - _samples.log();
         
         var mask = ~marks.isnan().all(dim: 1);
 
