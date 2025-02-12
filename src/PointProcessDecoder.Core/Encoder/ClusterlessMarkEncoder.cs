@@ -469,26 +469,4 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
 
         return this;
     }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _observationEstimation.Dispose();
-        foreach (var estimation in _channelEstimation)
-        {
-            estimation.Dispose();
-        }
-        foreach (var estimation in _markEstimation)
-        {
-            estimation.Dispose();
-        }
-        _estimations = [];
-        _updateConditionalIntensities = true;
-        _conditionalIntensities = [empty(0)];
-        _markConditionalIntensities.Dispose();
-        _channelConditionalIntensities.Dispose();
-        _spikeCounts.Dispose();
-        _samples.Dispose();
-        _rates.Dispose();
-    }
 }

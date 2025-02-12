@@ -282,13 +282,4 @@ public class PointProcessModel : ModelBase, IModel
 
         return model;
     }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _encoderModel.Dispose();
-        _decoderModel.Dispose();
-        _likelihood.Dispose();
-        _stateSpace.Dispose();
-    }
 }

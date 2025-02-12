@@ -279,30 +279,4 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
 
         return this;
     }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _observationEstimation.Dispose();
-        foreach (var estimation in _unitEstimation)
-        {
-            estimation.Dispose();
-        }
-        _estimations = [];
-        
-        _updateConditionalIntensities = true;
-        _conditionalIntensities = [empty(0)];
-
-        _unitConditionalIntensities.Dispose();
-        _unitConditionalIntensities = empty(0);
-
-        _spikeCounts.Dispose();
-        _spikeCounts = empty(0);
-
-        _samples.Dispose();
-        _samples = empty(0);
-
-        _rates.Dispose();
-        _rates = empty(0);
-    }
 }

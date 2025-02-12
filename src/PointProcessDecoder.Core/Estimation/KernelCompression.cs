@@ -269,12 +269,5 @@ public class KernelCompression : ModelComponent, IEstimation
         _kernels = Tensor.Load(Path.Combine(basePath, "kernels.bin")).to(_device);
         return this;
     }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _kernels.Dispose();
-        _kernels = empty(0);
-    }
 }
 

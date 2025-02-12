@@ -417,8 +417,6 @@ public class TestModel
         var prediction1 = pointProcessModel.Decode(marks[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
             .sum(dim: 0);
 
-        pointProcessModel.Dispose();
-
         pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
             transitionsType: TransitionsType.RandomWalk,
@@ -498,8 +496,6 @@ public class TestModel
 
         var prediction1 = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
             .sum(dim: 0);
-
-        pointProcessModel.Dispose();
 
         pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,

@@ -81,10 +81,4 @@ public class ClusterlessLikelihood : ModelComponent, ILikelihood
         return logLikelihood
             .MoveToOuterDisposeScope();
     }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _noSpikeLikelihood.Dispose();
-    }
 }

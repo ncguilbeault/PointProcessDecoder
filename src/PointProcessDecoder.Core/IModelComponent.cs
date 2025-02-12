@@ -5,7 +5,7 @@ namespace PointProcessDecoder.Core;
 /// <summary>
 /// Represents a single component of the model.
 /// </summary>
-public interface IModelComponent : IDisposable
+public interface IModelComponent
 {
     /// <summary>
     /// The device on which the model component in located.

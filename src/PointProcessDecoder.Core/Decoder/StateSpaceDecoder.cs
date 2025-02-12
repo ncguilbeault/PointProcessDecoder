@@ -106,12 +106,4 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
         _posterior.MoveToOuterDisposeScope();
         return output.MoveToOuterDisposeScope();
     }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _stateTransitions.Dispose();
-        _initialState.Dispose();
-        _posterior.Dispose();
-    }
 }

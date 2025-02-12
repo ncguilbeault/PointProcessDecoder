@@ -62,10 +62,4 @@ public class UniformTransitions : ModelComponent, IStateTransitions
             .to(device)
             .MoveToOuterDisposeScope();
     }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _transitions.Dispose();
-    }
 }
