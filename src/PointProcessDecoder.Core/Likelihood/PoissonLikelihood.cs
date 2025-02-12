@@ -25,19 +25,17 @@ public class PoissonLikelihood(
     public LikelihoodType LikelihoodType => LikelihoodType.Poisson;
 
     /// <inheritdoc />
-    public Tensor LogLikelihood(
+    public Tensor Likelihood(
         Tensor inputs, 
         IEnumerable<Tensor> conditionalIntensities
     )
     {
         using var _ = NewDisposeScope();
         var conditionalIntensity = conditionalIntensities.First();
-        var conditionalIntensityTensor = conditionalIntensity.flatten(1).T.unsqueeze(0);
         var logLikelihood = (inputs
-            .to_type(ScalarType.Bool)
             .unsqueeze(1) 
-            * conditionalIntensityTensor 
-            - conditionalIntensityTensor.exp())
+            * conditionalIntensity 
+            - conditionalIntensity.exp())
                 .nan_to_num()
                 .sum(dim: -1);
         logLikelihood -= logLikelihood

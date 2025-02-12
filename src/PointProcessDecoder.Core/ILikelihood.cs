@@ -18,5 +18,5 @@ public interface ILikelihood : IModelComponent
     /// <param name="inputs"></param>
     /// <param name="conditionalIntensities"></param>
     /// <returns></returns>
-    public Tensor LogLikelihood(Tensor inputs, IEnumerable<Tensor> conditionalIntensities);
+    public Tensor Likelihood(Tensor inputs, IEnumerable<Tensor> conditionalIntensities);
 }

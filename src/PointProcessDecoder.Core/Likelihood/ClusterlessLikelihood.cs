@@ -57,7 +57,7 @@ public class ClusterlessLikelihood : ModelComponent, ILikelihood
     }
 
     /// <inheritdoc />
-    public Tensor LogLikelihood(
+    public Tensor Likelihood(
         Tensor inputs, 
         IEnumerable<Tensor> conditionalIntensities
     )

@@ -203,7 +203,7 @@ public class PointProcessModel : ModelBase, IModel
     public override Tensor Decode(Tensor inputs)
     {
         var conditionalIntensities = _encoderModel.Evaluate(inputs);
-        var likelihood = _likelihood.LogLikelihood(inputs, conditionalIntensities);
+        var likelihood = _likelihood.Likelihood(inputs, conditionalIntensities);
         return _decoderModel.Decode(inputs, likelihood);
     }
 
