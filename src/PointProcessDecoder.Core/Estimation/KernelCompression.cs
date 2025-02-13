@@ -172,7 +172,7 @@ public class KernelCompression : ModelComponent, IEstimation
         using var _ = NewDisposeScope();
         if (_kernels.numel() == 0)
         {
-            return (ones([1, 1], dtype: _scalarType, device: _device) * float.NaN)
+            return (ones([points.size(0), 1], dtype: _scalarType, device: _device) * float.NaN)
                 .MoveToOuterDisposeScope();
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
