@@ -191,9 +191,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         {
             var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
                 .log();
-                
-            unitConditionalIntensities[i] = (_rates[i] + unitDensity - observationDensity)
-                .reshape(_stateSpace.Shape);
+            unitConditionalIntensities[i] = _rates[i] + unitDensity - observationDensity;
         }
         var output = stack(unitConditionalIntensities, dim: 0)
             .MoveToOuterDisposeScope();

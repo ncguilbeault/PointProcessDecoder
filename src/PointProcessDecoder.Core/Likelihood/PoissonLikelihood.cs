@@ -31,19 +31,15 @@ public class PoissonLikelihood(
     )
     {
         using var _ = NewDisposeScope();
-        var conditionalIntensity = conditionalIntensities.First();
-        var logLikelihood = (inputs
-            .unsqueeze(1) 
-            * conditionalIntensity 
+        var conditionalIntensity = conditionalIntensities.First()
+            .unsqueeze(0);
+        var logLikelihood = (inputs.unsqueeze(-1) 
+            * conditionalIntensity
             - conditionalIntensity.exp())
                 .nan_to_num()
-                .sum(dim: -1);
-        logLikelihood -= logLikelihood
-            .max(dim: -1, keepdim: true)
-            .values;
-        logLikelihood = logLikelihood
-            .exp()
-            .nan_to_num();
+                .sum(dim: 1)
+                .exp()
+                .nan_to_num();
         logLikelihood /= logLikelihood
             .sum(dim: -1, keepdim: true);
         return logLikelihood
