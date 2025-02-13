@@ -187,11 +187,11 @@ public class PointProcessModel : ModelBase, IModel
     /// <inheritdoc/>
     public override void Encode(Tensor observations, Tensor inputs)
     {
-        if (observations.shape[1] != _stateSpace.Dimensions)
+        if (observations.size(1) != _stateSpace.Dimensions)
         {
             throw new ArgumentException("The number of latent dimensions must match the shape of the observations.");
         }
-        if (observations.shape[0] != inputs.shape[0])
+        if (observations.size(0) != inputs.size(0))
         {
             throw new ArgumentException("The number of observations must match the number of inputs.");
         }

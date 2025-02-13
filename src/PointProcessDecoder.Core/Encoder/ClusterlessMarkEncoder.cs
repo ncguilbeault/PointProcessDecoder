@@ -206,7 +206,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
         using var _ = NewDisposeScope();
         var markKernelEstimate = _markEstimation[i].Estimate(marks);
         var markDensity = markKernelEstimate.matmul(_channelEstimates[i].T)
-            / markKernelEstimate.shape[1];
+            / markKernelEstimate.size(1);
         return (_rates[i] + markDensity.log() - _observationDensity)
             .nan_to_num()
             .MoveToOuterDisposeScope();
@@ -220,7 +220,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
         using var _ = NewDisposeScope();
         var markKernelEstimate = _markEstimation[i].Estimate(marks, _stateSpace.Dimensions);
         var markDensity = markKernelEstimate.matmul(_markStateSpaceKernelEstimates[i].T)
-            / markKernelEstimate.shape[1];
+            / markKernelEstimate.size(1);
         return (_rates[i] + markDensity.log() - _observationDensity)
             .nan_to_num()
             .MoveToOuterDisposeScope();
@@ -229,17 +229,17 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
     /// <inheritdoc/>
     public void Encode(Tensor observations, Tensor marks)
     {
-        if (marks.shape[1] != _markDimensions)
+        if (marks.size(1) != _markDimensions)
         {
             throw new ArgumentException("The number of mark dimensions must match the shape of the marks tensor on dimension 1.");
         }
 
-        if (marks.shape[2] != _markChannels)
+        if (marks.size(2) != _markChannels)
         {
             throw new ArgumentException("The number of mark channels must match the shape of the marks tensor on dimension 2.");
         }
 
-        if (observations.shape[1] != _stateSpace.Dimensions)
+        if (observations.size(1) != _stateSpace.Dimensions)
         {
             throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
         }
@@ -251,14 +251,14 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
             _spikeCounts = (marks.sum(dim: 1) > 0)
                 .sum(dim: 0)
                 .to(_device);
-            _samples = tensor(observations.shape[0], device: _device);
+            _samples = tensor(observations.size(0), device: _device);
 
         }
         else
         {
             _spikeCounts += (marks.sum(dim: 1) > 0)
                 .sum(dim: 0);
-            _samples += observations.shape[0];
+            _samples += observations.size(0);
         }
 
         _rates = _spikeCounts.log() - _samples.log();
@@ -289,7 +289,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
         using var _ = NewDisposeScope();
 
          var markConditionalIntensities = zeros(
-            [_markChannels, inputs.shape[0], _stateSpace.Points.shape[0]],
+            [_markChannels, inputs.size(0), _stateSpace.Points.size(0)],
             device: _device,
             dtype: _scalarType
         );
@@ -322,7 +322,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
             .log();
 
         var channelConditionalIntensities = zeros(
-            [_markChannels, _stateSpace.Points.shape[0]],
+            [_markChannels, _stateSpace.Points.size(0)],
             device: _device,
             dtype: _scalarType
         );

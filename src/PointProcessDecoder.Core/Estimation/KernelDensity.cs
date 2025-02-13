@@ -89,7 +89,7 @@ public class KernelDensity : ModelComponent, IEstimation
     /// <inheritdoc/>
     public void Fit(Tensor data) 
     {
-        if (data.shape[1] != _dimensions)
+        if (data.size(1) != _dimensions)
         {
             throw new ArgumentException("The number of dimensions must match the shape of the data.");
         }
@@ -104,9 +104,9 @@ public class KernelDensity : ModelComponent, IEstimation
 
         _kernels = cat([ _kernels, data ], dim: 0);
 
-        if (_kernels.shape[0] > _kernelLimit)
+        if (_kernels.size(0) > _kernelLimit)
         {
-            var start = _kernels.shape[0] - _kernelLimit;
+            var start = _kernels.size(0) - _kernelLimit;
             _kernels = _kernels[TensorIndex.Slice(start)];
         }
 
@@ -140,10 +140,8 @@ public class KernelDensity : ModelComponent, IEstimation
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
-
-        var density = (points.sum(dim: -1)
-            / points.shape[1])
-            .clamp_min(_eps);
+        var density = points.sum(dim: -1)
+            / points.size(1);
         density /= density.sum();
         return density
             .to_type(_scalarType)
@@ -154,7 +152,7 @@ public class KernelDensity : ModelComponent, IEstimation
     /// <inheritdoc/>
     public Tensor Evaluate(Tensor min, Tensor max, Tensor steps)
     {
-        if (min.shape[0] != _dimensions || max.shape[0] != _dimensions || steps.shape[0] != _dimensions)
+        if (min.size(0) != _dimensions || max.size(0) != _dimensions || steps.size(0) != _dimensions)
         {
             throw new ArgumentException("The lengths of min, max, and steps must be equal to the number of dimensions.");
         }
@@ -170,8 +168,8 @@ public class KernelDensity : ModelComponent, IEstimation
         }
 
         using var _ = NewDisposeScope();
-        var arrays = new Tensor[min.shape[0]];
-        for (int i = 0; i < min.shape[0]; i++)
+        var arrays = new Tensor[min.size(0)];
+        for (int i = 0; i < min.size(0); i++)
         {
             arrays[i] = linspace(min[i].item<double>(), max[i].item<double>(), steps[i].item<long>(), dtype: _scalarType, device: _device);
         }
@@ -189,7 +187,7 @@ public class KernelDensity : ModelComponent, IEstimation
     /// <inheritdoc/>
     public Tensor Evaluate(Tensor points)
     {
-        if (points.shape[1] != _dimensions)
+        if (points.size(1) != _dimensions)
         {
             throw new ArgumentException("The number of dimensions must match the shape of the data.");
         }

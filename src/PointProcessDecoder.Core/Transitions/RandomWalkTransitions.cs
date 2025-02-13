@@ -73,8 +73,8 @@ public class RandomWalkTransitions : ModelComponent, IStateTransitions
             .sum(dim: 2);
         var estimate = exp(-0.5 * sumSquaredDiff / bandwidth);
         var weights = estimate / sqrt(pow(2 * Math.PI, stateSpace.Dimensions) * bandwidth);
-        var transitions = weights / points.shape[1];
-
+        var transitions = weights / points.size(1);
+        transitions /= transitions.sum(dim: 1, keepdim: true);
         return transitions
             .to_type(type: scalarType)
             .to(device: device)

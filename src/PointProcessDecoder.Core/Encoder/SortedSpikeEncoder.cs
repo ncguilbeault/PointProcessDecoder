@@ -133,12 +133,12 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     /// <inheritdoc/>
     public void Encode(Tensor observations, Tensor inputs)
     {
-        if (inputs.shape[1] != _nUnits)
+        if (inputs.size(1) != _nUnits)
         {
             throw new ArgumentException("The number of units in the input tensor must match the expected number of units.");
         }
 
-        if (observations.shape[1] != _stateSpace.Dimensions)
+        if (observations.size(1) != _stateSpace.Dimensions)
         {
             throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
         }
@@ -150,14 +150,14 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
             _spikeCounts = inputs.nan_to_num()
                 .sum(dim: 0)
                 .to(_device);              
-            _samples = tensor(observations.shape[0], device: _device);
+            _samples = tensor(observations.size(0), device: _device);
         }
         else
         {
             _spikeCounts += inputs.nan_to_num()
                 .sum(dim: 0)
                 .to(_device);
-            _samples += observations.shape[0];
+            _samples += observations.size(0);
         }
 
         _rates = _spikeCounts.log() - _samples.log();
