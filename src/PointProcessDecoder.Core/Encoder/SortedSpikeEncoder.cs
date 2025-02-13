@@ -37,7 +37,6 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     private Tensor _samples = empty(0);
     private Tensor _rates = empty(0);
     private readonly IStateSpace _stateSpace;
-    private readonly double _eps;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SortedSpikeEncoder"/> class.
@@ -68,7 +67,6 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
 
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _stateSpace = stateSpace;
         _nUnits = nUnits;
         

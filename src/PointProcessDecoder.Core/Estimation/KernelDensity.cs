@@ -31,8 +31,6 @@ public class KernelDensity : ModelComponent, IEstimation
     private Tensor _kernels = empty(0);
     /// <inheritdoc/>
     public Tensor Kernels => _kernels;
-    
-    private readonly double _eps;
     private readonly int _kernelLimit;
 
     /// <summary>
@@ -52,7 +50,6 @@ public class KernelDensity : ModelComponent, IEstimation
         _dimensions = dimensions ?? 1;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _kernelBandwidth = tensor(bandwidth ?? 1.0, device: _device, dtype: _scalarType)
             .repeat(_dimensions);
         _kernelLimit = kernelLimit ?? int.MaxValue;
@@ -81,7 +78,6 @@ public class KernelDensity : ModelComponent, IEstimation
         _dimensions = dimensions;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _kernelBandwidth = tensor(bandwidth, device: _device, dtype: _scalarType);
         _kernelLimit = kernelLimit ?? int.MaxValue;
     }

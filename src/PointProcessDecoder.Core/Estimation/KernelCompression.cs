@@ -51,8 +51,6 @@ public class KernelCompression : ModelComponent, IEstimation
     /// <inheritdoc/>
     public int Dimensions => _dimensions;
 
-    private readonly double _eps;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="KernelCompression"/> class.
     /// </summary>
@@ -71,7 +69,6 @@ public class KernelCompression : ModelComponent, IEstimation
     {
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _kernelLimit = kernelLimit ?? int.MaxValue;
         _dimensions = dimensions ?? 1;
@@ -104,7 +101,6 @@ public class KernelCompression : ModelComponent, IEstimation
 
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _kernelLimit = kernelLimit ?? int.MaxValue;
         _dimensions = dimensions;
