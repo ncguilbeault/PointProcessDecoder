@@ -120,12 +120,13 @@ public class KernelDensity : ModelComponent, IEstimation
                 .MoveToOuterDisposeScope();
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
-        var dist = (kernels.unsqueeze(0) - points.unsqueeze(1)) / _kernelBandwidth;
+        var bandwidth = _kernelBandwidth[TensorIndex.Slice(dimensionStart, dimensionEnd)];
+        var dist = (kernels.unsqueeze(0) - points.unsqueeze(1)) / bandwidth;
         var sumSquaredDiff = dist
             .pow(exponent: 2)
             .sum(dim: -1);
         var estimate = exp(-0.5 * sumSquaredDiff);
-        var sqrtDiagonalCovariance = sqrt(pow(2 * Math.PI, _dimensions) * _kernelBandwidth.prod(dim: -1));
+        var sqrtDiagonalCovariance = sqrt(pow(2 * Math.PI, _dimensions) * bandwidth.prod(dim: -1));
         return (estimate / sqrtDiagonalCovariance)
             .to_type(_scalarType)
             .to(_device)
