@@ -20,16 +20,15 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     /// <inheritdoc/>
     public EncoderType EncoderType => EncoderType.SortedSpikeEncoder;
 
-    private Tensor[] _conditionalIntensities = [empty(0)];
     /// <inheritdoc/>
-    public Tensor[] ConditionalIntensities => _conditionalIntensities;
+    public Tensor[] Intensities => [_unitIntensities];
 
     private IEstimation[] _estimations = [];
     /// <inheritdoc/>
     public IEstimation[] Estimations => _estimations;
 
-    private Tensor _unitConditionalIntensities = empty(0);
-    private bool _updateConditionalIntensities = true;
+    private Tensor _unitIntensities = empty(0);
+    private bool _updateIntensities = true;
     private readonly int _nUnits;
     private readonly IEstimation[] _unitEstimation;
     private readonly IEstimation _observationEstimation;
@@ -167,37 +166,45 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
             _unitEstimation[i].Fit(observations[inputMask[TensorIndex.Colon, i]]);
         }
 
-        _updateConditionalIntensities = true;
-        _unitConditionalIntensities = Evaluate()
-            .First()
-            .MoveToOuterDisposeScope();
+        _updateIntensities = true;
+        Evaluate();
+    }
+
+    private void EvaluateUnitIntensities()
+    {
+        using var _ = NewDisposeScope();
+
+        var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
+            .log();
+
+        _unitIntensities = zeros(
+            [_nUnits, _stateSpace.Points.size(0)],
+            device: _device,
+            dtype: _scalarType
+        );
+
+        for (int i = 0; i < _nUnits; i++)
+        {
+            var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points);
+
+            _unitIntensities[i] = (_rates[i] + unitDensity.log() - observationDensity)
+                .MoveToOuterDisposeScope();
+        }
+
+        _unitIntensities.MoveToOuterDisposeScope();
+
+        _updateIntensities = false;
     }
 
     /// <inheritdoc/>
     public IEnumerable<Tensor> Evaluate(params Tensor[] inputs)
     {
-        if (_unitConditionalIntensities.numel() != 0 && !_updateConditionalIntensities)
+        if (_unitIntensities.numel() == 0 || _updateIntensities)
         {
-            _conditionalIntensities = [_unitConditionalIntensities];
-            return _conditionalIntensities;
+            EvaluateUnitIntensities();
         }
         
-        using var _ = NewDisposeScope();
-        var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
-            .log();
-        var unitConditionalIntensities = new Tensor[_nUnits];
-
-        for (int i = 0; i < _nUnits; i++)
-        {
-            var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
-                .log();
-            unitConditionalIntensities[i] = _rates[i] + unitDensity - observationDensity;
-        }
-        var output = stack(unitConditionalIntensities, dim: 0)
-            .MoveToOuterDisposeScope();
-        _updateConditionalIntensities = false;
-        _conditionalIntensities = [output];
-        return _conditionalIntensities;
+        return Intensities;
     }
 
     /// <inheritdoc/>
@@ -213,7 +220,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         _spikeCounts.Save(Path.Combine(path, "spikeCounts.bin"));
         _samples.Save(Path.Combine(path, "samples.bin"));
         _rates.Save(Path.Combine(path, "rates.bin"));
-        _unitConditionalIntensities.Save(Path.Combine(path, "unitConditionalIntensities.bin"));
+        _unitIntensities.Save(Path.Combine(path, "unitIntensities.bin"));
 
         var observationEstimationPath = Path.Combine(path, $"observationEstimation");
 
@@ -250,7 +257,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin")).to(_device);
         _samples = Tensor.Load(Path.Combine(path, "samples.bin")).to(_device);
         _rates = Tensor.Load(Path.Combine(path, "rates.bin")).to(_device);
-        _unitConditionalIntensities = Tensor.Load(Path.Combine(path, "unitConditionalIntensities.bin")).to(_device);
+        _unitIntensities = Tensor.Load(Path.Combine(path, "unitIntensities.bin")).to(_device);
 
         var observationEstimationPath = Path.Combine(path, $"observationEstimation");
 
