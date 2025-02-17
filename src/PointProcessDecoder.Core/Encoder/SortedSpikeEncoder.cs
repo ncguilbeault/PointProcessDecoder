@@ -175,7 +175,8 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         using var _ = NewDisposeScope();
 
         var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
-            .log();
+            .log()
+            .nan_to_num();
 
         _unitIntensities = zeros(
             [_nUnits, _stateSpace.Points.size(0)],
@@ -187,8 +188,15 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         {
             var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points);
 
-            _unitIntensities[i] = (_rates[i] + unitDensity.log() - observationDensity)
-                .MoveToOuterDisposeScope();
+            if (unitDensity.numel() == 0)
+            {
+                continue;
+            }
+
+            unitDensity = unitDensity.log()
+                .nan_to_num();
+
+            _unitIntensities[i] = _rates[i] + unitDensity - observationDensity;
         }
 
         _unitIntensities.MoveToOuterDisposeScope();

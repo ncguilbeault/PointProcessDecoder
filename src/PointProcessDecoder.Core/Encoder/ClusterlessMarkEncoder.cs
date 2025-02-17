@@ -228,10 +228,16 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
                 _stateSpace.Dimensions
             );
 
+            if (markKernelEstimate.numel() == 0)
+            {
+                continue;
+            }
+
             var markDensity = markKernelEstimate.matmul(_channelEstimates[i].T);
             markDensity /= markDensity.sum(dim: 1, keepdim: true);
             markDensity = markDensity
-                .log();
+                .log()
+                .nan_to_num();
 
             _markIntensities[i, TensorIndex.Tensor(mask[TensorIndex.Colon, i])] = _rates[i] + markDensity - _observationDensity;
         }
@@ -245,6 +251,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
 
         _observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
             .log()
+            .nan_to_num()
             .MoveToOuterDisposeScope();
 
         _channelIntensities = zeros(
@@ -258,9 +265,16 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
             _channelEstimates[i] = _markEstimation[i].Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions)
                 .MoveToOuterDisposeScope();
 
-            var channelDensity = _markEstimation[i].Normalize(_channelEstimates[i]);
+            if (_channelEstimates[i].numel() == 0)
+            {
+                continue;
+            }
 
-            _channelIntensities[i] = _rates[i] + channelDensity.log() - _observationDensity;
+            var channelDensity = _markEstimation[i].Normalize(_channelEstimates[i])
+                .log()
+                .nan_to_num();
+
+            _channelIntensities[i] = _rates[i] + channelDensity - _observationDensity;
         }
 
         _channelIntensities.MoveToOuterDisposeScope();
