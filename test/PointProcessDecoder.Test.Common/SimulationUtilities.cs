@@ -37,7 +37,14 @@ public static class SimulationUtilities
         var minPosition = 0;
         var maxPosition = position1D.shape[0];
         
-        ScatterPlot plotPosition1D = new(minPosition, maxPosition, min, max, "Position1D");
+        ScatterPlot plotPosition1D = new(
+            xMin: minPosition, 
+            xMax: maxPosition, 
+            yMin: min, 
+            yMax: max, 
+            title: "Position1D"
+        );
+
         plotPosition1D.OutputDirectory = Path.Combine(plotPosition1D.OutputDirectory, outputDirectory);
         plotPosition1D.Show<float>(position1DExpandedTime);
         plotPosition1D.Save(png: true);
@@ -52,7 +59,14 @@ public static class SimulationUtilities
         );
         var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
-        ScatterPlot plotPlaceFieldCenters = new(-1, 1, min, max, "PlaceFieldCenters1D");
+        ScatterPlot plotPlaceFieldCenters = new(
+            xMin: -1, 
+            xMax: 1, 
+            yMin: min, 
+            yMax: max, 
+            title: "PlaceFieldCenters1D"
+        );
+
         plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, outputDirectory);
         plotPlaceFieldCenters.Show<float>(placeFieldCenters2D);
         plotPlaceFieldCenters.Save(png: true);
@@ -66,14 +80,22 @@ public static class SimulationUtilities
             device: device
         );
 
-        ScatterPlot plotSpikingNeurons = new(0, position1D.shape[0], min, max, title: "SpikingNeurons1D");
+        ScatterPlot plotSpikingNeurons = new(
+            xMin: 0, 
+            xMax: position1D.shape[0], 
+            yMin: min, 
+            yMax: max, 
+            title: "SpikingNeurons1D"
+        );
+
         plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, outputDirectory);
 
         var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
 
         for (int i = 0; i < numNeurons; i++)
         {
-            var positionsAtSpikes = position1DExpandedTime[spikingData[TensorIndex.Ellipsis, i]];
+            var spikesMask = spikingData[TensorIndex.Ellipsis, i] != 0;
+            var positionsAtSpikes = position1DExpandedTime[spikesMask];
             plotSpikingNeurons.Show<float>(positionsAtSpikes, colors[i]);
         }
         plotSpikingNeurons.Save(png: true);
@@ -110,7 +132,14 @@ public static class SimulationUtilities
             device: device
         );
         
-        ScatterPlot plotPosition2D = new(xMin, xMax, yMin, yMax, "Position2D");
+        ScatterPlot plotPosition2D = new(
+            xMin: xMin, 
+            xMax: xMax, 
+            yMin: yMin, 
+            yMax: yMax, 
+            title: "Position2D"
+        );
+
         plotPosition2D.OutputDirectory = Path.Combine(plotPosition2D.OutputDirectory, outputDirectory);
         plotPosition2D.Show<float>(position2D);
         plotPosition2D.Save(png: true);
@@ -126,7 +155,14 @@ public static class SimulationUtilities
             device: device
         );
 
-        ScatterPlot plotPlaceFieldCenters = new(xMin, xMax, yMin, yMax, "PlaceFieldCenters");
+        ScatterPlot plotPlaceFieldCenters = new(
+            xMin: xMin, 
+            xMax: xMax, 
+            yMin: yMin, 
+            yMax: yMax, 
+            title: "PlaceFieldCenters"
+        );
+
         plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, outputDirectory);
         plotPlaceFieldCenters.Show<float>(placeFieldCenters);
         plotPlaceFieldCenters.Save(png: true);
@@ -140,14 +176,22 @@ public static class SimulationUtilities
             device: device
         );
 
-        ScatterPlot plotSpikingNeurons = new(xMin, xMax, yMin, yMax, title: "SpikingNeurons");
+        ScatterPlot plotSpikingNeurons = new(
+            xMin: xMin, 
+            xMax: xMax, 
+            yMin: yMin, 
+            yMax: yMax, 
+            title: "SpikingNeurons"
+        );
+
         plotSpikingNeurons.OutputDirectory = Path.Combine(plotSpikingNeurons.OutputDirectory, outputDirectory);
 
         var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
 
         for (int i = 0; i < numNeurons; i++)
         {
-            var positionsAtSpikes = position2D[spikingData[TensorIndex.Colon, i]];
+            var spikesMask = spikingData[TensorIndex.Ellipsis, i] != 0;
+            var positionsAtSpikes = position2D[spikesMask];
             plotSpikingNeurons.Show<float>(positionsAtSpikes, colors[i]);
         }
         plotSpikingNeurons.Save(png: true);
@@ -187,12 +231,26 @@ public static class SimulationUtilities
             device: device
         );
         
-        ScatterPlot plotPositionFirst = new(xMin, xMax, yMin, yMax, "Position2DFirst");
+        ScatterPlot plotPositionFirst = new(
+            xMin: xMin, 
+            xMax: xMax, 
+            yMin: yMin, 
+            yMax: yMax, 
+            title: "Position2DFirst"
+        );
+
         plotPositionFirst.OutputDirectory = Path.Combine(plotPositionFirst.OutputDirectory, outputDirectory);
         plotPositionFirst.Show<float>(position2D[TensorIndex.Slice(0, stepsToSeperate)]);
         plotPositionFirst.Save(png: true);
 
-        ScatterPlot plotPositionLast = new(xMin, xMax, yMin, yMax, "Position2DLast");
+        ScatterPlot plotPositionLast = new(
+            xMin: xMin, 
+            xMax: xMax, 
+            yMin: yMin, 
+            yMax: yMax, 
+            title: "Position2DLast"
+        );
+
         plotPositionLast.OutputDirectory = Path.Combine(plotPositionLast.OutputDirectory, outputDirectory);
         plotPositionLast.Show<float>(position2D[TensorIndex.Slice(stepsToSeperate)]);
         plotPositionLast.Save(png: true);
@@ -208,7 +266,14 @@ public static class SimulationUtilities
             device: device
         );
 
-        ScatterPlot plotPlaceFieldCenters = new(xMin, xMax, yMin, yMax, "PlaceFieldCenters");
+        ScatterPlot plotPlaceFieldCenters = new(
+            xMin: xMin, 
+            xMax: xMax, 
+            yMin: yMin, 
+            yMax: yMax, 
+            title: "PlaceFieldCenters"
+        );
+
         plotPlaceFieldCenters.OutputDirectory = Path.Combine(plotPlaceFieldCenters.OutputDirectory, outputDirectory);
         plotPlaceFieldCenters.Show<float>(placeFieldCenters);
         plotPlaceFieldCenters.Save(png: true);
@@ -222,20 +287,36 @@ public static class SimulationUtilities
             device: device
         );
 
-        ScatterPlot plotSpikingNeuronsFirst = new(xMin, xMax, yMin, yMax, title: "SpikingNeuronsFirst");
+        ScatterPlot plotSpikingNeuronsFirst = new(
+            xMin: xMin, 
+            xMax: xMax, 
+            yMin: yMin, 
+            yMax: yMax, 
+            title: "SpikingNeuronsFirst"
+        );
+
         plotSpikingNeuronsFirst.OutputDirectory = Path.Combine(plotSpikingNeuronsFirst.OutputDirectory, outputDirectory);
 
-        ScatterPlot plotSpikingNeuronsLast = new(xMin, xMax, yMin, yMax, title: "SpikingNeuronsLast");
+        ScatterPlot plotSpikingNeuronsLast = new(
+            xMin: xMin, 
+            xMax: xMax, 
+            yMin: yMin, 
+            yMax: yMax, 
+            title: "SpikingNeuronsLast"
+        );
+
         plotSpikingNeuronsLast.OutputDirectory = Path.Combine(plotSpikingNeuronsLast.OutputDirectory, outputDirectory);
 
         var colors = Plot.Utilities.GenerateRandomColors(numNeurons, seed);
 
         for (int i = 0; i < numNeurons; i++)
         {
-            var positionsAtSpikesFirst = position2D[TensorIndex.Slice(0, stepsToSeperate)][spikingData[TensorIndex.Slice(0, stepsToSeperate), i]];
+            var spikesMaskFirst = spikingData[TensorIndex.Slice(0, stepsToSeperate), i] != 0;
+            var positionsAtSpikesFirst = position2D[TensorIndex.Slice(0, stepsToSeperate)][spikesMaskFirst];
             plotSpikingNeuronsFirst.Show<float>(positionsAtSpikesFirst, colors[i]);
 
-            var positionsAtSpikesLast = position2D[TensorIndex.Slice(stepsToSeperate)][spikingData[TensorIndex.Slice(stepsToSeperate), i]];
+            var spikesMaskLast = spikingData[TensorIndex.Slice(stepsToSeperate), i] != 0;
+            var positionsAtSpikesLast = position2D[TensorIndex.Slice(stepsToSeperate)][spikesMaskLast];
             plotSpikingNeuronsLast.Show<float>(positionsAtSpikesLast, colors[i]);
         }
 
