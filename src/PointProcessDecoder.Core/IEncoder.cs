@@ -13,9 +13,9 @@ public interface IEncoder : IModelComponent
     public Encoder.EncoderType EncoderType { get; }
 
     /// <summary>
-    /// The conditional intensities of the model.
+    /// The intensities of the model.
     /// </summary>
-    public Tensor[] ConditionalIntensities { get; }
+    public Tensor[] Intensities { get; }
 
     /// <summary>
     /// The estimations of the model.
@@ -23,7 +23,7 @@ public interface IEncoder : IModelComponent
     public IEstimation[] Estimations { get; }
 
     /// <summary>
-    /// Evaluates the conditional intensities of the model given the inputs.
+    /// Evaluates the intensities of the model given the inputs.
     /// </summary>
     /// <param name="inputs"></param>
     /// <returns></returns>

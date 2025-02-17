@@ -27,22 +27,26 @@ public class PoissonLikelihood(
     /// <inheritdoc />
     public Tensor Likelihood(
         Tensor inputs, 
-        IEnumerable<Tensor> conditionalIntensities
+        IEnumerable<Tensor> intensities
     )
     {
         using var _ = NewDisposeScope();
-        var conditionalIntensity = conditionalIntensities.First()
+
+        var intensity = intensities.First()
             .unsqueeze(0);
-        var logLikelihood = (inputs.unsqueeze(-1) 
-            * conditionalIntensity
-            - conditionalIntensity.exp())
+
+        var likelihood = ((inputs.unsqueeze(-1) 
+            * intensity)
+            - intensity.exp())
                 .nan_to_num()
                 .sum(dim: 1)
                 .exp()
                 .nan_to_num();
-        logLikelihood /= logLikelihood
+
+        likelihood /= likelihood
             .sum(dim: -1, keepdim: true);
-        return logLikelihood
+
+        return likelihood
             .MoveToOuterDisposeScope();
     }
 }
