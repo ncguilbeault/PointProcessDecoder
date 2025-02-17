@@ -116,7 +116,7 @@ public class KernelDensity : ModelComponent, IEstimation
         using var _ = NewDisposeScope();
         if (_kernels.numel() == 0)
         {
-            return (ones([points.size(0), 1], dtype: _scalarType, device: _device) * float.NaN)
+            return empty(0, dtype: _scalarType, device: _device)
                 .MoveToOuterDisposeScope();
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
@@ -137,6 +137,10 @@ public class KernelDensity : ModelComponent, IEstimation
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
+        if (points.numel() == 0)
+        {
+            return points;
+        }
         var density = points.sum(dim: -1)
             / points.size(1);
         density /= density.sum();
@@ -191,7 +195,7 @@ public class KernelDensity : ModelComponent, IEstimation
 
         if (_kernels.numel() == 0)
         {
-            return zeros(points.shape[0], dtype: _scalarType, device: _device);
+            return empty(0, dtype: _scalarType, device: _device);
         }
 
         using var _ = NewDisposeScope();
