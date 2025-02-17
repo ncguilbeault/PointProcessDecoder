@@ -88,7 +88,7 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
         var output = zeros(outputShape, dtype: _scalarType, device: _device);
 
         if (_posterior.numel() == 0) {
-            _posterior = (_initialState * likelihood[0].flatten())
+            _posterior = (_initialState * likelihood[0])
                 .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
@@ -97,7 +97,7 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
 
         for (int i = 1; i < inputs.size(0); i++)
         {
-            _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i].flatten())
+            _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i])
                 .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
