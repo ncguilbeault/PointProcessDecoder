@@ -17,20 +17,13 @@ public class ClusterlessLikelihood : ModelComponent, ILikelihood
     public override ScalarType ScalarType => _scalarType;
 
     private bool _ignoreNoSpikes;
-    private Tensor _noSpikeLikelihood;
     /// <summary>
     /// Whether to ignore the contribution of channels with no spikes to the likelihood.
     /// </summary>
     public bool IgnoreNoSpikes
     {
         get => _ignoreNoSpikes;
-        set 
-        {
-            _ignoreNoSpikes = value;
-            _noSpikeLikelihood = _ignoreNoSpikes ? 
-                zeros(1, device: _device, dtype: _scalarType) 
-                : ones(1, dtype: _scalarType, device: _device);
-        }
+        set => _ignoreNoSpikes = value;
     }
 
     /// <inheritdoc />
@@ -51,34 +44,36 @@ public class ClusterlessLikelihood : ModelComponent, ILikelihood
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
         _ignoreNoSpikes = ignoreNoSpikes;
-        _noSpikeLikelihood = _ignoreNoSpikes ? 
-            zeros(1, dtype: _scalarType, device: _device) 
-            : ones(1, dtype: _scalarType, device: _device);
     }
 
     /// <inheritdoc />
     public Tensor Likelihood(
         Tensor inputs, 
-        IEnumerable<Tensor> conditionalIntensities
+        IEnumerable<Tensor> intensities
     )
     {
         using var _ = NewDisposeScope();
-        var channelConditionalIntensities = conditionalIntensities.ElementAt(0);
-        var markConditionalIntensities = conditionalIntensities.ElementAt(1);
-        var logLikelihood = markConditionalIntensities
-            .nan_to_num()
-            .sum(dim: 0) - channelConditionalIntensities
-                .nan_to_num()
-                .sum(dim: 0) * _noSpikeLikelihood;
-        logLikelihood -= logLikelihood
-            .max(dim: -1, keepdim: true)
-            .values;
-        logLikelihood = logLikelihood
-            .exp()
-            .nan_to_num();
-        logLikelihood /= logLikelihood
+
+        var channelIntensities = intensities.ElementAt(0);
+        var markIntensities = intensities.ElementAt(1);
+
+        var likelihood = markIntensities
+            .sum(dim: 0);
+
+        if (!_ignoreNoSpikes)
+        {
+            likelihood -= channelIntensities
+                .exp()
+                .sum(dim: 0);
+        }
+
+        likelihood = likelihood
+            .exp();
+
+        likelihood /= likelihood
             .sum(dim: -1, keepdim: true);
-        return logLikelihood
+
+        return likelihood
             .MoveToOuterDisposeScope();
     }
 }
