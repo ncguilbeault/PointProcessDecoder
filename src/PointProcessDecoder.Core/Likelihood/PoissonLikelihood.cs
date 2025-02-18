@@ -10,7 +10,8 @@ namespace PointProcessDecoder.Core.Likelihood;
 /// <param name="scalarType"></param>
 public class PoissonLikelihood(
     Device? device = null,
-    ScalarType? scalarType = null
+    ScalarType? scalarType = null,
+    bool ignoreNoSpikes = false
 ) : ModelComponent, ILikelihood
 {
     private readonly Device _device = device ?? CPU;
@@ -20,6 +21,16 @@ public class PoissonLikelihood(
     private readonly ScalarType _scalarType = scalarType ?? ScalarType.Float32;
     /// <inheritdoc/>
     public override ScalarType ScalarType => _scalarType;
+
+    private bool _ignoreNoSpikes = ignoreNoSpikes;
+    /// <summary>
+    /// Whether to ignore the contribution of no spikes to the likelihood.
+    /// </summary>
+    public bool IgnoreNoSpikes
+    {
+        get => _ignoreNoSpikes;
+        set => _ignoreNoSpikes = value;
+    }
 
     /// <inheritdoc />
     public LikelihoodType LikelihoodType => LikelihoodType.Poisson;
@@ -35,13 +46,16 @@ public class PoissonLikelihood(
         var intensity = intensities.First()
             .unsqueeze(0);
 
-        var likelihood = ((inputs.unsqueeze(-1) 
-            * intensity)
-            - intensity.exp())
-                .nan_to_num()
-                .sum(dim: 1)
-                .exp()
-                .nan_to_num();
+        var likelihood = inputs.unsqueeze(-1) 
+            * intensity;
+        
+        if (!_ignoreNoSpikes) {
+            likelihood -= intensity.exp();
+        }
+
+        likelihood = likelihood
+            .sum(dim: 1)
+            .exp();
 
         likelihood /= likelihood
             .sum(dim: -1, keepdim: true);

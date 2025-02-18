@@ -149,6 +149,7 @@ public class PointProcessModel : ModelBase, IModel
         _likelihood = likelihoodType switch
         {
             LikelihoodType.Poisson => new PoissonLikelihood(
+                ignoreNoSpikes: ignoreNoSpikes,
                 device: _device,
                 scalarType: _scalarType
             ),
