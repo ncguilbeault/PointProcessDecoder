@@ -6,17 +6,21 @@ namespace PointProcessDecoder.Core.Likelihood;
 /// Represents a clusterless likelihood.
 /// Expected to be used when the encoder is set to the <see cref="Encoder.EncoderType.ClusterlessMarkEncoder"/>.
 /// </summary>
-public class ClusterlessLikelihood : ModelComponent, ILikelihood
+public class ClusterlessLikelihood(
+    Device? device = null,
+    ScalarType? scalarType = null,
+    bool ignoreNoSpikes = false
+) : ModelComponent, ILikelihood
 {
-    private readonly Device _device;
+    private readonly Device _device = device ?? CPU;
     /// <inheritdoc/>
     public override Device Device => _device;
 
-    private readonly ScalarType _scalarType;
+    private readonly ScalarType _scalarType = scalarType ?? ScalarType.Float32;
     /// <inheritdoc/>
     public override ScalarType ScalarType => _scalarType;
 
-    private bool _ignoreNoSpikes;
+    private bool _ignoreNoSpikes = ignoreNoSpikes;
     /// <summary>
     /// Whether to ignore the contribution of channels with no spikes to the likelihood.
     /// </summary>
@@ -29,23 +33,6 @@ public class ClusterlessLikelihood : ModelComponent, ILikelihood
     /// <inheritdoc />
     public LikelihoodType LikelihoodType => LikelihoodType.Clusterless;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ClusterlessLikelihood"/> class.
-    /// </summary>
-    /// <param name="device"></param>
-    /// <param name="scalarType"></param>
-    /// <param name="ignoreNoSpikes"></param>
-    public ClusterlessLikelihood(
-        Device? device = null,
-        ScalarType? scalarType = null,
-        bool ignoreNoSpikes = false
-    )
-    {
-        _device = device ?? CPU;
-        _scalarType = scalarType ?? ScalarType.Float32;
-        _ignoreNoSpikes = ignoreNoSpikes;
-    }
-
     /// <inheritdoc />
     public Tensor Likelihood(
         Tensor inputs, 
@@ -57,17 +44,17 @@ public class ClusterlessLikelihood : ModelComponent, ILikelihood
         var channelIntensities = intensities.ElementAt(0);
         var markIntensities = intensities.ElementAt(1);
 
-        var likelihood = markIntensities
-            .sum(dim: 0);
+        var likelihood = markIntensities;
 
         if (!_ignoreNoSpikes)
         {
             likelihood -= channelIntensities
-                .exp()
-                .sum(dim: 0);
+                .unsqueeze(1)
+                .exp();
         }
 
         likelihood = likelihood
+            .sum(dim: 0)
             .exp();
 
         likelihood /= likelihood
