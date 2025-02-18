@@ -91,10 +91,4 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
             .to(device)
             .MoveToOuterDisposeScope();
     }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _points.Dispose();
-    }
 }

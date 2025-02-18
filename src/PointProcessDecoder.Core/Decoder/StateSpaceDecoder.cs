@@ -71,7 +71,7 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
             _ => throw new ArgumentException("Invalid transitions type.")
         };
 
-        var n = _stateSpace.Points.shape[0];
+        var n = _stateSpace.Points.size(0);
         _initialState = ones(n, dtype: _scalarType, device: _device) / n;
         _posterior = empty(0);
     }
@@ -81,23 +81,23 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
     {
         using var _ = NewDisposeScope();
 
-        var outputShape = new long[] { inputs.shape[0] }
+        var outputShape = new long[] { inputs.size(0) }
             .Concat(_stateSpace.Shape)
             .ToArray();
 
         var output = zeros(outputShape, dtype: _scalarType, device: _device);
 
         if (_posterior.numel() == 0) {
-            _posterior = (_initialState * likelihood[0].flatten())
+            _posterior = (_initialState * likelihood[0])
                 .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
             output[0] = _posterior.reshape(_stateSpace.Shape);
         }
 
-        for (int i = 1; i < inputs.shape[0]; i++)
+        for (int i = 1; i < inputs.size(0); i++)
         {
-            _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i].flatten())
+            _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i])
                 .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
@@ -105,13 +105,5 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
         }
         _posterior.MoveToOuterDisposeScope();
         return output.MoveToOuterDisposeScope();
-    }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _stateTransitions.Dispose();
-        _initialState.Dispose();
-        _posterior.Dispose();
     }
 }

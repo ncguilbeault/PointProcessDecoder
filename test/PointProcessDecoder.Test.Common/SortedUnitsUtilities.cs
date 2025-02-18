@@ -171,7 +171,7 @@ public static class SortedUnitsUtilities
 
         position = position.reshape(-1, 2);
         spikingData = spikingData.reshape(position.shape[0], -1)
-            .to_type(ScalarType.Bool);
+            .to_type(ScalarType.Int32);
         var numNeurons = (int)spikingData.shape[1];
         double[] heatmapRange = [minVals[0], maxVals[0], minVals[1], maxVals[1]];
 

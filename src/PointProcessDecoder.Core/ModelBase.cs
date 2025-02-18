@@ -44,7 +44,4 @@ public abstract class ModelBase: IModel
     /// <param name="device"></param>
     /// <returns></returns>
     public static IModelComponent Load(string basePath, Device? device = null) => throw new NotImplementedException();
-
-    /// <inheritdoc/>
-    public virtual void Dispose() { }
 }

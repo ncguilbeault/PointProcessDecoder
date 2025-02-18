@@ -95,7 +95,8 @@ public static class EncoderUtilities
             );
 
             RunSortedSpikeEncoder2D(
-                sortedSpikeEncoder, 
+                sortedSpikeEncoder,
+                evaluationSteps,
                 position2D, 
                 spikingData, 
                 outputDirectory,
@@ -249,7 +250,8 @@ public static class EncoderUtilities
 
         for (int i = 0; i < densities.shape[0]; i++)
         {
-            var density = densities[i];
+            var density = densities[i]
+                .exp();
             var density1DExpanded = vstack([arange(evaluationSteps), density]).T;
 
             var directoryScatterPlot1D = Path.Combine(encoderDirectory, "ScatterPlot1D");
@@ -283,7 +285,8 @@ public static class EncoderUtilities
     }
 
     public static void RunSortedSpikeEncoder2D(
-        IEncoder encoder, 
+        IEncoder encoder,
+        long[] evaluationSteps,
         Tensor observations, 
         Tensor spikes,
         string encoderDirectory,
@@ -296,7 +299,9 @@ public static class EncoderUtilities
 
         for (int i = 0; i < densities.shape[0]; i++)
         {
-            var density = densities[i];
+            var density = densities[i]
+                .exp()
+                .reshape(evaluationSteps);
             var directoryHeatmap2D = Path.Combine(encoderDirectory, "Heatmap2D");
 
             Heatmap plotDensity2D = new(

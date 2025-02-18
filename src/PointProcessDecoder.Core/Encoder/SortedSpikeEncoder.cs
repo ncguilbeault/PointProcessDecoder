@@ -20,16 +20,15 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     /// <inheritdoc/>
     public EncoderType EncoderType => EncoderType.SortedSpikeEncoder;
 
-    private Tensor[] _conditionalIntensities = [empty(0)];
     /// <inheritdoc/>
-    public Tensor[] ConditionalIntensities => _conditionalIntensities;
+    public Tensor[] Intensities => [_unitIntensities];
 
     private IEstimation[] _estimations = [];
     /// <inheritdoc/>
     public IEstimation[] Estimations => _estimations;
 
-    private Tensor _unitConditionalIntensities = empty(0);
-    private bool _updateConditionalIntensities = true;
+    private Tensor _unitIntensities = empty(0);
+    private bool _updateIntensities = true;
     private readonly int _nUnits;
     private readonly IEstimation[] _unitEstimation;
     private readonly IEstimation _observationEstimation;
@@ -37,7 +36,6 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     private Tensor _samples = empty(0);
     private Tensor _rates = empty(0);
     private readonly IStateSpace _stateSpace;
-    private readonly double _eps;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SortedSpikeEncoder"/> class.
@@ -68,7 +66,6 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
 
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _stateSpace = stateSpace;
         _nUnits = nUnits;
         
@@ -133,12 +130,12 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     /// <inheritdoc/>
     public void Encode(Tensor observations, Tensor inputs)
     {
-        if (inputs.shape[1] != _nUnits)
+        if (inputs.size(1) != _nUnits)
         {
             throw new ArgumentException("The number of units in the input tensor must match the expected number of units.");
         }
 
-        if (observations.shape[1] != _stateSpace.Dimensions)
+        if (observations.size(1) != _stateSpace.Dimensions)
         {
             throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
         }
@@ -148,26 +145,19 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         if (_spikeCounts.numel() == 0)
         {
             _spikeCounts = inputs.nan_to_num()
-                .sum(dim: 0);                
-            _samples = observations.shape[0];
+                .sum(dim: 0)
+                .to(_device);              
+            _samples = tensor(observations.size(0), device: _device);
         }
         else
         {
             _spikeCounts += inputs.nan_to_num()
-                .sum(dim: 0);
-            _samples += observations.shape[0];
+                .sum(dim: 0)
+                .to(_device);
+            _samples += observations.size(0);
         }
 
-        _spikeCounts = _spikeCounts
-            .to(_device)
-            .MoveToOuterDisposeScope();
-
-        _samples = _samples
-            .to(_device)
-            .MoveToOuterDisposeScope();
-
-        _rates = (_spikeCounts.log() - _samples.log())
-            .MoveToOuterDisposeScope();
+        _rates = _spikeCounts.log() - _samples.log();
 
         var inputMask = inputs.to_type(ScalarType.Bool);
 
@@ -176,39 +166,53 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
             _unitEstimation[i].Fit(observations[inputMask[TensorIndex.Colon, i]]);
         }
 
-        _updateConditionalIntensities = true;
-        _unitConditionalIntensities = Evaluate()
-            .First()
-            .MoveToOuterDisposeScope();
+        _updateIntensities = true;
+        Evaluate();
+    }
+
+    private void EvaluateUnitIntensities()
+    {
+        using var _ = NewDisposeScope();
+
+        var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
+            .log()
+            .nan_to_num();
+
+        _unitIntensities = zeros(
+            [_nUnits, _stateSpace.Points.size(0)],
+            device: _device,
+            dtype: _scalarType
+        );
+
+        for (int i = 0; i < _nUnits; i++)
+        {
+            var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points);
+
+            if (unitDensity.numel() == 0)
+            {
+                continue;
+            }
+
+            unitDensity = unitDensity.log()
+                .nan_to_num();
+
+            _unitIntensities[i] = _rates[i] + unitDensity - observationDensity;
+        }
+
+        _unitIntensities.MoveToOuterDisposeScope();
+
+        _updateIntensities = false;
     }
 
     /// <inheritdoc/>
     public IEnumerable<Tensor> Evaluate(params Tensor[] inputs)
     {
-        if (_unitConditionalIntensities.numel() != 0 && !_updateConditionalIntensities)
+        if (_unitIntensities.numel() == 0 || _updateIntensities)
         {
-            _conditionalIntensities = [_unitConditionalIntensities];
-            return _conditionalIntensities;
+            EvaluateUnitIntensities();
         }
         
-        using var _ = NewDisposeScope();
-        var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
-            .log();
-        var unitConditionalIntensities = new Tensor[_nUnits];
-
-        for (int i = 0; i < _nUnits; i++)
-        {
-            var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points)
-                .log();
-                
-            unitConditionalIntensities[i] = exp(_rates[i] + unitDensity - observationDensity)
-                .reshape(_stateSpace.Shape);
-        }
-        var output = stack(unitConditionalIntensities, dim: 0)
-            .MoveToOuterDisposeScope();
-        _updateConditionalIntensities = false;
-        _conditionalIntensities = [output];
-        return _conditionalIntensities;
+        return Intensities;
     }
 
     /// <inheritdoc/>
@@ -224,7 +228,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         _spikeCounts.Save(Path.Combine(path, "spikeCounts.bin"));
         _samples.Save(Path.Combine(path, "samples.bin"));
         _rates.Save(Path.Combine(path, "rates.bin"));
-        _unitConditionalIntensities.Save(Path.Combine(path, "unitConditionalIntensities.bin"));
+        _unitIntensities.Save(Path.Combine(path, "unitIntensities.bin"));
 
         var observationEstimationPath = Path.Combine(path, $"observationEstimation");
 
@@ -261,7 +265,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin")).to(_device);
         _samples = Tensor.Load(Path.Combine(path, "samples.bin")).to(_device);
         _rates = Tensor.Load(Path.Combine(path, "rates.bin")).to(_device);
-        _unitConditionalIntensities = Tensor.Load(Path.Combine(path, "unitConditionalIntensities.bin")).to(_device);
+        _unitIntensities = Tensor.Load(Path.Combine(path, "unitIntensities.bin")).to(_device);
 
         var observationEstimationPath = Path.Combine(path, $"observationEstimation");
 
@@ -285,31 +289,5 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
         }
 
         return this;
-    }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _observationEstimation.Dispose();
-        foreach (var estimation in _unitEstimation)
-        {
-            estimation.Dispose();
-        }
-        _estimations = [];
-        
-        _updateConditionalIntensities = true;
-        _conditionalIntensities = [empty(0)];
-
-        _unitConditionalIntensities.Dispose();
-        _unitConditionalIntensities = empty(0);
-
-        _spikeCounts.Dispose();
-        _spikeCounts = empty(0);
-
-        _samples.Dispose();
-        _samples = empty(0);
-
-        _rates.Dispose();
-        _rates = empty(0);
     }
 }

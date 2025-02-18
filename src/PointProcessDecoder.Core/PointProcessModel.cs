@@ -149,6 +149,7 @@ public class PointProcessModel : ModelBase, IModel
         _likelihood = likelihoodType switch
         {
             LikelihoodType.Poisson => new PoissonLikelihood(
+                ignoreNoSpikes: ignoreNoSpikes,
                 device: _device,
                 scalarType: _scalarType
             ),
@@ -187,11 +188,11 @@ public class PointProcessModel : ModelBase, IModel
     /// <inheritdoc/>
     public override void Encode(Tensor observations, Tensor inputs)
     {
-        if (observations.shape[1] != _stateSpace.Dimensions)
+        if (observations.size(1) != _stateSpace.Dimensions)
         {
             throw new ArgumentException("The number of latent dimensions must match the shape of the observations.");
         }
-        if (observations.shape[0] != inputs.shape[0])
+        if (observations.size(0) != inputs.size(0))
         {
             throw new ArgumentException("The number of observations must match the number of inputs.");
         }
@@ -203,7 +204,7 @@ public class PointProcessModel : ModelBase, IModel
     public override Tensor Decode(Tensor inputs)
     {
         var conditionalIntensities = _encoderModel.Evaluate(inputs);
-        var likelihood = _likelihood.LogLikelihood(inputs, conditionalIntensities);
+        var likelihood = _likelihood.Likelihood(inputs, conditionalIntensities);
         return _decoderModel.Decode(inputs, likelihood);
     }
 
@@ -281,14 +282,5 @@ public class PointProcessModel : ModelBase, IModel
         model.StateSpace.Load(basePath);
 
         return model;
-    }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _encoderModel.Dispose();
-        _decoderModel.Dispose();
-        _likelihood.Dispose();
-        _stateSpace.Dispose();
     }
 }

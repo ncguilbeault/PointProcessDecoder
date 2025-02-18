@@ -13,10 +13,10 @@ public interface ILikelihood : IModelComponent
     public Likelihood.LikelihoodType LikelihoodType { get; }
 
     /// <summary>
-    /// Measures the likelihood of the model given the inputs and the conditional intensities.
+    /// Measures the likelihood of the model given the inputs and the intensities.
     /// </summary>
     /// <param name="inputs"></param>
-    /// <param name="conditionalIntensities"></param>
+    /// <param name="intensities"></param>
     /// <returns></returns>
-    public Tensor LogLikelihood(Tensor inputs, IEnumerable<Tensor> conditionalIntensities);
+    public Tensor Likelihood(Tensor inputs, IEnumerable<Tensor> intensities);
 }

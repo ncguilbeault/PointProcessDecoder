@@ -51,8 +51,6 @@ public class KernelCompression : ModelComponent, IEstimation
     /// <inheritdoc/>
     public int Dimensions => _dimensions;
 
-    private readonly double _eps;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="KernelCompression"/> class.
     /// </summary>
@@ -71,7 +69,6 @@ public class KernelCompression : ModelComponent, IEstimation
     {
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _kernelLimit = kernelLimit ?? int.MaxValue;
         _dimensions = dimensions ?? 1;
@@ -104,7 +101,6 @@ public class KernelCompression : ModelComponent, IEstimation
 
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
-        _eps = finfo(_scalarType).eps;
         _distanceThreshold = distanceThreshold ?? double.NegativeInfinity;
         _kernelLimit = kernelLimit ?? int.MaxValue;
         _dimensions = dimensions;
@@ -115,11 +111,11 @@ public class KernelCompression : ModelComponent, IEstimation
     /// <inheritdoc/>
     public void Fit(Tensor data)
     {
-        if (data.shape[1] != _dimensions)
+        if (data.size(1) != _dimensions)
         {
             throw new ArgumentException("Data shape must match expected dimensions");
         }
-        if (data.shape[0] == 0) return;
+        if (data.size(0) == 0) return;
 
         using var _ = NewDisposeScope();
 
@@ -127,7 +123,7 @@ public class KernelCompression : ModelComponent, IEstimation
         {
             _kernels = stack([_weight, data[0], _kernelBandwidth], dim: 1)
                 .unsqueeze(0);
-            if (data.shape[0] == 1) 
+            if (data.size(0) == 1) 
             {
                 _kernels.MoveToOuterDisposeScope();
                 return;
@@ -135,13 +131,13 @@ public class KernelCompression : ModelComponent, IEstimation
             data = data[TensorIndex.Slice(1)];
         }
 
-        for (int i = 0; i < data.shape[0]; i++)
+        for (int i = 0; i < data.size(0); i++)
         {
             var kernel = stack([_weight, data[i], _kernelBandwidth], dim: 1);
             var dist = CalculateMahalanobisDistance(data[i]);
             var (minDist, argminDist) = dist.min(0);
             if ((minDist > _distanceThreshold).item<bool>()
-                && _kernels.shape[0] < _kernelLimit)
+                && _kernels.size(0) < _kernelLimit)
             {
                 _kernels = concat([_kernels, kernel.unsqueeze(0)], dim: 0);
                 continue;
@@ -176,7 +172,7 @@ public class KernelCompression : ModelComponent, IEstimation
         using var _ = NewDisposeScope();
         if (_kernels.numel() == 0)
         {
-            return (ones([1, 1], dtype: _scalarType, device: _device) * float.NaN)
+            return empty(0, dtype: _scalarType, device: _device)
                 .MoveToOuterDisposeScope();
         }
         var kernels = _kernels[TensorIndex.Colon, TensorIndex.Slice(dimensionStart, dimensionEnd)];
@@ -196,9 +192,12 @@ public class KernelCompression : ModelComponent, IEstimation
     public Tensor Normalize(Tensor points)
     {
         using var _ = NewDisposeScope();
-        var density = (points.sum(dim: -1)
-            / points.shape[1])
-            .clamp_min(_eps);
+        if (points.numel() == 0)
+        {
+            return points;
+        }
+        var density = points.sum(dim: -1)
+            / points.size(1);
         density /= density.sum();
         return density
             .to_type(_scalarType)
@@ -209,7 +208,7 @@ public class KernelCompression : ModelComponent, IEstimation
     /// <inheritdoc/>
     public Tensor Evaluate(Tensor min, Tensor max, Tensor steps)
     {
-        if (min.shape[0] != _dimensions || max.shape[0] != _dimensions || steps.shape[0] != _dimensions)
+        if (min.size(0) != _dimensions || max.size(0) != _dimensions || steps.size(0) != _dimensions)
         {
             throw new ArgumentException("The lengths of min, max, and steps must be equal to the number of dimensions.");
         }
@@ -225,8 +224,8 @@ public class KernelCompression : ModelComponent, IEstimation
         }
 
         using var _ = NewDisposeScope();
-        var arrays = new Tensor[min.shape[0]];
-        for (int i = 0; i < min.shape[0]; i++)
+        var arrays = new Tensor[min.size(0)];
+        for (int i = 0; i < min.size(0); i++)
         {
             arrays[i] = linspace(min[i].item<double>(), max[i].item<double>(), steps[i].item<long>()).to(_device);
         }
@@ -241,14 +240,14 @@ public class KernelCompression : ModelComponent, IEstimation
     /// <inheritdoc/>
     public Tensor Evaluate(Tensor points)
     {
-        if (points.shape[1] != _dimensions)
+        if (points.size(1) != _dimensions)
         {
             throw new ArgumentException("The number of dimensions must match the shape of the data.");
         }
 
         if (_kernels.numel() == 0)
         {
-            return zeros(points.shape[0], dtype: _scalarType, device: _device);
+            return empty(0, dtype: _scalarType, device: _device);
         }
 
         using var _ = NewDisposeScope();
@@ -268,13 +267,6 @@ public class KernelCompression : ModelComponent, IEstimation
     {
         _kernels = Tensor.Load(Path.Combine(basePath, "kernels.bin")).to(_device);
         return this;
-    }
-
-    /// <inheritdoc/>
-    public override void Dispose()
-    {
-        _kernels.Dispose();
-        _kernels = empty(0);
     }
 }
 

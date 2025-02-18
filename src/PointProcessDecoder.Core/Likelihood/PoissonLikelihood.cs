@@ -10,7 +10,8 @@ namespace PointProcessDecoder.Core.Likelihood;
 /// <param name="scalarType"></param>
 public class PoissonLikelihood(
     Device? device = null,
-    ScalarType? scalarType = null
+    ScalarType? scalarType = null,
+    bool ignoreNoSpikes = false
 ) : ModelComponent, ILikelihood
 {
     private readonly Device _device = device ?? CPU;
@@ -21,25 +22,45 @@ public class PoissonLikelihood(
     /// <inheritdoc/>
     public override ScalarType ScalarType => _scalarType;
 
+    private bool _ignoreNoSpikes = ignoreNoSpikes;
+    /// <summary>
+    /// Whether to ignore the contribution of no spikes to the likelihood.
+    /// </summary>
+    public bool IgnoreNoSpikes
+    {
+        get => _ignoreNoSpikes;
+        set => _ignoreNoSpikes = value;
+    }
+
     /// <inheritdoc />
     public LikelihoodType LikelihoodType => LikelihoodType.Poisson;
 
     /// <inheritdoc />
-    public Tensor LogLikelihood(
+    public Tensor Likelihood(
         Tensor inputs, 
-        IEnumerable<Tensor> conditionalIntensities
+        IEnumerable<Tensor> intensities
     )
     {
         using var _ = NewDisposeScope();
-        var conditionalIntensity = conditionalIntensities.First();
-        var conditionalIntensityTensor = conditionalIntensity.flatten(1).T.unsqueeze(0);
-        var logLikelihood = (xlogy(inputs.unsqueeze(1), conditionalIntensityTensor) - conditionalIntensityTensor)
-            .nan_to_num()
-            .sum(dim: -1);
-        logLikelihood -= logLikelihood.max(dim: -1, keepdim: true).values;
-        return logLikelihood
-            .exp()
-            .nan_to_num()
+
+        var intensity = intensities.First()
+            .unsqueeze(0);
+
+        var likelihood = inputs.unsqueeze(-1) 
+            * intensity;
+        
+        if (!_ignoreNoSpikes) {
+            likelihood -= intensity.exp();
+        }
+
+        likelihood = likelihood
+            .sum(dim: 1)
+            .exp();
+
+        likelihood /= likelihood
+            .sum(dim: -1, keepdim: true);
+
+        return likelihood
             .MoveToOuterDisposeScope();
     }
 }
