@@ -98,6 +98,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
                 _observationEstimation = new KernelDensity(
                     bandwidth: observationBandwidth, 
                     dimensions: _stateSpace.Dimensions, 
+                    kernelLimit: kernelLimit,
                     device: device,
                     scalarType: scalarType
                 );
@@ -106,7 +107,8 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
                 {
                     _markEstimation[i] = new KernelDensity(
                         bandwidth: bandwidth, 
-                        dimensions: jointDimensions, 
+                        dimensions: jointDimensions,
+                        kernelLimit: kernelLimit,
                         device: device,
                         scalarType: scalarType
                     );

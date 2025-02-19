@@ -98,6 +98,11 @@ public class PointProcessModelConfiguration
     public double? SigmaRandomWalk { get; set; }
 
     /// <summary>
+    /// The kernel limit of the model.
+    /// </summary>
+    public int? KernelLimit { get; set; }
+
+    /// <summary>
     /// The scalar type of the model.
     /// </summary>
     public ScalarType? ScalarType { get; set; }

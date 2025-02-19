@@ -181,6 +181,7 @@ public class PointProcessModel : ModelBase, IModel
             DistanceThreshold = distanceThreshold,
             IgnoreNoSpikes = ignoreNoSpikes,
             SigmaRandomWalk = sigmaRandomWalk,
+            KernelLimit = kernelLimit,
             ScalarType = scalarType
         };
     }
@@ -272,6 +273,7 @@ public class PointProcessModel : ModelBase, IModel
             distanceThreshold: configuration.DistanceThreshold,
             ignoreNoSpikes: configuration.IgnoreNoSpikes,
             sigmaRandomWalk: configuration.SigmaRandomWalk,
+            kernelLimit: configuration.KernelLimit,
             device: device,
             scalarType: configuration.ScalarType
         );
