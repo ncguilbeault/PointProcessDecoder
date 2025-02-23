@@ -50,11 +50,16 @@ public class PoissonLikelihood(
             * intensity;
         
         if (!_ignoreNoSpikes) {
-            likelihood -= intensity.exp();
+            likelihood -= intensity
+                .exp();
         }
 
         likelihood = likelihood
-            .sum(dim: 1)
+            .sum(dim: 1);
+
+        likelihood -= likelihood.max(dim: -1, keepdim: true).values;
+
+        likelihood = likelihood
             .exp();
 
         likelihood /= likelihood
