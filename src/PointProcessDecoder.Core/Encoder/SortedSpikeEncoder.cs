@@ -112,6 +112,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
             EstimationMethod.KernelDensity => new KernelDensity(
                 bandwidth: bandwidth, 
                 dimensions: dimensions, 
+                kernelLimit: kernelLimit,
                 device: device,
                 scalarType: scalarType
             ),
