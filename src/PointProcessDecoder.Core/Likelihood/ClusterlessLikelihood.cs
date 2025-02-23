@@ -52,10 +52,13 @@ public class ClusterlessLikelihood(
                 .unsqueeze(1)
                 .exp();
         }
-
+        
         likelihood = likelihood
-            .sum(dim: 0)
-            .exp();
+            .sum(dim: 0);
+
+        likelihood -= likelihood.max(dim: -1, keepdim: true).values;
+
+        likelihood = likelihood.exp();
 
         likelihood /= likelihood
             .sum(dim: -1, keepdim: true);
