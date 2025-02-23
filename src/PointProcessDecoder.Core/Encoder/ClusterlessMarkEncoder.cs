@@ -34,7 +34,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
     private Tensor _markIntensities = empty(0);
     private Tensor _channelIntensities = empty(0);
     private Tensor _observationDensity = empty(0);
-    private Tensor[] _channelEstimates = [];
+    private readonly Tensor[] _channelEstimates = [];
 
     private Tensor _spikeCounts = empty(0);
     private Tensor _samples = empty(0);
