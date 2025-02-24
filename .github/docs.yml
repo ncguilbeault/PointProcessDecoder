@@ -1,0 +1,51 @@
+name: Build docs
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: docs
+  cancel-in-progress: true
+
+permissions:
+  # Both required by actions/deploy-pages
+  pages: write
+  id-token: write
+
+jobs:
+  build_docs:
+    runs-on: windows-latest
+@@ -14,31 +23,31 @@ jobs:
+          submodules: true
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v4.0.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+        
+
+      - name: Restore NuGet Packages
+        run: dotnet restore PointProcessDecoder.sln
+
+      - name: Build Solution
+        run: dotnet build PointProcessDecoder.sln -c Release
+        
+
+      - name: Setup DocFX
+        run: dotnet tool restore
+        
+
+      - name: Publish to github pages
+        uses: peaceiris/actions-gh-pages@v3.9.3
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _site
+          publish_branch: gh-pages
+          force_orphan: true
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
