@@ -1,0 +1,48 @@
+name: Build docs
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: docs
+  cancel-in-progress: true
+
+permissions:
+  pages: write
+  id-token: write
+
+jobs:
+  build_docs:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+
+      - name: Restore NuGet Packages
+        run: dotnet restore PointProcessDecoder.sln
+
+      - name: Build Solution
+        run: dotnet build PointProcessDecoder.sln -c Release
+
+      - name: Setup DocFX
+        run: dotnet tool restore
+
+      - name: Build Metadata
+        run: dotnet docfx metadata
+
+      - name: Build Site
+        run: dotnet docfx build
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

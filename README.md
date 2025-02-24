@@ -6,6 +6,16 @@ This repo contains a C# implementation of the Bayesian state space point process
 
 The goal of this software is to perform neural decoding. Bayesian state-space models, in particular, provide a framework to model latent states based on neural activity while point processes capture the probabilistic relationship between neural activity and latent observations.
 
+## Demo
+
+Below is a demo running online decoding of position with spike sorted data from tetrode recordings of hippocampus.
+
+<p align="center">
+<img src="./assets/SpikeSortedCompressionDemo.gif" alt="Point Process Decoder Demo using Spike Sorted Data">
+</p>
+
+*Shows online decoding using the `PointProcessModel` with the parameters `KernelCompression` for density estimation and `SortedSpikeEncoder` for encoding. Batches of neural spiking data are combined with the animals position online and used to update the encoder. At the same time, the decoder outputs a posterior distribution over the latent space given small batches of neural spiking data it has not learned from. The green dot shows the true position of the animal in the arena and the red data shows the maximum a posteriori estimate of the posterior distribution.*
+
 ## Description
 
 There are 3 main components of the model: encoder, likelihood, and decoder.
