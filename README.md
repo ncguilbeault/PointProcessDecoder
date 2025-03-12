@@ -6,15 +6,29 @@ This repo contains a C# implementation of the Bayesian state space point process
 
 The goal of this software is to perform neural decoding. Bayesian state-space models, in particular, provide a framework to model latent states based on neural activity while point processes capture the probabilistic relationship between neural activity and latent observations.
 
-## Demo
+## Demos
 
-Below is a demo running online decoding of position with spike sorted data from tetrode recordings of hippocampus.
+### Decoding from Hippocampal Sorted Units
+
+Below is a demo running online decoding of position with spike sorted data from tetrode recordings of mouse hippocampal neurons.
 
 <p align="center">
-<img src="./assets/SpikeSortedCompressionDemo.gif" alt="Point Process Decoder Demo using Spike Sorted Data">
+<img src="./assets/DecodingFromHippocampalSortedUnits.gif" alt="Point Process Decoder Demo using Spike Sorted Data from the Hippocampus">
 </p>
 
-*Shows online decoding using the `PointProcessModel` with the parameters `KernelCompression` for density estimation and `SortedSpikeEncoder` for encoding. Batches of neural spiking data are combined with the animals position online and used to update the encoder. At the same time, the decoder outputs a posterior distribution over the latent space given small batches of neural spiking data it has not learned from. The green dot shows the true position of the animal in the arena and the red data shows the maximum a posteriori estimate of the posterior distribution.*
+*This demo shows online decoding of the hippocampus using the `PointProcessDecoder` package. A mouse is placed into a W-shaped maze and allowed to freely explore. Neural spikes from hippocampal units are combined with the animals position and used to update the encoder. Given small batches of previously unseen neural spiking data, the model can decode the animals position from a posterior distribution over the latent space. The green dot shows the true position of the animal in the arena and the red data shows the predicted position, taken as the maximum a posteriori estimate of the posterior distribution. The original data for this demo was published in Eric L Denovellis, Anna K Gillespie, Michael E Coulter, Marielena Sosa, Jason E Chung, Uri T Eden, Loren M Frank (2021) Hippocampal replay of experience at real-world speeds eLife 10:e64505.*
+
+### Decoding from Striatal Sorted Units
+
+Below is a demo running online decoding with spike sorted data from neuropixel recordings of mouse striatum.
+
+<p align="center">
+<img src="./assets/DecodingFromStriatalSortedUnits.gif" alt="Point Process Decoder Demo using Spike Sorted Data from the Striatum">
+</p>
+
+*This demo shows online decoding of the striatum using the `PointProcessModel`. A mouse is trained to press buttons in a correct sequence to receive a reward. Spiking activity from striatal units are fed into the encoder along with the animal's head position. The decoder outputs a posterior distribution over position given small batches of neural spiking data it has not learned from. The green dot shows the true position of the animal's head in the arena and the red data shows the maximum a posteriori estimate of the posterior distribution. The original data for this demo came from Emmett J thompson, Lars Rollik, Benjamin Waked, Georgina Mills, Jasvin Kaur, Ben Geva, Rodrigo Carrasco-Davis, Tom George, Clementine Domine, William Dorrell, Marcus Stephenson-Jones (2024) Replay of procedural experience is independent of the hippocampus bioRxiv.*
+
+
 
 ## Description
 
