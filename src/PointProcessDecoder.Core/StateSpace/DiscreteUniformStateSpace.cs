@@ -26,6 +26,9 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
     /// <inheritdoc/>
     public Tensor Points => _points;
 
+    private readonly Tensor _axesPoints;
+    public Tensor AxesPoints => _axesPoints;
+
     private readonly long[] _shape;
     /// <inheritdoc/>
     public long[] Shape => _shape;
@@ -57,8 +60,28 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
         _dimensions = dimensions;
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
+        _axesPoints = ComputeAxesPoints(min, max, steps, _device, _scalarType);
         _points = ComputeDiscreteUniformStateSpace(min, max, steps, _device, _scalarType);
         _shape = steps;
+    }
+
+    public static Tensor ComputeAxesPoints(
+        double[] min,
+        double[] max,
+        long[] steps,
+        Device device,
+        ScalarType scalarType
+    )
+    {
+        using var _ = NewDisposeScope();
+        var dims = min.Length;
+        var axesPoints = new Tensor[dims];
+        for (int i = 0; i < dims; i++)
+        {
+            axesPoints[i] = linspace(min[i], max[i], steps[i], dtype: scalarType, device: device);
+        }
+        return vstack(axesPoints)
+            .MoveToOuterDisposeScope();
     }
 
     /// <summary>
