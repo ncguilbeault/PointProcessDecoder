@@ -13,6 +13,11 @@ public interface ILikelihood : IModelComponent
     public Likelihood.LikelihoodType LikelihoodType { get; }
 
     /// <summary>
+    /// Whether to ignore the contribution of units or channels with no spikes to the likelihood.
+    /// </summary>
+    public bool IgnoreNoSpikes { get; set; }
+
+    /// <summary>
     /// Measures the likelihood of the model given the inputs and the intensities.
     /// </summary>
     /// <param name="inputs"></param>
