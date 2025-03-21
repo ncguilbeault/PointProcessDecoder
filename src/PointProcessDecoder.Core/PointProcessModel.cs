@@ -206,7 +206,7 @@ public class PointProcessModel : ModelBase, IModel
     {
         var conditionalIntensities = _encoderModel.Evaluate(inputs);
         var likelihood = _likelihood.Likelihood(inputs, conditionalIntensities);
-        return _decoderModel.Decode(inputs, likelihood);
+        return _decoderModel.Decode(likelihood);
     }
 
     /// <inheritdoc/>

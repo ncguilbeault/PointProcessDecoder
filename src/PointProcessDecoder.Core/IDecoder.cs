@@ -23,10 +23,9 @@ public interface IDecoder : IModelComponent
     public IStateTransitions Transitions { get; }
 
     /// <summary>
-    /// Decodes the observations into the latent state based on the inputs and the likelihood.
+    /// Decodes the observations into the latent state based on the likelihood of the data.
     /// </summary>
-    /// <param name="input"></param>
     /// <param name="likelihood"></param>
     /// <returns></returns>
-    public Tensor Decode(Tensor input, Tensor likelihood);
+    public Tensor Decode(Tensor likelihood);
 }
