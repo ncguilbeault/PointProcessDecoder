@@ -462,7 +462,7 @@ public class TestModel
 
         position = position.reshape(-1, 2);
         spikingData = spikingData.reshape(position.shape[0], -1)
-            .to_type(ScalarType.Bool);
+            .to_type(ScalarType.Int32);
         var numNeurons = (int)spikingData.shape[1];
 
         var pointProcessModel = new PointProcessModel(
