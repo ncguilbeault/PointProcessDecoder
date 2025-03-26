@@ -124,7 +124,7 @@ public static class SortedUnitsUtilities
         );
 
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, outputDirectory);
-        plotPrediction.Show<float>(
+        plotPrediction.Show(
             prediction, 
             positionPoints
         );
@@ -210,7 +210,7 @@ public static class SortedUnitsUtilities
         );
 
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, outputDirectory);
-        plotPrediction.Show<float>(
+        plotPrediction.Show(
             prediction, 
             position[TensorIndex.Slice(nTraining, nTraining + nTesting)]
         );

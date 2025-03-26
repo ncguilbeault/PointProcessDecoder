@@ -228,7 +228,7 @@ public static class EncoderUtilities
             );
 
             plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, outputDirectory);
-            plotDensity2D.Show<float>(density);
+            plotDensity2D.Show(density);
             plotDensity2D.Save(png: true);
         }
     }
@@ -264,7 +264,7 @@ public static class EncoderUtilities
                 title: $"{title}{i}"
             );
             plotDensity1D.OutputDirectory = Path.Combine(plotDensity1D.OutputDirectory, directoryScatterPlot1D);
-            plotDensity1D.Show<float>(density1DExpanded);
+            plotDensity1D.Show(density1DExpanded);
             plotDensity1D.Save(png: true);
 
             var density2D = tile(density, [heatmapPadding, 1]);
@@ -279,7 +279,7 @@ public static class EncoderUtilities
                 title: $"{title}{i}"
             );
             plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, directoryHeatmap2D);
-            plotDensity2D.Show<float>(density2D);
+            plotDensity2D.Show(density2D);
             plotDensity2D.Save(png: true);
         }
     }
@@ -313,7 +313,7 @@ public static class EncoderUtilities
             );
 
             plotDensity2D.OutputDirectory = Path.Combine(plotDensity2D.OutputDirectory, directoryHeatmap2D);
-            plotDensity2D.Show<float>(density);
+            plotDensity2D.Show(density);
             plotDensity2D.Save(png: true);
         }
     }
