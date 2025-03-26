@@ -37,7 +37,7 @@ public static class Simulate
     /// <returns>
     /// A 1D tensor of position values with shape (steps * cycles, 1).
     /// </returns>
-    public static Tensor Position(
+    public static Tensor SinPosition(
         int steps, 
         int cycles, 
         double min, 
@@ -71,7 +71,7 @@ public static class Simulate
     /// <returns>
     /// A 2D tensor of position values with shape (steps * cycles, 2).
     /// </returns>
-    public static Tensor Position(
+    public static Tensor SinPosition(
         int steps, 
         int cycles, 
         double xMin, 
@@ -106,6 +106,50 @@ public static class Simulate
             .MoveToOuterDisposeScope();
     }
 
+    public static Tensor RandPosition(
+        int count,
+        double min, 
+        double max,
+        int? seed = null,
+        ScalarType? scalarType = null, 
+        Device? device = null
+    )
+    {
+        using var _ = NewDisposeScope();
+        if (seed != null) manual_seed(seed.Value);
+
+        scalarType ??= _scalarType;
+        device ??= _device;
+
+        return (rand(count, 1) * max - min + min)
+            .to_type(scalarType.Value)
+            .to(device)
+            .MoveToOuterDisposeScope();
+    }
+
+    public static Tensor RandPosition(
+        int count,
+        double xMin, 
+        double xMax, 
+        double yMin, 
+        double yMax,
+        int? seed = null,
+        ScalarType? scalarType = null, 
+        Device? device = null
+    )
+    {
+        using var _ = NewDisposeScope();
+        if (seed != null) manual_seed(seed.Value);
+
+        scalarType ??= _scalarType;
+        device ??= _device;
+
+        return (rand(count, 2) * tensor(new double[] { xMax - xMin, yMax - yMin }) + tensor(new double[] { xMin, yMin }))
+            .to_type(scalarType.Value)
+            .to(device)
+            .MoveToOuterDisposeScope();
+    }
+
     /// <summary>
     /// Simulate 1D place fields for a given range of x values and number of neurons.
     /// Spaces the place fields evenly across the range.
@@ -121,8 +165,7 @@ public static class Simulate
     public static Tensor PlaceFieldCenters(
         double min, 
         double max, 
-        int numNeurons, 
-        int? seed = null, 
+        int numNeurons,
         ScalarType? scalarType = null,
         Device? device = null
     )
@@ -130,7 +173,6 @@ public static class Simulate
         scalarType ??= _scalarType;
         device ??= _device;
         using var _ = NewDisposeScope();
-        if (seed != null) manual_seed(seed.Value);
         var positions = linspace(min + 0.5 * (max - min) / numNeurons, max - 0.5 * (max - min) / numNeurons, numNeurons).unsqueeze(1);
         return positions
             .to_type(scalarType.Value)
@@ -167,13 +209,14 @@ public static class Simulate
         scalarType ??= _scalarType;
         device ??= _device;
         using var _ = NewDisposeScope();
-        if (seed != null) manual_seed(seed.Value);
+        var generator = seed != null ? manual_seed(seed.Value) : null;
+
         var count = sqrt(numNeurons).to_type(ScalarType.Int32).item<int>();
         var xSpacing = linspace(xMin + 0.5 * (xMax - xMin) / count, xMax - 0.5 * (xMax - xMin) / count, count);
         var ySpacing = linspace(yMin + 0.5 * (yMax - yMin) / count, yMax - 0.5 * (yMax - yMin) / count, count);
         var positionGrid = meshgrid([ xSpacing, ySpacing ]);
         var centers = vstack([ positionGrid[0].flatten(), positionGrid[1].flatten() ]).T;
-        var leftover = rand(numNeurons - count * count, 2) * tensor(new double[] { xMax - xMin, yMax - yMin }) + tensor(new double[] { xMin, yMin });
+        var leftover = rand(numNeurons - count * count, 2, generator: generator) * tensor(new double[] { xMax - xMin, yMax - yMin }) + tensor(new double[] { xMin, yMin });
         var positions = vstack([ centers, leftover ]);
         return positions
             .to_type(scalarType.Value)
@@ -238,9 +281,9 @@ public static class Simulate
         scalarType ??= _scalarType;
         device ??= _device;
         using var _ = NewDisposeScope();
-        if (seed != null) manual_seed(seed.Value);
+        var generator = seed != null ? manual_seed(seed.Value) : null;
         var spikingRates = GaussianSpikeRates(positionData, placeFieldCenters, placeFieldRadius);
-        var noise = rand_like(spikingRates);
+        var noise = rand(spikingRates.shape, generator: generator);
         noise *= noiseScale ?? 1.0;
         var spikeThreshold = firingThreshold + noise;
         var spikes = spikeThreshold < spikingRates;
@@ -277,11 +320,11 @@ public static class Simulate
         scalarType ??= _scalarType;
         device ??= _device;
         using var _ = NewDisposeScope();
-        if (seed != null) manual_seed(seed.Value);
+        var generator = seed != null ? manual_seed(seed.Value) : null;
         var marks = ones([positionData.shape[0], markDimensions, markChannels], device: device, dtype: scalarType.Value) * double.NaN;
         var nUnits = spikes.shape[1];
         var spikeIndices = spikes.nonzero();
-        var unitMarks = rand([nUnits, markDimensions], device: device, dtype: scalarType.Value) * spikeScale;
+        var unitMarks = rand([nUnits, markDimensions], device: device, dtype: scalarType.Value, generator: generator) * spikeScale;
         var neuronsPerChannel = (int)Math.Ceiling((double)nUnits / markChannels);
 
         // simulate marks for each channel
@@ -296,7 +339,7 @@ public static class Simulate
                 var unitMark = unitMarks[unitIndex];
                 var unitMarkExpanded = unitMark.unsqueeze(0).expand(unitSpikes.shape[0], markDimensions);
                 // add gaussian noise to the mark
-                unitMarkExpanded += randn_like(unitMarkExpanded) * noiseScale;
+                unitMarkExpanded += randn(unitMarkExpanded.shape, generator: generator) * noiseScale;
                 marks[TensorIndex.Tensor(unitSpikes[TensorIndex.Colon, 0]), TensorIndex.Colon, i] = unitMarkExpanded;
             }
         }
