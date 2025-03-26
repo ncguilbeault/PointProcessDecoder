@@ -82,7 +82,7 @@ public class TestSerialization
     [TestMethod]
     public void TestSortedUnitsUniformDensityDeserialization()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -92,8 +92,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -142,7 +141,7 @@ public class TestSerialization
     [TestMethod]
     public void TestSortedUnitsRandomWalkCompressionDeserialization()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -152,8 +151,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -204,7 +202,7 @@ public class TestSerialization
     [TestMethod]
     public void TestClusterlessRandomWalkDensityDeserializationAfterEncoding()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -214,8 +212,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -275,7 +272,7 @@ public class TestSerialization
     [TestMethod]
     public void TestClusterlessUniformCompressionDeserializationAfterEncoding()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -285,8 +282,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -347,7 +343,7 @@ public class TestSerialization
     [TestMethod]
     public void TestSortedEncodeAfterLoading()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -357,8 +353,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(

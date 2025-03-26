@@ -32,7 +32,7 @@ public class TestCuda
         InitializeDevice(device);
         Assert.IsTrue(device.type == DeviceType.CUDA);
 
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -44,7 +44,6 @@ public class TestCuda
             0, 
             100, 
             40,
-            seed: 0,
             device: device
         );
 

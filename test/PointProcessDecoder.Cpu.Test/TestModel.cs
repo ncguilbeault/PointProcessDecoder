@@ -415,6 +415,7 @@ public class TestModel
         }
 
         var prediction1 = pointProcessModel.Decode(marks[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
+            
             .sum(dim: 0);
 
         pointProcessModel = new PointProcessModel(
@@ -444,6 +445,7 @@ public class TestModel
         );
 
         var prediction2 = pointProcessModel.Decode(marks[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
+            
             .sum(dim: 0);
 
         Assert.AreEqual(prediction1, prediction2);
@@ -495,6 +497,7 @@ public class TestModel
         }
 
         var prediction1 = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
+            
             .sum(dim: 0);
 
         pointProcessModel = new PointProcessModel(
@@ -522,6 +525,7 @@ public class TestModel
         );
 
         var prediction2 = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
+            
             .sum(dim: 0);
 
         Assert.AreEqual(prediction1, prediction2);
