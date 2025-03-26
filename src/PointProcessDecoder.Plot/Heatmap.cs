@@ -113,32 +113,7 @@ public class Heatmap : OxyPlotBase
 
     public void Show(Tensor density, Tensor? points = null, bool addLine = false)
     {
-        var densityArray = density.data<double>().ToNDArray();
-        var densityData = new double[density.shape[0], density.shape[1]];
-        Array.Copy(densityArray, densityData, densityArray.Length);
-
-        var heatMapSeries = new HeatMapSeries
-        {
-            X0 = XMin,
-            X1 = XMax,
-            Y0 = YMin,
-            Y1 = YMax,
-            Interpolate = true,
-            Data = densityData,
-            ColorAxisKey = "color"
-        };
-
-        _plot.Series.Add(heatMapSeries);
-
-        if (points is not null)
-        {
-            AddPoints(points, addLine);
-        }
-    }
-
-    public void Show<T>(Tensor density, Tensor? points = null, bool addLine = false) where T : unmanaged
-    {
-        var densityArray = density.data<T>().ToNDArray();
+        var densityArray = density.to_type(ScalarType.Float64).data<double>().ToNDArray();
         var densityData = new double[density.shape[0], density.shape[1]];
         Array.Copy(densityArray, densityData, densityArray.Length);
 
