@@ -44,7 +44,7 @@ public static class TransitionsUtilities
 
         Heatmap transitionsPlot = new(min[xIdx], max[xIdx], min[yIdx], max[yIdx], title: figureName);
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<float>(uniformTransitions.Transitions);
+        transitionsPlot.Show(uniformTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 
@@ -86,7 +86,7 @@ public static class TransitionsUtilities
 
         Heatmap transitionsPlot = new(min[xIdx], max[xIdx], min[yIdx], max[yIdx], title: figureName);
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<float>(randomWalkTransitions.Transitions);
+        transitionsPlot.Show(randomWalkTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 }

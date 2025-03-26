@@ -30,10 +30,10 @@ public static class EstimationUtilities
 
         var kernelCompressionDirectory = Path.Combine(outputDirectory, "KernelCompression1D");
 
-        var position1D = Simulate.Position(steps, cycles, yMin, yMax, scalarType);
+        var position1D = Simulate.SinPosition(steps, cycles, yMin, yMax, scalarType);
         var position1DExpanded = concat([zeros_like(position1D), position1D], dim: 1);
 
-        var placeFieldCenters = Simulate.PlaceFieldCenters(yMin, yMax, numNeurons, seed, scalarType);
+        var placeFieldCenters = Simulate.PlaceFieldCenters(yMin, yMax, numNeurons, scalarType);
         var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
@@ -62,7 +62,7 @@ public static class EstimationUtilities
             title: "PositionKernelCompression2D"
         );
         plotKernelDensityEstimate.OutputDirectory = Path.Combine(plotKernelDensityEstimate.OutputDirectory, kernelCompressionDirectory);
-        plotKernelDensityEstimate.Show<float>(positionKC2D);
+        plotKernelDensityEstimate.Show(positionKC2D);
         plotKernelDensityEstimate.Save(png: true);
 
         var neuronKDEs = new List<KernelCompression>();
@@ -98,7 +98,7 @@ public static class EstimationUtilities
                 figureName: $"Neuron{i}PlaceField"
             );
             plotNeuronKernelDensityEstimate.OutputDirectory = Path.Combine(plotNeuronKernelDensityEstimate.OutputDirectory, compressedPlaceFieldsDirectory);
-            plotNeuronKernelDensityEstimate.Show<float>(neuronDensity2D);
+            plotNeuronKernelDensityEstimate.Show(neuronDensity2D);
             plotNeuronKernelDensityEstimate.Save(png: true);
         }
     }
@@ -125,10 +125,10 @@ public static class EstimationUtilities
 
         var kernelDensityDirectory = Path.Combine(outputDirectory, "KernelDensity");
 
-        var position1D = Simulate.Position(steps, cycles, yMin, yMax, scalarType);
+        var position1D = Simulate.SinPosition(steps, cycles, yMin, yMax, scalarType);
         var position1DExpanded = concat([zeros_like(position1D), position1D], dim: 1);
 
-        var placeFieldCenters = Simulate.PlaceFieldCenters(yMin, yMax, numNeurons, seed, scalarType);
+        var placeFieldCenters = Simulate.PlaceFieldCenters(yMin, yMax, numNeurons, scalarType);
         var placeFieldCenters2D = concat([zeros_like(placeFieldCenters), placeFieldCenters], dim: 1);
 
         var spikingData = Simulate.SpikesAtPosition(position1DExpanded, placeFieldCenters2D, placeFieldRadius, firingThreshold, seed);
@@ -150,7 +150,7 @@ public static class EstimationUtilities
             title: "PositionDensity2D"
         );
         plotKernelDensityEstimate.OutputDirectory = Path.Combine(plotKernelDensityEstimate.OutputDirectory, kernelDensityDirectory);
-        plotKernelDensityEstimate.Show<float>(positionDensity2DExtended);
+        plotKernelDensityEstimate.Show(positionDensity2DExtended);
         plotKernelDensityEstimate.Save(png: true);
 
         var neuronKDEs = new List<KernelDensity>();
@@ -180,7 +180,7 @@ public static class EstimationUtilities
                 figureName: $"Neuron{i}PlaceField"
             );
             plotNeuronKernelDensityEstimate.OutputDirectory = Path.Combine(plotNeuronKernelDensityEstimate.OutputDirectory, placeFieldsDirectory);
-            plotNeuronKernelDensityEstimate.Show<float>(neuronDensity2D);
+            plotNeuronKernelDensityEstimate.Show(neuronDensity2D);
             plotNeuronKernelDensityEstimate.Save(png: true);
         }
     }
