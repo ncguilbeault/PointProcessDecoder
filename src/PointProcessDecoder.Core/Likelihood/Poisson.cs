@@ -8,7 +8,7 @@ namespace PointProcessDecoder.Core.Likelihood;
 /// </summary>
 /// <param name="device"></param>
 /// <param name="scalarType"></param>
-public class PoissonLikelihood(
+public class Poisson(
     Device? device = null,
     ScalarType? scalarType = null,
     bool ignoreNoSpikes = false

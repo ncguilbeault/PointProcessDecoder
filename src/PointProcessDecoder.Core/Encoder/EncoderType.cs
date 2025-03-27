@@ -6,12 +6,12 @@ namespace PointProcessDecoder.Core.Encoder;
 public enum EncoderType
 {
     /// <summary>
-    /// Represents a clusterless mark encoder.
+    /// Represents an encoder for clusterless marks.
     /// </summary>
-    ClusterlessMarkEncoder,
+    ClusterlessMarks,
 
     /// <summary>
-    /// Represents a sorted spike encoder.
+    /// Represents an encoder for sorted spikes.
     /// </summary>
-    SortedSpikeEncoder
+    SortedSpikes
 }

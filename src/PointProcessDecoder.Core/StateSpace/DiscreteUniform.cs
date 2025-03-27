@@ -5,7 +5,7 @@ namespace PointProcessDecoder.Core.StateSpace;
 /// <summary>
 /// Represents a discrete uniform state space.
 /// </summary>
-public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
+public class DiscreteUniform : ModelComponent, IStateSpace
 {
     private readonly Device _device;
     /// <inheritdoc/>
@@ -16,7 +16,7 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
     public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
-    public StateSpaceType StateSpaceType => StateSpaceType.DiscreteUniformStateSpace;
+    public StateSpaceType StateSpaceType => StateSpaceType.DiscreteUniform;
 
     private readonly int _dimensions;
     /// <inheritdoc/>
@@ -34,7 +34,7 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
     public long[] Shape => _shape;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DiscreteUniformStateSpace"/> class.
+    /// Initializes a new instance of the <see cref="DiscreteUniform"/> class.
     /// </summary>
     /// <param name="dimensions"></param>
     /// <param name="min"></param>
@@ -43,7 +43,7 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
     /// <param name="device"></param>
     /// <param name="scalarType"></param>
     /// <exception cref="ArgumentException"></exception>
-    public DiscreteUniformStateSpace(
+    public DiscreteUniform(
         int dimensions,
         double[] min,
         double[] max,
@@ -61,7 +61,7 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
         _axesPoints = ComputeAxesPoints(min, max, steps, _device, _scalarType);
-        _points = ComputeDiscreteUniformStateSpace(min, max, steps, _device, _scalarType);
+        _points = ComputeDiscreteUniform(min, max, steps, _device, _scalarType);
         _shape = steps;
     }
 
@@ -92,7 +92,7 @@ public class DiscreteUniformStateSpace : ModelComponent, IStateSpace
     /// <param name="steps"></param>
     /// <param name="device"></param>
     /// <returns></returns>
-    public static Tensor ComputeDiscreteUniformStateSpace(
+    public static Tensor ComputeDiscreteUniform(
         double[] min, 
         double[] max, 
         long[] steps,
