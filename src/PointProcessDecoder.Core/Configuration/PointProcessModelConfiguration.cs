@@ -103,6 +103,11 @@ public class PointProcessModelConfiguration
     public int? KernelLimit { get; set; }
 
     /// <summary>
+    /// The stay probability of the model.
+    /// </summary>
+    public double? StayProbability { get; set; }
+
+    /// <summary>
     /// The scalar type of the model.
     /// </summary>
     public ScalarType? ScalarType { get; set; }
