@@ -24,7 +24,7 @@ public static class TransitionsUtilities
         max ??= [100];
         device ??= CPU;
 
-        var stateSpace = new DiscreteUniformStateSpace(
+        var stateSpace = new DiscreteUniform(
             dimensions,
             min,
             max,
@@ -33,7 +33,7 @@ public static class TransitionsUtilities
             scalarType: scalarType
         );
 
-        var uniformTransitions = new UniformTransitions(
+        var uniformTransitions = new Uniform(
             stateSpace,
             device: device,
             scalarType: scalarType
@@ -65,7 +65,7 @@ public static class TransitionsUtilities
         max ??= [100];
         device ??= CPU;
 
-        var stateSpace = new DiscreteUniformStateSpace(
+        var stateSpace = new DiscreteUniform(
             dimensions,
             min,
             max,
@@ -74,7 +74,7 @@ public static class TransitionsUtilities
             scalarType: scalarType
         );
 
-        var randomWalkTransitions = new RandomWalkTransitions(
+        var randomWalkTransitions = new RandomWalk(
             stateSpace,
             sigma,
             device: device,

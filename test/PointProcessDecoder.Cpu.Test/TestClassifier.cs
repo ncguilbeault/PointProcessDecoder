@@ -1,5 +1,3 @@
-using PointProcessDecoder.Core.Transitions;
-using PointProcessDecoder.Core.Estimation;
 using PointProcessDecoder.Test.Common;
 using PointProcessDecoder.Core;
 using static TorchSharp.torch;
@@ -18,33 +16,36 @@ public class TestClassifier
     [TestMethod]
     public void TestClassifierModelSimulatedData()
     {
-        double[] bandwidth = [5];
-        long[] evaluationSteps = [50];
-        double min = 0;
-        double max = 100;
+        var bandwidth = 5;
+        var evaluationSteps = 50;
+        var min = 0;
+        var max = 100;
+        var stayProbability = 0.99;
         var scale = 1;
         var dimensions = 1;
         var nUnits = 40;
         var sigma = 1;
         var device = CPU;
         var scalarType = ScalarType.Float32;
-        var estimationMethod = EstimationMethod.KernelDensity;
+        var estimationMethod = Core.Estimation.EstimationMethod.KernelDensity;
 
         var outputDirectory = Path.Combine("TestReplayModel", "SimulatedData1D", estimationMethod.ToString());
         
-        var replayClassifierModel = new ReplayClassifierModel(
+        var replayClassifierModel = new PointProcessModel(
             estimationMethod,
-            Core.Encoder.EncoderType.SortedSpikeEncoder,
-            Core.Classifier.ClassifierType.ReplayClassifier,
-            Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            Core.Transitions.TransitionsType.RandomWalk,
+            Core.Encoder.EncoderType.SortedSpikes,
+            Core.Decoder.DecoderType.HybridStateSpaceReplayClassifier,
+            Core.StateSpace.StateSpaceType.DiscreteUniform,
             Core.Likelihood.LikelihoodType.Poisson,
             [min],
             [max],
-            evaluationSteps,
-            bandwidth,
+            [evaluationSteps],
+            [bandwidth],
             dimensions,
             sigmaRandomWalk: sigma,
             nUnits: nUnits,
+            stayProbability: stayProbability,
             device: device,
             scalarType: scalarType
         );
@@ -184,15 +185,15 @@ public class TestClassifier
 
         var decoderModel = new PointProcessModel(
             estimationMethod,
-            TransitionsType.RandomWalk,
-            Core.Encoder.EncoderType.SortedSpikeEncoder,
+            Core.Transitions.TransitionsType.RandomWalk,
+            Core.Encoder.EncoderType.SortedSpikes,
             Core.Decoder.DecoderType.StateSpaceDecoder,
-            Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            Core.StateSpace.StateSpaceType.DiscreteUniform,
             Core.Likelihood.LikelihoodType.Poisson,
             [min],
             [max],
-            evaluationSteps,
-            bandwidth,
+            [evaluationSteps],
+            [bandwidth],
             dimensions,
             sigmaRandomWalk: sigma,
             nUnits: nUnits,
