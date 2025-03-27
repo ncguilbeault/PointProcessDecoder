@@ -3,6 +3,7 @@ using OxyPlot;
 using OxyPlot.Series;
 using OxyPlot.Axes;
 using TorchSharp;
+using OxyPlot.Legends;
 
 namespace PointProcessDecoder.Plot;
 
@@ -10,6 +11,7 @@ public class ScatterPlot : OxyPlotBase
 {
     public override PlotModel Plot => _plot;
     private readonly PlotModel _plot;
+    private Legend? _legend = null;
     public double XMin { get; } = 0;
     public double XMax { get; } = 100;
     public double YMin { get; } = 0;
@@ -131,11 +133,16 @@ public class ScatterPlot : OxyPlotBase
         if (!string.IsNullOrEmpty(seriesLabel))
         {
             if (lineSeries != null)
-                lineSeries.LegendKey = seriesLabel;
+                lineSeries.Title = seriesLabel;
             else
-                scatterSeries.LegendKey = seriesLabel;
-
-            _plot.IsLegendVisible = true;
+                scatterSeries.Title = seriesLabel;
+            
+            if (_legend == null)
+            {
+                _legend = new Legend();
+                _plot.Legends.Add(_legend);
+                _plot.IsLegendVisible = true;
+            }
         }
         
         for (int i = 0; i < data.shape[0]; i++)
