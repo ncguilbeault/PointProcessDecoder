@@ -147,6 +147,8 @@ public class TestClassifier
             positionPoints
         );
 
+        plotPosteriorPrediction.Save(png: true);
+
         Plot.ScatterPlot plotStatePrediction = new(
             0,
             testingSpikes.size(0),
@@ -165,7 +167,8 @@ public class TestClassifier
         plotStatePrediction.Show(
             state0, 
             color: colors[0],
-            seriesLabel: "State0"
+            addLine: true,
+            seriesLabel: "State 0"
         );
 
         var state1 = concat([time, statePrediction[TensorIndex.Colon, 1].unsqueeze(1)], dim: 1);
@@ -173,7 +176,8 @@ public class TestClassifier
         plotStatePrediction.Show(
             state1, 
             color: colors[1],
-            seriesLabel: "State1"
+            addLine: true,
+            seriesLabel: "State 1"
         );
 
         plotStatePrediction.Save(png: true);
