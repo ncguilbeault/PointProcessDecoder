@@ -38,7 +38,7 @@ public static class EncoderUtilities
 
         outputDirectory = Path.Combine(outputDirectory, modelDirectory, estimationMethod.ToString());
 
-        var stateSpace = new DiscreteUniformStateSpace(
+        var stateSpace = new DiscreteUniform(
             numDimensions,
             min,
             max,
@@ -47,7 +47,7 @@ public static class EncoderUtilities
             scalarType: scalarType
         );
 
-        var sortedSpikeEncoder = new SortedSpikeEncoder(
+        var sortedSpikeEncoder = new SortedSpikes(
             estimationMethod, 
             bandwidth,
             numNeurons,
@@ -139,7 +139,7 @@ public static class EncoderUtilities
 
         outputDirectory = Path.Combine(outputDirectory, modelDirectory, estimationMethod.ToString());
 
-        var stateSpace = new DiscreteUniformStateSpace(
+        var stateSpace = new DiscreteUniform(
             numDimensions,
             min,
             max,
@@ -148,7 +148,7 @@ public static class EncoderUtilities
             scalarType: scalarType
         );
 
-        var encoder = new ClusterlessMarkEncoder(
+        var encoder = new ClusterlessMarks(
             estimationMethod, 
             observationBandwidth,
             markDimensions,

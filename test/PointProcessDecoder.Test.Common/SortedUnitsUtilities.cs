@@ -51,9 +51,9 @@ public static class SortedUnitsUtilities
         var pointProcessModel = new PointProcessModel(
             estimationMethod,
             transitionsType,
-            EncoderType.SortedSpikeEncoder,
+            EncoderType.SortedSpikes,
             DecoderType.StateSpaceDecoder,
-            StateSpaceType.DiscreteUniformStateSpace,
+            StateSpaceType.DiscreteUniform,
             LikelihoodType.Poisson,
             min,
             max,
@@ -181,9 +181,9 @@ public static class SortedUnitsUtilities
         var pointProcessModel = new PointProcessModel(
             estimationMethod,
             transitionsType,
-            EncoderType.SortedSpikeEncoder,
+            EncoderType.SortedSpikes,
             DecoderType.StateSpaceDecoder,
-            StateSpaceType.DiscreteUniformStateSpace,
+            StateSpaceType.DiscreteUniform,
             LikelihoodType.Poisson,
             minVals,
             maxVals,

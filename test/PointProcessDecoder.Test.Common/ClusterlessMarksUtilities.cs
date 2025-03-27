@@ -57,9 +57,9 @@ public static class ClusterlessMarksUtilities
         var pointProcessModel = new PointProcessModel(
             estimationMethod,
             transitionsType,
-            EncoderType.ClusterlessMarkEncoder,
+            EncoderType.ClusterlessMarks,
             DecoderType.StateSpaceDecoder,
-            StateSpaceType.DiscreteUniformStateSpace,
+            StateSpaceType.DiscreteUniform,
             LikelihoodType.Clusterless,
             min,
             max,
@@ -205,9 +205,9 @@ public static class ClusterlessMarksUtilities
         var pointProcessModel = new PointProcessModel(
             estimationMethod,
             transitionsType,
-            EncoderType.ClusterlessMarkEncoder,
+            EncoderType.ClusterlessMarks,
             DecoderType.StateSpaceDecoder,
-            StateSpaceType.DiscreteUniformStateSpace,
+            StateSpaceType.DiscreteUniform,
             LikelihoodType.Clusterless,
             minVals,
             maxVals,
