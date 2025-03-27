@@ -5,7 +5,7 @@ namespace PointProcessDecoder.Core.Transitions;
 /// <summary>
 /// Represents random walk state transitions.
 /// </summary>
-public class RandomWalkTransitions : ModelComponent, IStateTransitions
+public class RandomWalk : ModelComponent, IStateTransitions
 {
     private readonly Device _device;
     /// <inheritdoc/>
@@ -31,13 +31,13 @@ public class RandomWalkTransitions : ModelComponent, IStateTransitions
     private readonly IStateSpace _stateSpace;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RandomWalkTransitions"/> class.
+    /// Initializes a new instance of the <see cref="RandomWalk"/> class.
     /// </summary>
     /// <param name="stateSpace"></param>
     /// <param name="sigma"></param>
     /// <param name="device"></param>
     /// <param name="scalarType"></param>
-    public RandomWalkTransitions(
+    public RandomWalk(
         IStateSpace stateSpace,
         double? sigma = null, 
         Device? device = null,
@@ -49,7 +49,7 @@ public class RandomWalkTransitions : ModelComponent, IStateTransitions
         _stateSpace = stateSpace;
         _sigma = sigma is not null ? tensor(sigma.Value, device: _device, dtype: _scalarType) : null;
 
-        _transitions = ComputeRandomWalkTransitions(
+        _transitions = ComputeRandomWalk(
             _stateSpace,
             _device,
             _scalarType, 
@@ -57,7 +57,7 @@ public class RandomWalkTransitions : ModelComponent, IStateTransitions
         );
     }
 
-    private static Tensor ComputeRandomWalkTransitions(
+    private static Tensor ComputeRandomWalk(
         IStateSpace stateSpace,
         Device device,
         ScalarType scalarType,

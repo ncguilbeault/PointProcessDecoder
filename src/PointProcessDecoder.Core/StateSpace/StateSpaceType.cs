@@ -8,5 +8,5 @@ public enum StateSpaceType
     /// <summary>
     /// Represents a discrete uniform state space.
     /// </summary>
-    DiscreteUniformStateSpace
+    DiscreteUniform
 }

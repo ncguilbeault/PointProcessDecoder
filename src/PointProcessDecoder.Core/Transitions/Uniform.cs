@@ -5,7 +5,7 @@ namespace PointProcessDecoder.Core.Transitions;
 /// <summary>
 /// Represents uniform state transitions.
 /// </summary>
-public class UniformTransitions : ModelComponent, IStateTransitions
+public class Uniform : ModelComponent, IStateTransitions
 {
     private readonly Device _device;
     /// <inheritdoc/>
@@ -25,12 +25,12 @@ public class UniformTransitions : ModelComponent, IStateTransitions
     private readonly IStateSpace _stateSpace;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UniformTransitions"/> class.
+    /// Initializes a new instance of the <see cref="Uniform"/> class.
     /// </summary>
     /// <param name="stateSpace"></param>
     /// <param name="device"></param>
     /// <param name="scalarType"></param>
-    public UniformTransitions(
+    public Uniform(
         IStateSpace stateSpace,
         Device? device = null,
         ScalarType? scalarType = null
@@ -40,14 +40,14 @@ public class UniformTransitions : ModelComponent, IStateTransitions
         _scalarType = scalarType ?? ScalarType.Float32;
         _stateSpace = stateSpace;
 
-        _transitions = ComputeUniformTransitions(
+        _transitions = ComputeUniform(
             _stateSpace,
             _device,
             _scalarType
         );
     }
 
-    private static Tensor ComputeUniformTransitions(
+    private static Tensor ComputeUniform(
         IStateSpace stateSpace,
         Device device,
         ScalarType scalarType

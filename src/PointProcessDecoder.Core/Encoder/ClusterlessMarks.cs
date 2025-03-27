@@ -7,7 +7,7 @@ namespace PointProcessDecoder.Core.Encoder;
 /// <summary>
 /// Represents a clusterless mark encoder.
 /// </summary>
-public class ClusterlessMarkEncoder : ModelComponent, IEncoder
+public class ClusterlessMarks : ModelComponent, IEncoder
 {
     private readonly Device _device;
     /// <inheritdoc/>
@@ -18,7 +18,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
     public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
-    public EncoderType EncoderType => EncoderType.ClusterlessMarkEncoder;
+    public EncoderType EncoderType => EncoderType.ClusterlessMarks;
 
     /// <inheritdoc/>
     public Tensor[] Intensities => [_channelIntensities, _markIntensities];
@@ -44,7 +44,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
     private readonly int _markChannels;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ClusterlessMarkEncoder"/> class.
+    /// Initializes a new instance of the <see cref="ClusterlessMarks"/> class.
     /// </summary>
     /// <param name="estimationMethod"></param>
     /// <param name="observationBandwidth"></param>
@@ -56,7 +56,7 @@ public class ClusterlessMarkEncoder : ModelComponent, IEncoder
     /// <param name="device"></param>
     /// <param name="scalarType"></param>
     /// <exception cref="ArgumentException"></exception>
-    public ClusterlessMarkEncoder(
+    public ClusterlessMarks(
         EstimationMethod estimationMethod, 
         double[] observationBandwidth, 
         int markDimensions,

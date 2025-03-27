@@ -6,7 +6,7 @@ namespace PointProcessDecoder.Core.Likelihood;
 /// Represents a clusterless likelihood.
 /// Expected to be used when the encoder is set to the <see cref="Encoder.EncoderType.ClusterlessMarkEncoder"/>.
 /// </summary>
-public class ClusterlessLikelihood(
+public class Clusterless(
     Device? device = null,
     ScalarType? scalarType = null,
     bool ignoreNoSpikes = false

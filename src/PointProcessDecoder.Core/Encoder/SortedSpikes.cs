@@ -7,7 +7,7 @@ namespace PointProcessDecoder.Core.Encoder;
 /// <summary>
 /// Represents a sorted spike encoder.
 /// </summary>
-public class SortedSpikeEncoder : ModelComponent, IEncoder
+public class SortedSpikes : ModelComponent, IEncoder
 {
     private readonly Device _device;
     /// <inheritdoc/>
@@ -18,7 +18,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     public override ScalarType ScalarType => _scalarType;
 
     /// <inheritdoc/>
-    public EncoderType EncoderType => EncoderType.SortedSpikeEncoder;
+    public EncoderType EncoderType => EncoderType.SortedSpikes;
 
     /// <inheritdoc/>
     public Tensor[] Intensities => [_unitIntensities];
@@ -38,7 +38,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     private readonly IStateSpace _stateSpace;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SortedSpikeEncoder"/> class.
+    /// Initializes a new instance of the <see cref="SortedSpikes"/> class.
     /// </summary>
     /// <param name="estimationMethod"></param>
     /// <param name="bandwidth"></param>
@@ -48,7 +48,7 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
     /// <param name="device"></param>
     /// <param name="scalarType"></param>
     /// <exception cref="ArgumentException"></exception>
-    public SortedSpikeEncoder(
+    public SortedSpikes(
         EstimationMethod estimationMethod, 
         double[] bandwidth,
         int nUnits,
