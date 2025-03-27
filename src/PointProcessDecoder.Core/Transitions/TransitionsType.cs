@@ -14,4 +14,9 @@ public enum TransitionsType
     /// Represents random walk state transitions.
     /// </summary>
     RandomWalk,
+
+    /// <summary>
+    /// Represents stationary state transitions.
+    /// </summary>
+    Stationary
 }
