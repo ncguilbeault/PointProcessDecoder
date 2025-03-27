@@ -64,6 +64,11 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
         _stateSpace = stateSpace;
         _stayProbability = stayProbability ?? 0.99;
 
+        if (_stayProbability < 0 || _stayProbability > 1)
+        {
+            throw new ArgumentException("The stay probability must be between 0 and 1.");
+        }
+
         _discreteTransitions = tensor(
             new double[] 
             { 
@@ -120,19 +125,25 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
                 .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
+            output[0] = _posterior.reshape(_posteriorShape);
             startIndex++;
         }
 
         for (int i = startIndex; i < likelihood.size(0); i++)
         {
-            var discretePred = _discreteTransitions.matmul(_posterior);
-            var discretePredReshaped = discretePred.flatten();
-            var discretePredExpanded = discretePredReshaped.reshape(1, -1, 1);
-            var product = _continuousTransitions * discretePredExpanded;
-            var newPosterior = product.sum(dim: 1);
+            using var discretePred = _discreteTransitions.matmul(_posterior);
+            using var discretePredReshaped = discretePred.flatten();
+            using var discretePredExpanded = discretePredReshaped.reshape(1, -1, 1);
+            using var product = _continuousTransitions * discretePredExpanded;
+            using var newPosterior = product.sum(dim: 1);
             _posterior = (newPosterior * likelihood[i])
                 .nan_to_num()
                 .clamp_min(_eps);
+            // _posterior = ((_continuousTransitions * 
+            //     _discreteTransitions.matmul(_posterior)
+            //         .reshape(1, -1, 1)).sum(dim: 1) * likelihood[i])
+            //             .nan_to_num()
+            //             .clamp_min(_eps);
             _posterior /= _posterior.sum();
             output[i] = _posterior.reshape(_posteriorShape);
         }
