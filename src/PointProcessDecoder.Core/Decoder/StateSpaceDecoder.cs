@@ -20,9 +20,9 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
     /// <inheritdoc/>
     public Tensor InitialState => _initialState;
 
-    private readonly IStateTransitions _stateTransitions;
+    private readonly Tensor _stateTransitions;
     /// <inheritdoc/>
-    public IStateTransitions Transitions => _stateTransitions;
+    public Tensor[] Transitions => [_stateTransitions];
 
     private Tensor _posterior;
     /// <summary>
@@ -57,17 +57,17 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
 
         _stateTransitions = transitionsType switch
         {
-            TransitionsType.Uniform => new UniformTransitions(
+            TransitionsType.Uniform => new Uniform(
                 _stateSpace,
                 device: _device,
                 scalarType: _scalarType
-            ),
-            TransitionsType.RandomWalk => new RandomWalkTransitions(
+            ).Transitions,
+            TransitionsType.RandomWalk => new RandomWalk(
                 _stateSpace,
                 sigmaRandomWalk, 
                 device: _device,
                 scalarType: _scalarType
-            ),
+            ).Transitions,
             _ => throw new ArgumentException("Invalid transitions type.")
         };
 
@@ -99,7 +99,7 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
 
         for (int i = startIndex; i < likelihood.size(0); i++)
         {
-            _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i])
+            _posterior = (_stateTransitions.matmul(_posterior) * likelihood[i])
                 .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();

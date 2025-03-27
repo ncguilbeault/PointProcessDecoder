@@ -3,7 +3,7 @@ using static TorchSharp.torch;
 namespace PointProcessDecoder.Core;
 
 /// <summary>
-/// Represents the model of the point process decoder.
+/// Represents the type of point process decoder model.
 /// </summary>
 public interface IModel : IModelComponent
 {    

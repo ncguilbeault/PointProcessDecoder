@@ -20,7 +20,7 @@ public interface IDecoder : IModelComponent
     /// <summary>
     /// The state transitions of the model.
     /// </summary>
-    public IStateTransitions Transitions { get; }
+    public Tensor[] Transitions { get; }
 
     /// <summary>
     /// Decodes the observations into the latent state based on the likelihood of the data.

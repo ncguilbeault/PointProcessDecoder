@@ -8,5 +8,10 @@ public enum DecoderType
     /// <summary>
     /// Represents a state space decoder.
     /// </summary>
-    StateSpaceDecoder
+    StateSpaceDecoder,
+
+    /// <summary>
+    /// Represents a hybrid state space replay classifier.
+    /// </summary>
+    HybridStateSpaceReplayClassifier
 }
