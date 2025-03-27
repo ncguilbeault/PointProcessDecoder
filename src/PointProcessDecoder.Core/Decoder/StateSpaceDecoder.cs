@@ -94,6 +94,7 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
                 .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
+            output[0] = _posterior.reshape(_stateSpace.Shape);
             startIndex++;
         }
 
