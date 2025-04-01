@@ -51,6 +51,9 @@ public class Stationary : ModelComponent, IStateTransitions
         var points = stateSpace.Points;
         var n = stateSpace.Points.size(0);
         var transitions = eye(n, device: device, dtype: scalarType);
-        return transitions;
+        return transitions
+            .to_type(type: scalarType)
+            .to(device: device)
+            .MoveToOuterDisposeScope();
     }
 }

@@ -55,8 +55,7 @@ public class Uniform : ModelComponent, IStateTransitions
     {
         using var _ = NewDisposeScope();
         var n = stateSpace.Points.size(0);
-        var transitions = ones(n, n, device: device, dtype: scalarType);
-        transitions /= transitions.sum(1, true);
+        var transitions = ones(n, n, device: device, dtype: scalarType) / n;
         return transitions
             .to_type(scalarType)
             .to(device)
