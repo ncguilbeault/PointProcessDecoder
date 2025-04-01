@@ -18,5 +18,7 @@ public enum TransitionsType
     /// <summary>
     /// Represents stationary state transitions.
     /// </summary>
-    Stationary
+    Stationary,
+
+    ReciprocalGaussian
 }
