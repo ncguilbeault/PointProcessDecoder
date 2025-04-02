@@ -4,7 +4,7 @@ using PointProcessDecoder.Core.Transitions;
 
 namespace PointProcessDecoder.Core.Decoder;
 
-public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
+public class HybridStateSpaceClassifier : ModelComponent, IDecoder
 {
     private readonly Device _device;
     /// <inheritdoc/>
@@ -14,7 +14,7 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
     /// <inheritdoc/>
     public override ScalarType ScalarType => _scalarType;
 
-    public DecoderType DecoderType => DecoderType.HybridStateSpaceReplayClassifier;
+    public DecoderType DecoderType => DecoderType.HybridStateSpaceClassifier;
 
     private const int NUM_STATES = 3;
 
@@ -51,7 +51,7 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
     private readonly double _stayProbability;
 
 
-    public HybridStateSpaceReplayClassifier(
+    public HybridStateSpaceClassifier(
         IStateSpace stateSpace,
         double? sigmaRandomWalk = null,
         double? stayProbability = null,
