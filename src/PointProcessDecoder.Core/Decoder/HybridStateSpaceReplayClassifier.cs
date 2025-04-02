@@ -50,6 +50,7 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
     private readonly long[] _posteriorShape;
     private readonly double _stayProbability;
 
+
     public HybridStateSpaceReplayClassifier(
         IStateSpace stateSpace,
         double? sigmaRandomWalk = null,
@@ -64,7 +65,7 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
         _stateSpace = stateSpace;
         _stayProbability = stayProbability ?? 0.99;
 
-        if (_stayProbability < 0 || _stayProbability > 1)
+        if (_stayProbability <= 0 || _stayProbability >= 1)
         {
             throw new ArgumentException("The stay probability must be between 0 and 1.");
         }
@@ -93,15 +94,8 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
             scalarType: _scalarType
         );
 
-        // var uniformTransitions = new Uniform(
-        //     stateSpace: _stateSpace,
-        //     device: _device,
-        //     scalarType: _scalarType
-        // );
-
-        var uniformTransitions = new ReciprocalGaussian(
+        var uniformTransitions = new Uniform(
             stateSpace: _stateSpace,
-            sigma: sigmaRandomWalk,
             device: _device,
             scalarType: _scalarType
         );
@@ -113,40 +107,6 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
         );
 
         var n = _stateSpace.Points.size(0);
-
-        // _continuousTransitions = stack
-        // (
-        //     [
-        //         stack
-        //         (
-        //             [
-        //                 stationaryTransitions.Transitions,
-        //                 stationaryTransitions.Transitions,
-        //                 stationaryTransitions.Transitions
-        //             ], 
-        //             dim: 0
-        //         ),
-        //         stack
-        //         (
-        //             [
-        //                 randomWalkTransitions.Transitions,
-        //                 randomWalkTransitions.Transitions,
-        //                 randomWalkTransitions.Transitions
-        //             ], 
-        //             dim: 0
-        //         ),
-        //         stack
-        //         (
-        //             [
-        //                 uniformTransitions.Transitions,
-        //                 uniformTransitions.Transitions,
-        //                 uniformTransitions.Transitions
-        //             ], 
-        //             dim: 0
-        //         ),
-        //     ], 
-        //     dim: 0
-        // );
         _continuousTransitions = cat([
             stationaryTransitions.Transitions,
             randomWalkTransitions.Transitions,
@@ -163,26 +123,8 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
             n, 
             n
         );
-        // _continuousTransitions = cat([
-        //     uniformTransitions.Transitions,
-        //     uniformTransitions.Transitions,
-        //     uniformTransitions.Transitions,
-        //     uniformTransitions.Transitions,
-        //     randomWalkTransitions.Transitions,
-        //     stationaryTransitions.Transitions,
-        //     uniformTransitions.Transitions,
-        //     randomWalkTransitions.Transitions,
-        //     stationaryTransitions.Transitions,
-        // ]).reshape(
-        //     NUM_STATES, 
-        //     NUM_STATES, 
-        //     n, 
-        //     n
-        // );
         
-        _initialState = ones([NUM_STATES, n], dtype: _scalarType, device: _device) / NUM_STATES * n;
-        _initialState = _initialState.log();
-
+        _initialState = ones([NUM_STATES, n], dtype: _scalarType, device: _device) / (NUM_STATES * n);
         _posterior = empty(0);
         _posteriorShape = [.. new long[] { NUM_STATES }.Concat(_stateSpace.Shape)];
     }
@@ -198,18 +140,9 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
         var output = zeros([.. outputShape], dtype: _scalarType, device: _device);
 
         var startIndex = 0;
-        likelihood = likelihood.log();
 
         if (_posterior.NumberOfElements == 0) {
-            _posterior = (_initialState + likelihood[0])
-                .nan_to_num();
-
-            _posterior -= _posterior.max(dim: -1, keepdim: true).values;
-
-            _posterior = _posterior
-                .exp();
-
-            _posterior /= _posterior.sum();
+            _posterior = UpdatePosterior(_initialState, likelihood[0]);
             output[0] = _posterior.reshape(_posteriorShape);
             startIndex++;
         }
@@ -222,51 +155,28 @@ public class HybridStateSpaceReplayClassifier : ModelComponent, IDecoder
         {
             using var continuousPrediction = _continuousTransitions.matmul(_posterior.reshape(predShape));
             using var product = _discreteTransitions * continuousPrediction;
-            // using var discretePred = _discreteTransitions.matmul(_posterior);
-            // // using var discretePredReshaped = discretePred.flatten();
-            // using var discretePredExpanded = discretePred.reshape(predShape);
-            // // using var product = _continuousTransitions * discretePredExpanded;
-            // using var product = _continuousTransitions * discretePred;
             using var newPosterior = product.sum([0, -1]);
-            // if (newPosterior.sum().item<float>() == 0)
-            // {
-            //     throw new Exception("New posterior contains zero sum.");
-            // }
-            // var logPosterior = newPosterior.log() + likelihood[i];
-            // var logZ = logPosterior.logsumexp(dim: 0, keepdim: true);
-            // _posterior = (logPosterior - logZ)
-            //     .exp()
-            //     .nan_to_num();
-
-            // _posterior = (newPosterior.log() + likelihood[i])
-            //     .nan_to_num();
-
-            // _posterior -= _posterior.max(dim: -1, keepdim: true).values;
-
-            // _posterior = _posterior
-            //     .exp();
-
-            _posterior = (newPosterior * likelihood[i].exp())
-                .nan_to_num();
-            // _posterior = ((_continuousTransitions * 
-            //     _discreteTransitions.matmul(_posterior)
-            //         .reshape(1, -1, 1)).sum(dim: 1) * likelihood[i])
-            //             .nan_to_num()
-            //             .clamp_min(_eps);
-            if (_posterior.sum().item<float>() == 0)
-            {
-                // throw new Exception("Posterior contains zero sum.");
-                _posterior /= _posterior.sum();
-            }
-            else
-            {
-                _posterior = 
-            }
-            _posterior /= _posterior.sum();
+            _posterior = UpdatePosterior(newPosterior, likelihood[i]);
             output[i] = _posterior.reshape(_posteriorShape);
         }
         
         _posterior.MoveToOuterDisposeScope();
         return output.MoveToOuterDisposeScope();
+    }
+
+    private Tensor UpdatePosterior(Tensor prior, Tensor likelihood)
+    {
+        var posterior = (prior * likelihood)
+            .nan_to_num();
+
+        if (posterior.sum().item<float>() == 0)
+        {
+            posterior = (_initialState * likelihood)
+                .nan_to_num();
+        }
+
+        posterior /= posterior.sum();
+
+        return posterior.clamp_min(_eps);
     }
 }
