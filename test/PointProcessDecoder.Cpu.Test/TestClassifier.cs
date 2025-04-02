@@ -20,10 +20,10 @@ public class TestClassifier
         var evaluationSteps = 50;
         var min = 0;
         var max = 100;
-        var stayProbability = 0.99;
+        var stayProbability = 0.33;
         var dimensions = 1;
         var nUnits = 40;
-        var sigma = 80;
+        var sigma = 25;
         var device = CPU;
         var scalarType = ScalarType.Float32;
         var estimationMethod = Core.Estimation.EstimationMethod.KernelDensity;
@@ -965,7 +965,7 @@ public class TestClassifier
         var sigma = 25;
         var scale = 0.1;
         var dimensions = 2;
-        var stayProbability = 1.0;
+        var stayProbability = 0.99;
         var nUnits = 40;
         var device = CPU;
         var scalarType = ScalarType.Float32;
