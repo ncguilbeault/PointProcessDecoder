@@ -144,7 +144,7 @@ public class PointProcessModel : ModelBase, IModel
                 device: _device,
                 scalarType: _scalarType
             ),
-            DecoderType.HybridStateSpaceReplayClassifier => new HybridStateSpaceReplayClassifier(
+            DecoderType.HybridStateSpaceClassifier => new HybridStateSpaceClassifier(
                 stateSpace: _stateSpace,
                 sigmaRandomWalk: sigmaRandomWalk,
                 stayProbability: stayProbability,
