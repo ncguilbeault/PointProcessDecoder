@@ -160,11 +160,9 @@ public class SortedSpikeEncoder : ModelComponent, IEncoder
 
         _rates = _spikeCounts.log() - _samples.log();
 
-        var inputMask = inputs.to_type(ScalarType.Bool);
-
         for (int i = 0; i < _nUnits; i++)
         {
-            _unitEstimation[i].Fit(observations[inputMask[TensorIndex.Colon, i]]);
+            _unitEstimation[i].Fit(observations.repeat_interleave(inputs[TensorIndex.Colon, i], dim: 0));
         }
 
         _updateIntensities = true;

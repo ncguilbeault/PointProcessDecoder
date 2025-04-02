@@ -18,6 +18,11 @@ public interface IStateSpace : IModelComponent
     public Tensor Points { get; }
 
     /// <summary>
+    /// The axes points of the state space.
+    /// </summary>
+    public Tensor AxesPoints { get; }
+
+    /// <summary>
     /// The shape of the state space.
     /// </summary>
     public long[] Shape { get; }

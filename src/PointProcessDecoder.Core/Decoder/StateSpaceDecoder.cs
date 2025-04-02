@@ -77,25 +77,27 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
     }
 
     /// <inheritdoc/>
-    public Tensor Decode(Tensor inputs, Tensor likelihood)
+    public Tensor Decode(Tensor likelihood)
     {
         using var _ = NewDisposeScope();
 
-        var outputShape = new long[] { inputs.size(0) }
+        var outputShape = new long[] { likelihood.size(0) }
             .Concat(_stateSpace.Shape)
             .ToArray();
 
         var output = zeros(outputShape, dtype: _scalarType, device: _device);
+
+        var startIndex = 0;
 
         if (_posterior.numel() == 0) {
             _posterior = (_initialState * likelihood[0])
                 .nan_to_num()
                 .clamp_min(_eps);
             _posterior /= _posterior.sum();
-            output[0] = _posterior.reshape(_stateSpace.Shape);
+            startIndex++;
         }
 
-        for (int i = 1; i < inputs.size(0); i++)
+        for (int i = startIndex; i < likelihood.size(0); i++)
         {
             _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i])
                 .nan_to_num()
