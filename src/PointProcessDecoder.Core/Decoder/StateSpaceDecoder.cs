@@ -90,23 +90,35 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
         var startIndex = 0;
 
         if (_posterior.numel() == 0) {
-            _posterior = (_initialState * likelihood[0])
-                .nan_to_num()
-                .clamp_min(_eps);
-            _posterior /= _posterior.sum();
+            _posterior = UpdatePosterior(_initialState, likelihood[0]);
             output[0] = _posterior.reshape(_stateSpace.Shape);
             startIndex++;
         }
 
         for (int i = startIndex; i < likelihood.size(0); i++)
         {
-            _posterior = (_stateTransitions.matmul(_posterior) * likelihood[i])
-                .nan_to_num()
-                .clamp_min(_eps);
-            _posterior /= _posterior.sum();
+            using var prediction = _stateTransitions.matmul(_posterior);
+            _posterior = UpdatePosterior(prediction, likelihood[i]);
             output[i] = _posterior.reshape(_stateSpace.Shape);
         }
+        
         _posterior.MoveToOuterDisposeScope();
         return output.MoveToOuterDisposeScope();
+    }
+
+    private Tensor UpdatePosterior(Tensor prior, Tensor likelihood)
+    {
+        var posterior = (prior * likelihood)
+            .nan_to_num();
+
+        if (posterior.sum().item<float>() == 0)
+        {
+            posterior = (_initialState * likelihood)
+                .nan_to_num();
+        }
+
+        posterior /= posterior.sum();
+
+        return posterior.clamp_min(_eps);
     }
 }
