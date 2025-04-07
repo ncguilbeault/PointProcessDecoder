@@ -19,12 +19,12 @@ public class HybridStateSpaceClassifier : ModelComponent, IDecoder
     private const int NUM_STATES = 3;
 
     /// <summary>
-    /// A 2x2 transition matrix for discrete states.
+    /// The transition matrix for discrete states.
     /// </summary>
     private readonly Tensor _discreteTransitions = empty(0);
 
     /// <summary>
-    /// The continuous transitions for each state, shape [2, n, n].
+    /// The continuous transitions for each state.
     /// </summary>
     private readonly Tensor _continuousTransitions = empty(0);
 
@@ -32,7 +32,7 @@ public class HybridStateSpaceClassifier : ModelComponent, IDecoder
     public Tensor[] Transitions => [_discreteTransitions, _continuousTransitions];
 
     /// <summary>
-    /// The user-defined continuous state space.
+    /// The state space.
     /// </summary>
     private readonly IStateSpace _stateSpace;
 
@@ -50,7 +50,15 @@ public class HybridStateSpaceClassifier : ModelComponent, IDecoder
     private readonly long[] _posteriorShape;
     private readonly double _stayProbability;
 
-
+    /// <summary>
+    /// Creates a new instance of the HybridStateSpaceClassifier.
+    /// </summary>
+    /// <param name="stateSpace"></param>
+    /// <param name="sigmaRandomWalk"></param>
+    /// <param name="stayProbability"></param>
+    /// <param name="device"></param>
+    /// <param name="scalarType"></param>
+    /// <exception cref="ArgumentException"></exception>
     public HybridStateSpaceClassifier(
         IStateSpace stateSpace,
         double? sigmaRandomWalk = null,
