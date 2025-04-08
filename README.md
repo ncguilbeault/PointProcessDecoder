@@ -29,6 +29,15 @@ Below is a demo running online decoding with spike sorted data from neuropixel r
 *This demo shows online decoding of the striatum. A mouse is trained to press buttons in a correct sequence to receive a reward. Spiking activity from striatal units are fed into the encoder along with the animal's head position. The decoder outputs a posterior distribution over position given small batches of neural spiking data it has not learned from. The green dot shows the true position of the animal's head in the arena and the red data shows the maximum a posteriori estimate of the posterior distribution. The original data for this demo came from Emmett J thompson, Lars Rollik, Benjamin Waked, Georgina Mills, Jasvin Kaur, Ben Geva, Rodrigo Carrasco-Davis, Tom George, Clementine Domine, William Dorrell, Marcus Stephenson-Jones (2024) Replay of procedural experience is independent of the hippocampus bioRxiv.*
 
 
+### Classifying Replay Activity in Synthetic Data
+
+Below is a demo showing simultaneous decoding and classification of replay activity in synthetic data derived from sorted units in mouse striatum.
+
+<p align="center">
+<img src="./assets/ClassifyingReplaySyntheticDataStriatum.gif" alt="Hybrid State-Space Classifier Demo using Synthetic Data Derived from Sorted Striatal Units">
+</p>
+
+*This demo shows online decoding and classification of replay activity in synthetic data derived from the striatum. First, the model was trained on 80% of data for a single session (training data). For the remaining 20% of data (testing data), the neuron IDs were shuffled to create a mismatch of the model's encoded receptive fields while preserving the temporal structure within each unit. Unchanged neural activity during periods of the testing data where the animal performed a correct sequence were randomly inserted into different timepoints of the synthetic data. The trained classifier decodes the latent position online from the synthetic neural activity and classifies the dynamics of the latent variable. A simple logistic regression model is then used to classify the discrete state probabilities provided by the classifier to predict at each timepoint whether the data being decoded were inserted, which we call synthetic "replay" events. The original data for this demo came from Emmett J thompson, Lars Rollik, Benjamin Waked, Georgina Mills, Jasvin Kaur, Ben Geva, Rodrigo Carrasco-Davis, Tom George, Clementine Domine, William Dorrell, Marcus Stephenson-Jones (2024) Replay of procedural experience is independent of the hippocampus bioRxiv.*
 
 ## Description
 
