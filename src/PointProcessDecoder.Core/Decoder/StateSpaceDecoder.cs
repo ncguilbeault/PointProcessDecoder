@@ -68,6 +68,16 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
                 device: _device,
                 scalarType: _scalarType
             ).Transitions,
+            TransitionsType.Stationary => new Stationary(
+                _stateSpace,
+                device: _device,
+                scalarType: _scalarType
+            ).Transitions,
+            TransitionsType.ReciprocalGaussian => new ReciprocalGaussian(
+                _stateSpace,
+                device: _device,
+                scalarType: _scalarType
+            ).Transitions,
             _ => throw new ArgumentException("Invalid transitions type.")
         };
 
@@ -108,17 +118,17 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
 
     private Tensor UpdatePosterior(Tensor prior, Tensor likelihood)
     {
-        var posterior = (prior * likelihood)
-            .nan_to_num();
+        var posterior = prior * likelihood;
 
-        if (posterior.sum().item<float>() == 0)
+        if (posterior.nansum().item<float>() == 0)
         {
-            posterior = (_initialState * likelihood)
-                .nan_to_num();
+            posterior = _initialState * likelihood;
         }
 
-        posterior /= posterior.sum();
+        posterior /= posterior.nansum();
 
-        return posterior.clamp_min(_eps);
+        return posterior
+            .nan_to_num()
+            .clamp_min(_eps);
     }
 }
