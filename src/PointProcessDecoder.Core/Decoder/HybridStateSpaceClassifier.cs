@@ -174,17 +174,17 @@ public class HybridStateSpaceClassifier : ModelComponent, IDecoder
 
     private Tensor UpdatePosterior(Tensor prior, Tensor likelihood)
     {
-        var posterior = (prior * likelihood)
-            .nan_to_num();
+        var posterior = prior * likelihood;
 
-        if (posterior.sum().item<float>() == 0)
+        if (posterior.nansum().item<float>() == 0)
         {
-            posterior = (_initialState * likelihood)
-                .nan_to_num();
+            posterior = _initialState * likelihood;
         }
 
-        posterior /= posterior.sum();
+        posterior /= posterior.nansum();
 
-        return posterior.clamp_min(_eps);
+        return posterior
+            .nan_to_num()
+            .clamp_min(_eps);
     }
 }
