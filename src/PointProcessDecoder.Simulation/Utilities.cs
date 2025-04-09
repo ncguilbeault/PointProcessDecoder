@@ -17,7 +17,7 @@ public static class Utilities
         int seed = 0
     )
     {
-        var position1D = Simulate.Position(
+        var position1D = Simulate.SinPosition(
             steps, 
             cycles, 
             min, 
@@ -31,8 +31,7 @@ public static class Utilities
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             min, 
             max, 
-            numNeurons, 
-            seed, 
+            numNeurons,
             scalarType,
             device
         );
@@ -67,7 +66,7 @@ public static class Utilities
         int seed = 0
     )
     {
-        var position2D = Simulate.Position(
+        var position2D = Simulate.SinPosition(
             steps, 
             cycles, 
             xMin, 

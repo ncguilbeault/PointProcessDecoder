@@ -20,9 +20,9 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
     /// <inheritdoc/>
     public Tensor InitialState => _initialState;
 
-    private readonly IStateTransitions _stateTransitions;
+    private readonly Tensor _stateTransitions;
     /// <inheritdoc/>
-    public IStateTransitions Transitions => _stateTransitions;
+    public Tensor[] Transitions => [_stateTransitions];
 
     private Tensor _posterior;
     /// <summary>
@@ -57,17 +57,27 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
 
         _stateTransitions = transitionsType switch
         {
-            TransitionsType.Uniform => new UniformTransitions(
+            TransitionsType.Uniform => new Uniform(
                 _stateSpace,
                 device: _device,
                 scalarType: _scalarType
-            ),
-            TransitionsType.RandomWalk => new RandomWalkTransitions(
+            ).Transitions,
+            TransitionsType.RandomWalk => new RandomWalk(
                 _stateSpace,
                 sigmaRandomWalk, 
                 device: _device,
                 scalarType: _scalarType
-            ),
+            ).Transitions,
+            TransitionsType.Stationary => new Stationary(
+                _stateSpace,
+                device: _device,
+                scalarType: _scalarType
+            ).Transitions,
+            TransitionsType.ReciprocalGaussian => new ReciprocalGaussian(
+                _stateSpace,
+                device: _device,
+                scalarType: _scalarType
+            ).Transitions,
             _ => throw new ArgumentException("Invalid transitions type.")
         };
 
@@ -90,22 +100,35 @@ public class StateSpaceDecoder : ModelComponent, IDecoder
         var startIndex = 0;
 
         if (_posterior.numel() == 0) {
-            _posterior = (_initialState * likelihood[0])
-                .nan_to_num()
-                .clamp_min(_eps);
-            _posterior /= _posterior.sum();
+            _posterior = UpdatePosterior(_initialState, likelihood[0]);
+            output[0] = _posterior.reshape(_stateSpace.Shape);
             startIndex++;
         }
 
         for (int i = startIndex; i < likelihood.size(0); i++)
         {
-            _posterior = (_stateTransitions.Transitions.matmul(_posterior) * likelihood[i])
-                .nan_to_num()
-                .clamp_min(_eps);
-            _posterior /= _posterior.sum();
+            using var prediction = _stateTransitions.matmul(_posterior);
+            _posterior = UpdatePosterior(prediction, likelihood[i]);
             output[i] = _posterior.reshape(_stateSpace.Shape);
         }
+        
         _posterior.MoveToOuterDisposeScope();
         return output.MoveToOuterDisposeScope();
+    }
+
+    private Tensor UpdatePosterior(Tensor prior, Tensor likelihood)
+    {
+        var posterior = prior * likelihood;
+
+        if (posterior.nansum().item<float>() == 0)
+        {
+            posterior = _initialState * likelihood;
+        }
+
+        posterior /= posterior.nansum();
+
+        return posterior
+            .nan_to_num()
+            .clamp_min(_eps);
     }
 }

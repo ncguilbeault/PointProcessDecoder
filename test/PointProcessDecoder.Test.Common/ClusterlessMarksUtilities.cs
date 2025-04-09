@@ -57,9 +57,9 @@ public static class ClusterlessMarksUtilities
         var pointProcessModel = new PointProcessModel(
             estimationMethod,
             transitionsType,
-            EncoderType.ClusterlessMarkEncoder,
+            EncoderType.ClusterlessMarks,
             DecoderType.StateSpaceDecoder,
-            StateSpaceType.DiscreteUniformStateSpace,
+            StateSpaceType.DiscreteUniform,
             LikelihoodType.Clusterless,
             min,
             max,
@@ -143,7 +143,7 @@ public static class ClusterlessMarksUtilities
         );
 
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, outputDirectory);
-        plotPrediction.Show<float>(
+        plotPrediction.Show(
             prediction, 
             positionPoints
         );
@@ -205,9 +205,9 @@ public static class ClusterlessMarksUtilities
         var pointProcessModel = new PointProcessModel(
             estimationMethod,
             transitionsType,
-            EncoderType.ClusterlessMarkEncoder,
+            EncoderType.ClusterlessMarks,
             DecoderType.StateSpaceDecoder,
-            StateSpaceType.DiscreteUniformStateSpace,
+            StateSpaceType.DiscreteUniform,
             LikelihoodType.Clusterless,
             minVals,
             maxVals,
@@ -236,7 +236,7 @@ public static class ClusterlessMarksUtilities
         );
 
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, outputDirectory);
-        plotPrediction.Show<float>(
+        plotPrediction.Show(
             prediction, 
             position[TensorIndex.Slice(nTraining, nTraining + nTesting)]
         );

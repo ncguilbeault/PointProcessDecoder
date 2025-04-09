@@ -87,6 +87,7 @@ public class PointProcessModel : ModelBase, IModel
         bool ignoreNoSpikes = false,
         double? sigmaRandomWalk = null,
         int? kernelLimit = null,
+        double? stayProbability = null,
         Device? device = null,
         ScalarType? scalarType = null
     )
@@ -96,7 +97,7 @@ public class PointProcessModel : ModelBase, IModel
 
         _stateSpace = stateSpaceType switch
         {
-            StateSpaceType.DiscreteUniformStateSpace => new DiscreteUniformStateSpace(
+            StateSpaceType.DiscreteUniform => new DiscreteUniform(
                 dimensions: stateSpaceDimensions,
                 min: minStateSpace,
                 max: maxStateSpace,
@@ -109,7 +110,7 @@ public class PointProcessModel : ModelBase, IModel
 
         _encoderModel = encoderType switch
         {
-            EncoderType.ClusterlessMarkEncoder => new ClusterlessMarkEncoder(
+            EncoderType.ClusterlessMarks => new ClusterlessMarks(
                 estimationMethod: estimationMethod, 
                 observationBandwidth: observationBandwidth,
                 markDimensions: markDimensions ?? 1, 
@@ -121,7 +122,7 @@ public class PointProcessModel : ModelBase, IModel
                 device: _device,
                 scalarType: _scalarType
             ),
-            EncoderType.SortedSpikeEncoder => new SortedSpikeEncoder(
+            EncoderType.SortedSpikes => new SortedSpikes(
                 estimationMethod: estimationMethod, 
                 bandwidth: observationBandwidth,
                 nUnits: nUnits ?? 1,
@@ -143,17 +144,24 @@ public class PointProcessModel : ModelBase, IModel
                 device: _device,
                 scalarType: _scalarType
             ),
+            DecoderType.HybridStateSpaceClassifier => new HybridStateSpaceClassifier(
+                stateSpace: _stateSpace,
+                sigmaRandomWalk: sigmaRandomWalk,
+                stayProbability: stayProbability,
+                device: _device,
+                scalarType: _scalarType
+            ),
             _ => throw new ArgumentException("Invalid decoder type.")
         };
 
         _likelihood = likelihoodType switch
         {
-            LikelihoodType.Poisson => new PoissonLikelihood(
+            LikelihoodType.Poisson => new Poisson(
                 ignoreNoSpikes: ignoreNoSpikes,
                 device: _device,
                 scalarType: _scalarType
             ),
-            LikelihoodType.Clusterless => new ClusterlessLikelihood(
+            LikelihoodType.Clusterless => new Clusterless(
                 ignoreNoSpikes: ignoreNoSpikes,
                 device: _device,
                 scalarType: _scalarType
@@ -182,6 +190,7 @@ public class PointProcessModel : ModelBase, IModel
             IgnoreNoSpikes = ignoreNoSpikes,
             SigmaRandomWalk = sigmaRandomWalk,
             KernelLimit = kernelLimit,
+            StayProbability = stayProbability,
             ScalarType = scalarType
         };
     }
@@ -274,6 +283,7 @@ public class PointProcessModel : ModelBase, IModel
             ignoreNoSpikes: configuration.IgnoreNoSpikes,
             sigmaRandomWalk: configuration.SigmaRandomWalk,
             kernelLimit: configuration.KernelLimit,
+            stayProbability: configuration.StayProbability,
             device: device,
             scalarType: configuration.ScalarType
         );

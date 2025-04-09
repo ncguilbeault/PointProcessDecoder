@@ -24,7 +24,7 @@ public static class TransitionsUtilities
         max ??= [100];
         device ??= CPU;
 
-        var stateSpace = new DiscreteUniformStateSpace(
+        var stateSpace = new DiscreteUniform(
             dimensions,
             min,
             max,
@@ -33,7 +33,7 @@ public static class TransitionsUtilities
             scalarType: scalarType
         );
 
-        var uniformTransitions = new UniformTransitions(
+        var uniformTransitions = new Uniform(
             stateSpace,
             device: device,
             scalarType: scalarType
@@ -44,7 +44,7 @@ public static class TransitionsUtilities
 
         Heatmap transitionsPlot = new(min[xIdx], max[xIdx], min[yIdx], max[yIdx], title: figureName);
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<float>(uniformTransitions.Transitions);
+        transitionsPlot.Show(uniformTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 
@@ -65,7 +65,7 @@ public static class TransitionsUtilities
         max ??= [100];
         device ??= CPU;
 
-        var stateSpace = new DiscreteUniformStateSpace(
+        var stateSpace = new DiscreteUniform(
             dimensions,
             min,
             max,
@@ -74,7 +74,7 @@ public static class TransitionsUtilities
             scalarType: scalarType
         );
 
-        var randomWalkTransitions = new RandomWalkTransitions(
+        var randomWalkTransitions = new RandomWalk(
             stateSpace,
             sigma,
             device: device,
@@ -86,7 +86,7 @@ public static class TransitionsUtilities
 
         Heatmap transitionsPlot = new(min[xIdx], max[xIdx], min[yIdx], max[yIdx], title: figureName);
         transitionsPlot.OutputDirectory = Path.Combine(transitionsPlot.OutputDirectory, outputDirectory);
-        transitionsPlot.Show<float>(randomWalkTransitions.Transitions);
+        transitionsPlot.Show(randomWalkTransitions.Transitions);
         transitionsPlot.Save(png: true);
     }
 }

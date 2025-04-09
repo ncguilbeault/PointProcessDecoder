@@ -2,6 +2,8 @@ using static TorchSharp.torch;
 using OxyPlot;
 using OxyPlot.Series;
 using OxyPlot.Axes;
+using TorchSharp;
+using OxyPlot.Legends;
 
 namespace PointProcessDecoder.Plot;
 
@@ -9,6 +11,7 @@ public class ScatterPlot : OxyPlotBase
 {
     public override PlotModel Plot => _plot;
     private readonly PlotModel _plot;
+    private Legend? _legend = null;
     public double XMin { get; } = 0;
     public double XMax { get; } = 100;
     public double YMin { get; } = 0;
@@ -103,9 +106,15 @@ public class ScatterPlot : OxyPlotBase
         _plot.Axes.Add(yAxis);
     }
 
-    public void Show(Tensor data, OxyColor? color = null, bool addLine = false)
+    public void Show(
+        Tensor data, 
+        OxyColor? color = null, 
+        bool addLine = false,
+        string seriesLabel = ""
+    )
     {
-        
+        data = data.to_type(ScalarType.Float64);
+
         var scatterSeries = new ScatterSeries
         {
             MarkerType = MarkerType.Circle,
@@ -120,6 +129,21 @@ public class ScatterPlot : OxyPlotBase
             StrokeThickness = 1,
             MarkerType = MarkerType.None
         } : null;
+
+        if (!string.IsNullOrEmpty(seriesLabel))
+        {
+            if (lineSeries != null)
+                lineSeries.Title = seriesLabel;
+            else
+                scatterSeries.Title = seriesLabel;
+            
+            if (_legend == null)
+            {
+                _legend = new Legend();
+                _plot.Legends.Add(_legend);
+                _plot.IsLegendVisible = true;
+            }
+        }
         
         for (int i = 0; i < data.shape[0]; i++)
         {
@@ -130,44 +154,6 @@ public class ScatterPlot : OxyPlotBase
             lineSeries?.Points.Add(new DataPoint(
                 data[i,0].item<double>(), 
                 data[i,1].item<double>()
-            ));
-        }
-
-        _plot.Series.Add(scatterSeries);
-        if (addLine)
-        {
-            _plot.Series.Add(lineSeries);
-        }
-    }
-
-    public void Show<T>(Tensor data, OxyColor? color = null, bool addLine = false) where T : unmanaged
-    {
-        
-        var scatterSeries = new ScatterSeries
-        {
-            MarkerType = MarkerType.Circle,
-            MarkerFill = color ?? OxyColors.Red,
-            MarkerSize = 4,
-            MarkerStrokeThickness = 1,
-        };
-
-        var lineSeries = addLine ? new LineSeries
-        {
-            Color = color ?? OxyColors.Red,
-            StrokeThickness = 1,
-            MarkerType = MarkerType.None
-        } : null;
-        
-        for (int i = 0; i < data.shape[0]; i++)
-        {
-            scatterSeries.Points.Add(new ScatterPoint(
-                Convert.ToDouble(data[i,0].item<T>()), 
-                Convert.ToDouble(data[i,1].item<T>())
-            ));
-
-            lineSeries?.Points.Add(new DataPoint(
-                Convert.ToDouble(data[i,0].item<T>()), 
-                Convert.ToDouble(data[i,1].item<T>())
             ));
         }
 

@@ -51,9 +51,9 @@ public static class SortedUnitsUtilities
         var pointProcessModel = new PointProcessModel(
             estimationMethod,
             transitionsType,
-            EncoderType.SortedSpikeEncoder,
+            EncoderType.SortedSpikes,
             DecoderType.StateSpaceDecoder,
-            StateSpaceType.DiscreteUniformStateSpace,
+            StateSpaceType.DiscreteUniform,
             LikelihoodType.Poisson,
             min,
             max,
@@ -124,7 +124,7 @@ public static class SortedUnitsUtilities
         );
 
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, outputDirectory);
-        plotPrediction.Show<float>(
+        plotPrediction.Show(
             prediction, 
             positionPoints
         );
@@ -181,9 +181,9 @@ public static class SortedUnitsUtilities
         var pointProcessModel = new PointProcessModel(
             estimationMethod,
             transitionsType,
-            EncoderType.SortedSpikeEncoder,
+            EncoderType.SortedSpikes,
             DecoderType.StateSpaceDecoder,
-            StateSpaceType.DiscreteUniformStateSpace,
+            StateSpaceType.DiscreteUniform,
             LikelihoodType.Poisson,
             minVals,
             maxVals,
@@ -210,7 +210,7 @@ public static class SortedUnitsUtilities
         );
 
         plotPrediction.OutputDirectory = Path.Combine(plotPrediction.OutputDirectory, outputDirectory);
-        plotPrediction.Show<float>(
+        plotPrediction.Show(
             prediction, 
             position[TensorIndex.Slice(nTraining, nTraining + nTesting)]
         );

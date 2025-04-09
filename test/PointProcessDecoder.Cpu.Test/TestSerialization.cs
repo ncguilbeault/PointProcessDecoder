@@ -14,9 +14,9 @@ public class TestSerialization
         var model = new PointProcessModel(
             estimationMethod: Core.Estimation.EstimationMethod.KernelDensity,
             transitionsType: Core.Transitions.TransitionsType.Uniform,
-            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            encoderType: Core.Encoder.EncoderType.SortedSpikes,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
             minStateSpace: [0],
             maxStateSpace: [100],
@@ -45,9 +45,9 @@ public class TestSerialization
         var model = new PointProcessModel(
             estimationMethod: Core.Estimation.EstimationMethod.KernelDensity,
             transitionsType: Core.Transitions.TransitionsType.Uniform,
-            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            encoderType: Core.Encoder.EncoderType.SortedSpikes,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
             minStateSpace: [0, 0],
             maxStateSpace: [100, 100],
@@ -82,7 +82,7 @@ public class TestSerialization
     [TestMethod]
     public void TestSortedUnitsUniformDensityDeserialization()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -92,8 +92,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -107,9 +106,9 @@ public class TestSerialization
         var model = new PointProcessModel(
             estimationMethod: Core.Estimation.EstimationMethod.KernelDensity,
             transitionsType: Core.Transitions.TransitionsType.Uniform,
-            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            encoderType: Core.Encoder.EncoderType.SortedSpikes,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
             minStateSpace: [0],
             maxStateSpace: [100],
@@ -142,7 +141,7 @@ public class TestSerialization
     [TestMethod]
     public void TestSortedUnitsRandomWalkCompressionDeserialization()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -152,8 +151,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -167,9 +165,9 @@ public class TestSerialization
         var model = new PointProcessModel(
             estimationMethod: Core.Estimation.EstimationMethod.KernelCompression,
             transitionsType: Core.Transitions.TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            encoderType: Core.Encoder.EncoderType.SortedSpikes,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
             minStateSpace: [0],
             maxStateSpace: [100],
@@ -204,7 +202,7 @@ public class TestSerialization
     [TestMethod]
     public void TestClusterlessRandomWalkDensityDeserializationAfterEncoding()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -214,8 +212,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -237,9 +234,9 @@ public class TestSerialization
         var model = new PointProcessModel(
             estimationMethod: Core.Estimation.EstimationMethod.KernelDensity,
             transitionsType: Core.Transitions.TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarks,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
             minStateSpace: [0],
             maxStateSpace: [100],
@@ -275,7 +272,7 @@ public class TestSerialization
     [TestMethod]
     public void TestClusterlessUniformCompressionDeserializationAfterEncoding()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -285,8 +282,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -308,9 +304,9 @@ public class TestSerialization
         var model = new PointProcessModel(
             estimationMethod: Core.Estimation.EstimationMethod.KernelCompression,
             transitionsType: Core.Transitions.TransitionsType.Uniform,
-            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarks,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
             minStateSpace: [0],
             maxStateSpace: [100],
@@ -347,7 +343,7 @@ public class TestSerialization
     [TestMethod]
     public void TestSortedEncodeAfterLoading()
     {
-        var position = Simulate.Position(
+        var position = Simulate.SinPosition(
             200, 
             10, 
             0, 
@@ -357,8 +353,7 @@ public class TestSerialization
         var placeFieldCenters = Simulate.PlaceFieldCenters(
             0, 
             100, 
-            40,
-            seed: 0
+            40
         );
 
         var spikingData = Simulate.SpikesAtPosition(
@@ -372,9 +367,9 @@ public class TestSerialization
         var modelFull = new PointProcessModel(
             estimationMethod: Core.Estimation.EstimationMethod.KernelDensity,
             transitionsType: Core.Transitions.TransitionsType.Uniform,
-            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            encoderType: Core.Encoder.EncoderType.SortedSpikes,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
             minStateSpace: [0],
             maxStateSpace: [100],
@@ -391,9 +386,9 @@ public class TestSerialization
         var modelSplit = new PointProcessModel(
             estimationMethod: Core.Estimation.EstimationMethod.KernelDensity,
             transitionsType: Core.Transitions.TransitionsType.Uniform,
-            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            encoderType: Core.Encoder.EncoderType.SortedSpikes,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
             minStateSpace: [0],
             maxStateSpace: [100],

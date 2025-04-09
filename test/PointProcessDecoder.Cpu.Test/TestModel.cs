@@ -335,9 +335,9 @@ public class TestModel
         var pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
             transitionsType: TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarks,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
@@ -386,9 +386,9 @@ public class TestModel
         var pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
             transitionsType: TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarks,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
@@ -415,14 +415,15 @@ public class TestModel
         }
 
         var prediction1 = pointProcessModel.Decode(marks[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
+            
             .sum(dim: 0);
 
         pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
             transitionsType: TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarks,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
@@ -444,6 +445,7 @@ public class TestModel
         );
 
         var prediction2 = pointProcessModel.Decode(marks[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
+            
             .sum(dim: 0);
 
         Assert.AreEqual(prediction1, prediction2);
@@ -468,9 +470,9 @@ public class TestModel
         var pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
             transitionsType: TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            encoderType: Core.Encoder.EncoderType.SortedSpikes,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
@@ -495,14 +497,15 @@ public class TestModel
         }
 
         var prediction1 = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
+            
             .sum(dim: 0);
 
         pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
             transitionsType: TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.SortedSpikeEncoder,
+            encoderType: Core.Encoder.EncoderType.SortedSpikes,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Poisson,
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
@@ -522,6 +525,7 @@ public class TestModel
         );
 
         var prediction2 = pointProcessModel.Decode(spikingData[TensorIndex.Slice(nBatches * batchSize, (nBatches + 1) * batchSize)])
+            
             .sum(dim: 0);
 
         Assert.AreEqual(prediction1, prediction2);
@@ -547,9 +551,9 @@ public class TestModel
         var pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
             transitionsType: TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarks,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
@@ -580,9 +584,9 @@ public class TestModel
         var pointProcessModelLimited = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
             transitionsType: TransitionsType.RandomWalk,
-            encoderType: Core.Encoder.EncoderType.ClusterlessMarkEncoder,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarks,
             decoderType: Core.Decoder.DecoderType.StateSpaceDecoder,
-            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniformStateSpace,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
             likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
