@@ -538,7 +538,6 @@ public class TestClassifier
             seed,
             classifierData,
             testingPosition,
-            testingSpikes,
             insertionIndex
         );
 
@@ -572,7 +571,6 @@ public class TestClassifier
             seed,
             classifierData,
             testingPosition,
-            testingSpikes,
             insertionIndex
         );
 
@@ -606,7 +604,6 @@ public class TestClassifier
             seed,
             classifierData,
             testingPosition,
-            testingSpikes,
             insertionIndex
         );
     }
@@ -739,7 +736,6 @@ public class TestClassifier
             seed,
             classifierData,
             testingPosition,
-            testingSpikes,
             insertionIndex
         );
 
@@ -773,7 +769,6 @@ public class TestClassifier
             seed,
             classifierData,
             testingPosition,
-            testingSpikes,
             insertionIndex
         );
 
@@ -807,11 +802,10 @@ public class TestClassifier
             seed,
             classifierData,
             testingPosition,
-            testingSpikes,
             insertionIndex
         );
 
-        classifierModel = new PointProcessModel(
+        Assert.ThrowsException<ArgumentException>(() => new PointProcessModel(
             estimationMethod,
             Core.Transitions.TransitionsType.RandomWalk,
             Core.Encoder.EncoderType.SortedSpikes,
@@ -828,24 +822,9 @@ public class TestClassifier
             stayProbability: 1.0,
             device: device,
             scalarType: scalarType
-        );
+        ));
 
-        classifierModel.Encode(trainingPosition, trainingSpikes);
-        result = classifierModel.Decode(testingSpikes);
-        classifierData = new ClassifierData(classifierModel.StateSpace, result);
-
-        PlotClassifierData(
-            min,
-            max,
-            Path.Combine(outputDirectory, "StayProbability1.0"),
-            seed,
-            classifierData,
-            testingPosition,
-            testingSpikes,
-            insertionIndex
-        );
-
-        classifierModel = new PointProcessModel(
+        Assert.ThrowsException<ArgumentException>(() => new PointProcessModel(
             estimationMethod,
             Core.Transitions.TransitionsType.RandomWalk,
             Core.Encoder.EncoderType.SortedSpikes,
@@ -859,25 +838,10 @@ public class TestClassifier
             dimensions,
             sigmaRandomWalk: sigma,
             nUnits: nUnits,
-            stayProbability: 0.25,
+            stayProbability: 0,
             device: device,
             scalarType: scalarType
-        );
-
-        classifierModel.Encode(trainingPosition, trainingSpikes);
-        result = classifierModel.Decode(testingSpikes);
-        classifierData = new ClassifierData(classifierModel.StateSpace, result);
-
-        PlotClassifierData(
-            min,
-            max,
-            Path.Combine(outputDirectory, "StayProbability0.25"),
-            seed,
-            classifierData,
-            testingPosition,
-            testingSpikes,
-            insertionIndex
-        );
+        ));
     }
 
     private static void PlotClassifierData(
@@ -887,7 +851,6 @@ public class TestClassifier
         int seed,
         ClassifierData classifierData,
         Tensor testingPosition,
-        Tensor testingSpikes,
         int insertionIndex
     )
     {
@@ -913,7 +876,7 @@ public class TestClassifier
 
         Plot.ScatterPlot plotStatePrediction = new(
             0,
-            testingSpikes.size(0),
+            classifierData.StateProbabilities.size(0),
             0,
             1,
             title: "ReplayClassifierStatePrediction"
@@ -956,22 +919,22 @@ public class TestClassifier
     }
 
     [TestMethod]
-    public void EvaluateStayProbability1()
+    public void TestClusterless()
     {
         var bandwidth = new double[] { 5, 5 };
         var evaluationSteps = new long[] { 50, 50 };
         var min = new double[] { 0, 0 };
         var max = new double[] { 100, 100 };
-        var sigma = 25;
+        var stayProbability = 0.99;
         var scale = 0.1;
         var dimensions = 2;
-        var stayProbability = 0.99;
         var nUnits = 40;
+        var sigma = 25;
         var device = CPU;
         var scalarType = ScalarType.Float32;
         var estimationMethod = Core.Estimation.EstimationMethod.KernelDensity;
 
-        var outputDirectory = Path.Combine("TestClassifier", "EvaluateStayProbability1", estimationMethod.ToString());
+        var outputDirectory = Path.Combine("TestClassifier", "Clusterless", estimationMethod.ToString());
 
         var steps = 200;
         var cycles = 10;
@@ -1011,9 +974,46 @@ public class TestClassifier
             device: device
         );
 
+        var markDimensions = 4;
+        var markChannels = 8;
+        var spikeScale = 5.0;
+        var noiseScale = 0.5;
+    
+        var marks = Simulation.Simulate.MarksAtPosition(
+            position, 
+            spikes: spikingData,
+            markDimensions: markDimensions,
+            markChannels: markChannels,
+            seed: seed,
+            device: device,
+            scalarType: scalarType,
+            spikeScale: spikeScale,
+            noiseScale: noiseScale
+        );
+
+        var pointProcessModel = new PointProcessModel(
+            estimationMethod: Core.Estimation.EstimationMethod.KernelCompression,
+            transitionsType: Core.Transitions.TransitionsType.RandomWalk,
+            encoderType: Core.Encoder.EncoderType.ClusterlessMarks,
+            decoderType: Core.Decoder.DecoderType.HybridStateSpaceClassifier,
+            stateSpaceType: Core.StateSpace.StateSpaceType.DiscreteUniform,
+            likelihoodType: Core.Likelihood.LikelihoodType.Clusterless,
+            minStateSpace: min,
+            maxStateSpace: max,
+            stepsStateSpace: evaluationSteps,
+            observationBandwidth: bandwidth,
+            stateSpaceDimensions: dimensions,
+            markDimensions: markDimensions,
+            markChannels: markChannels,
+            markBandwidth: [1,1,1,1],
+            distanceThreshold: 1.5,
+            sigmaRandomWalk: sigma,
+            stayProbability: stayProbability
+        );
+
         var nTraining = 1800;
         var trainingPosition = position[TensorIndex.Slice(0, nTraining)];
-        var trainingSpikes = spikingData[TensorIndex.Slice(0, nTraining)];
+        var trainingMarks = marks[TensorIndex.Slice(0, nTraining)];
 
         var fragmentedPosition = Simulation.Simulate.RandPosition(
             500, 
@@ -1035,6 +1035,18 @@ public class TestClassifier
             device: device
         );
 
+        var fragmentedMarks = Simulation.Simulate.MarksAtPosition(
+            fragmentedPosition, 
+            fragmentedSpikes,
+            markDimensions: markDimensions,
+            markChannels: markChannels,
+            seed: seed,
+            device: device,
+            scalarType: scalarType,
+            spikeScale: spikeScale,
+            noiseScale: noiseScale
+        );
+
         var gen = manual_seed(seed);
         var insertionIndex = randint(0, 500, [1], device: device, dtype: ScalarType.Int32, generator: gen).item<int>();
 
@@ -1044,48 +1056,24 @@ public class TestClassifier
             fragmentedPosition[TensorIndex.Slice(insertionIndex)]
         ]);
 
-        var testingSpikes = vstack([
-            fragmentedSpikes[TensorIndex.Slice(0, insertionIndex)],
-            spikingData[TensorIndex.Slice(nTraining)], 
-            fragmentedSpikes[TensorIndex.Slice(insertionIndex)]
+        var testingMarks = vstack([
+            fragmentedMarks[TensorIndex.Slice(0, insertionIndex)],
+            marks[TensorIndex.Slice(nTraining)], 
+            fragmentedMarks[TensorIndex.Slice(insertionIndex)]
         ]);
 
-        PointProcessModel classifierModel;
-        Tensor result;
-        ClassifierData classifierData;
-
-        classifierModel = new PointProcessModel(
-            estimationMethod,
-            Core.Transitions.TransitionsType.RandomWalk,
-            Core.Encoder.EncoderType.SortedSpikes,
-            Core.Decoder.DecoderType.HybridStateSpaceClassifier,
-            Core.StateSpace.StateSpaceType.DiscreteUniform,
-            Core.Likelihood.LikelihoodType.Poisson,
-            min,
-            max,
-            evaluationSteps,
-            bandwidth,
-            dimensions,
-            sigmaRandomWalk: sigma,
-            nUnits: nUnits,
-            stayProbability: stayProbability,
-            device: device,
-            scalarType: scalarType
-        );
-
-        classifierModel.Encode(trainingPosition, trainingSpikes);
-        result = classifierModel.Decode(testingSpikes);
-        classifierData = new ClassifierData(classifierModel.StateSpace, result);
+        pointProcessModel.Encode(trainingPosition, trainingMarks);
+        var prediction = pointProcessModel.Decode(testingMarks);
+        var classifierData = new ClassifierData(pointProcessModel.StateSpace, prediction);
 
         PlotClassifierData(
-            min,
-            max,
-            outputDirectory,
-            seed,
-            classifierData,
-            testingPosition,
-            testingSpikes,
-            insertionIndex
+            min: min,
+            max: max,
+            outputDirectory: outputDirectory,
+            seed: 0,
+            classifierData: classifierData,
+            testingPosition: testingPosition,
+            insertionIndex: insertionIndex
         );
     }
 }
