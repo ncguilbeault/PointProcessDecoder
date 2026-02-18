@@ -66,9 +66,9 @@ public class TestCuda
             minStateSpace: [0],
             maxStateSpace: [100],
             stepsStateSpace: [50],
-            observationBandwidth: [1],
+            covariateBandwidth: [1],
             stateSpaceDimensions: 1,
-            nUnits: 40,
+            numUnits: 40,
             sigmaRandomWalk: 1,
             device: device
         );

@@ -26,10 +26,10 @@ public abstract class ModelBase: IModel
     public abstract IStateSpace StateSpace { get; }
 
     /// <inheritdoc/>
-    public abstract void Encode(Tensor observations, Tensor inputs);
+    public abstract void Encode(Tensor covariates, Tensor observations);
 
     /// <inheritdoc/>
-    public abstract Tensor Decode(Tensor inputs);
+    public abstract Tensor Decode(Tensor observations);
 
     /// <inheritdoc/>
     public virtual void Save(string basePath) { }

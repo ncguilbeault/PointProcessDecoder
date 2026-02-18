@@ -13,9 +13,9 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelSortedUnitsUniformDensitySimulatedData()
     {
-        SortedUnitsUtilities.BayesianStateSpaceSortedUnitsSimulatedData(
+        SortedUnitsUtilities.StateSpaceSortedUnitsSimulatedData(
             transitionsType: TransitionsType.Uniform,
-            bandwidth: [2],
+            covariateBandwidth: [2],
             firingThreshold: 0.2,
             modelDirectory: "SimulatedData"
         );
@@ -24,7 +24,7 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelSortedUnitsRandomWalkDensitySimulatedData()
     {
-        SortedUnitsUtilities.BayesianStateSpaceSortedUnitsSimulatedData(
+        SortedUnitsUtilities.StateSpaceSortedUnitsSimulatedData(
             transitionsType: TransitionsType.RandomWalk,
             sigma: 0.5,
             modelDirectory: "SimulatedData1D"
@@ -34,7 +34,7 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelSortedUnitsRandomWalkCompressionSimulatedData()
     {
-        SortedUnitsUtilities.BayesianStateSpaceSortedUnitsSimulatedData(
+        SortedUnitsUtilities.StateSpaceSortedUnitsSimulatedData(
             transitionsType: TransitionsType.RandomWalk,
             estimationMethod: EstimationMethod.KernelCompression,
             sigma: 0.5,
@@ -46,8 +46,8 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelSortedUnitsUniformDensitySimulatedData2D()
     {
-        SortedUnitsUtilities.BayesianStateSpaceSortedUnitsSimulatedData(
-            bandwidth: [5.0, 5.0],
+        SortedUnitsUtilities.StateSpaceSortedUnitsSimulatedData(
+            covariateBandwidth: [5.0, 5.0],
             dimensions: 2,
             evaluationSteps: [50, 50],
             min: [0, 0],
@@ -60,8 +60,8 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelSortedUnitsRandomWalkDensitySimulatedData2D()
     {
-        SortedUnitsUtilities.BayesianStateSpaceSortedUnitsSimulatedData(
-            bandwidth: [5.0, 5.0],
+        SortedUnitsUtilities.StateSpaceSortedUnitsSimulatedData(
+            covariateBandwidth: [5.0, 5.0],
             dimensions: 2,
             evaluationSteps: [50, 50],
             min: [0, 0],
@@ -76,8 +76,8 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelSortedUnitsRandomWalkCompressionSimulatedData2D()
     {
-        SortedUnitsUtilities.BayesianStateSpaceSortedUnitsSimulatedData(
-            bandwidth: [5.0, 5.0],
+        SortedUnitsUtilities.StateSpaceSortedUnitsSimulatedData(
+            covariateBandwidth: [5.0, 5.0],
             dimensions: 2,
             evaluationSteps: [50, 50],
             min: [0, 0],
@@ -94,8 +94,8 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelSortedUnitsUniformDensityRealData2D()
     {
-        SortedUnitsUtilities.BayesianStateSpaceSortedUnitsRealData(
-            bandwidth: [0.5, 0.5],
+        SortedUnitsUtilities.StateSpaceSortedUnitsRealData(
+            covariateBandwidth: [0.5, 0.5],
             dimensions: 2,
             evaluationSteps: [50, 50],
             minVals: [0, 0],
@@ -109,8 +109,8 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelSortedUnitsRandomWalkCompressionRealData2D()
     {
-        SortedUnitsUtilities.BayesianStateSpaceSortedUnitsRealData(
-            bandwidth: [0.5, 0.5],
+        SortedUnitsUtilities.StateSpaceSortedUnitsRealData(
+            covariateBandwidth: [0.5, 0.5],
             dimensions: 2,
             evaluationSteps: [50, 50],
             minVals: [0, 0],
@@ -128,9 +128,9 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksUniformDensitySimulatedData()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.Uniform,
-            observationBandwidth: [2],
+            covariateBandwidth: [2],
             markBandwidth: [1,1,1,1],
             firingThreshold: 0.2,
             noiseScale: 0.5,
@@ -141,11 +141,11 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksUniformCompressionSimulatedData()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.Uniform,
             estimationMethod: EstimationMethod.KernelCompression,
             distanceThreshold: 1.5,
-            observationBandwidth: [2],
+            covariateBandwidth: [2],
             markBandwidth: [1,1,1,1],
             firingThreshold: 0.2,
             noiseScale: 1.0,
@@ -156,9 +156,9 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksUniformDensitySimulatedData2D()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.Uniform,
-            observationBandwidth: [5,5],
+            covariateBandwidth: [5,5],
             dimensions : 2,
             evaluationSteps: [50, 50],
             min: [0, 0],
@@ -174,11 +174,11 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksUniformCompressionSimulatedData2D()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.Uniform,
             estimationMethod: EstimationMethod.KernelCompression,
             distanceThreshold: 1.5,
-            observationBandwidth: [5,5],
+            covariateBandwidth: [5,5],
             dimensions : 2,
             evaluationSteps: [50, 50],
             min: [0, 0],
@@ -194,9 +194,9 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksRandomWalkDensitySimulatedData()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.RandomWalk,
-            observationBandwidth: [5],
+            covariateBandwidth: [5],
             sigma: 3,
             markBandwidth: [2,2,2,2],
             firingThreshold: 0.5,
@@ -208,11 +208,11 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksRandomWalkCompressionSimulatedData()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.RandomWalk,
             estimationMethod: EstimationMethod.KernelCompression,
             distanceThreshold: 1.5,
-            observationBandwidth: [5],
+            covariateBandwidth: [5],
             sigma: 3,
             markBandwidth: [2,2,2,2],
             firingThreshold: 0.5,
@@ -224,9 +224,9 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksRandomWalkDensitySimulatedData2D()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.RandomWalk,
-            observationBandwidth: [5, 5],
+            covariateBandwidth: [5, 5],
             sigma: 1,
             dimensions : 2,
             evaluationSteps: [50, 50],
@@ -243,11 +243,11 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksRandomWalkCompressionSimulatedData2D()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksSimulated(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksSimulated(
             transitionsType: TransitionsType.RandomWalk,
             estimationMethod: EstimationMethod.KernelCompression,
             distanceThreshold: 1,
-            observationBandwidth: [10, 10],
+            covariateBandwidth: [10, 10],
             sigma: 10,
             dimensions : 2,
             evaluationSteps: [50, 50],
@@ -264,8 +264,8 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksUniformDensityRealData2D()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksRealData(
-            observationBandwidth: [0.5, 0.5],
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksRealData(
+            covariateBandwidth: [0.5, 0.5],
             dimensions: 2,
             evaluationSteps: [50, 50],
             minVals: [0, 0],
@@ -278,12 +278,12 @@ public class TestModel
     [TestMethod]
     public void TestPointProcessModelClusterlessMarksRandomWalkCompressionRealData2D()
     {
-        ClusterlessMarksUtilities.BayesianStateSpaceClusterlessMarksRealData(
+        ClusterlessMarksUtilities.StateSpaceClusterlessMarksRealData(
             transitionsType: TransitionsType.RandomWalk,
             estimationMethod: EstimationMethod.KernelCompression,
             distanceThreshold: 1.5,
             sigma: 0.25,
-            observationBandwidth: [0.5, 0.5],
+            covariateBandwidth: [0.5, 0.5],
             dimensions: 2,
             evaluationSteps: [50, 50],
             minVals: [0, 0],
@@ -293,7 +293,7 @@ public class TestModel
         );
     }
 
-    Tensor ReadBinaryFile(
+    static Tensor ReadBinaryFile(
         string binary_file
     )
     {
@@ -305,7 +305,7 @@ public class TestModel
         return t;
     }
 
-    (Tensor, Tensor) InitializeRealData(
+    static (Tensor, Tensor) InitializeRealData(
         string positionFile,
         string marksFile
     )
@@ -322,7 +322,7 @@ public class TestModel
         string marksFile = "../../../../data/marks.bin";
 
         int markDimensions = 4;
-        int markChannels = 28;
+        int numChannels = 28;
 
         var (position, marks) = InitializeRealData(
             positionFile: positionFile,
@@ -330,7 +330,7 @@ public class TestModel
         );
 
         position = position.reshape(-1, 2);
-        marks = marks.reshape(position.shape[0], markDimensions, markChannels);
+        marks = marks.reshape(position.shape[0], markDimensions, numChannels);
 
         var pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
@@ -342,10 +342,10 @@ public class TestModel
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
             stepsStateSpace: [50, 50],
-            observationBandwidth: [2, 2],
+            covariateBandwidth: [2, 2],
             stateSpaceDimensions: 2,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             markBandwidth: [1, 1, 1, 1],
             distanceThreshold: 1.5,
             sigmaRandomWalk: 5
@@ -373,7 +373,7 @@ public class TestModel
         string marksFile = "../../../../data/marks.bin";
 
         int markDimensions = 4;
-        int markChannels = 28;
+        int numChannels = 28;
 
         var (position, marks) = InitializeRealData(
             positionFile: positionFile,
@@ -381,7 +381,7 @@ public class TestModel
         );
 
         position = position.reshape(-1, 2);
-        marks = marks.reshape(position.shape[0], markDimensions, markChannels);
+        marks = marks.reshape(position.shape[0], markDimensions, numChannels);
 
         var pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
@@ -393,10 +393,10 @@ public class TestModel
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
             stepsStateSpace: [50, 50],
-            observationBandwidth: [5, 5],
+            covariateBandwidth: [5, 5],
             stateSpaceDimensions: 2,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             markBandwidth: [1, 1, 1, 1],
             distanceThreshold: 1.5,
             sigmaRandomWalk: 1
@@ -428,10 +428,10 @@ public class TestModel
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
             stepsStateSpace: [50, 50],
-            observationBandwidth: [5, 5],
+            covariateBandwidth: [5, 5],
             stateSpaceDimensions: 2,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             markBandwidth: [1, 1, 1, 1],
             distanceThreshold: 1.5,
             sigmaRandomWalk: 1
@@ -477,10 +477,10 @@ public class TestModel
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
             stepsStateSpace: [50, 50],
-            observationBandwidth: [5, 5],
+            covariateBandwidth: [5, 5],
             stateSpaceDimensions: 2,
             distanceThreshold: 1.5,
-            nUnits: numNeurons,
+            numUnits: numNeurons,
             sigmaRandomWalk: 1
         );
 
@@ -510,10 +510,10 @@ public class TestModel
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
             stepsStateSpace: [50, 50],
-            observationBandwidth: [5, 5],
+            covariateBandwidth: [5, 5],
             stateSpaceDimensions: 2,
             distanceThreshold: 1.5,
-            nUnits: numNeurons,
+            numUnits: numNeurons,
             sigmaRandomWalk: 1
         );
 
@@ -538,7 +538,7 @@ public class TestModel
         string marksFile = "../../../../data/marks.bin";
 
         int markDimensions = 4;
-        int markChannels = 28;
+        int numChannels = 28;
 
         var (position, marks) = InitializeRealData(
             positionFile: positionFile,
@@ -546,7 +546,7 @@ public class TestModel
         );
 
         position = position.reshape(-1, 2);
-        marks = marks.reshape(position.shape[0], markDimensions, markChannels);
+        marks = marks.reshape(position.shape[0], markDimensions, numChannels);
 
         var pointProcessModel = new PointProcessModel(
             estimationMethod: EstimationMethod.KernelCompression,
@@ -558,10 +558,10 @@ public class TestModel
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
             stepsStateSpace: [50, 50],
-            observationBandwidth: [2, 2],
+            covariateBandwidth: [2, 2],
             stateSpaceDimensions: 2,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             markBandwidth: [1, 1, 1, 1],
             distanceThreshold: 1.5,
             sigmaRandomWalk: 5
@@ -591,10 +591,10 @@ public class TestModel
             minStateSpace: [0, 0],
             maxStateSpace: [120, 120],
             stepsStateSpace: [50, 50],
-            observationBandwidth: [2, 2],
+            covariateBandwidth: [2, 2],
             stateSpaceDimensions: 2,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             markBandwidth: [1, 1, 1, 1],
             distanceThreshold: 1.5,
             sigmaRandomWalk: 5,

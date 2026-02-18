@@ -42,6 +42,9 @@ public class PointProcessModel : ModelBase, IModel
 
     private readonly PointProcessModelConfiguration _configuration;
 
+    /// <inheritdoc/>
+    public PointProcessModelConfiguration Configuration => _configuration;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="PointProcessModel"/> class.
     /// </summary>
@@ -54,12 +57,12 @@ public class PointProcessModel : ModelBase, IModel
     /// <param name="minStateSpace"></param>
     /// <param name="maxStateSpace"></param>
     /// <param name="stepsStateSpace"></param>
-    /// <param name="observationBandwidth"></param>
+    /// <param name="covariateBandwidth"></param>
     /// <param name="stateSpaceDimensions"></param>
     /// <param name="markDimensions"></param>
-    /// <param name="markChannels"></param>
+    /// <param name="numChannels"></param>
     /// <param name="markBandwidth"></param>
-    /// <param name="nUnits"></param>
+    /// <param name="numUnits"></param>
     /// <param name="distanceThreshold"></param>
     /// <param name="ignoreNoSpikes"></param>
     /// <param name="sigmaRandomWalk"></param>
@@ -77,12 +80,12 @@ public class PointProcessModel : ModelBase, IModel
         double[] minStateSpace,
         double[] maxStateSpace,
         long[] stepsStateSpace,
-        double[] observationBandwidth,
+        double[] covariateBandwidth,
         int stateSpaceDimensions,
         int? markDimensions = null,
-        int? markChannels = null,
+        int? numChannels = null,
         double[]? markBandwidth = null,
-        int? nUnits = null,
+        int? numUnits = null,
         double? distanceThreshold = null,
         bool ignoreNoSpikes = false,
         double? sigmaRandomWalk = null,
@@ -112,10 +115,10 @@ public class PointProcessModel : ModelBase, IModel
         {
             EncoderType.ClusterlessMarks => new ClusterlessMarks(
                 estimationMethod: estimationMethod,
-                observationBandwidth: observationBandwidth,
+                covariateBandwidth: covariateBandwidth,
                 markDimensions: markDimensions ?? 1,
-                markChannels: markChannels ?? 1,
-                markBandwidth: markBandwidth ?? observationBandwidth,
+                numChannels: numChannels ?? 1,
+                markBandwidth: markBandwidth ?? covariateBandwidth,
                 stateSpace: _stateSpace,
                 distanceThreshold: distanceThreshold,
                 kernelLimit: kernelLimit,
@@ -124,8 +127,8 @@ public class PointProcessModel : ModelBase, IModel
             ),
             EncoderType.SortedSpikes => new SortedSpikes(
                 estimationMethod: estimationMethod,
-                bandwidth: observationBandwidth,
-                nUnits: nUnits ?? 1,
+                covariateBandwidth: covariateBandwidth,
+                numUnits: numUnits ?? 1,
                 stateSpace: _stateSpace,
                 distanceThreshold: distanceThreshold,
                 kernelLimit: kernelLimit,
@@ -180,12 +183,12 @@ public class PointProcessModel : ModelBase, IModel
             MinStateSpace = minStateSpace,
             MaxStateSpace = maxStateSpace,
             StepsStateSpace = stepsStateSpace,
-            ObservationBandwidth = observationBandwidth,
+            CovariateBandwidth = covariateBandwidth,
             StateSpaceDimensions = stateSpaceDimensions,
             MarkDimensions = markDimensions,
-            MarkChannels = markChannels,
+            NumChannels = numChannels,
             MarkBandwidth = markBandwidth,
-            NUnits = nUnits,
+            NumUnits = numUnits,
             DistanceThreshold = distanceThreshold,
             IgnoreNoSpikes = ignoreNoSpikes,
             SigmaRandomWalk = sigmaRandomWalk,
@@ -196,16 +199,16 @@ public class PointProcessModel : ModelBase, IModel
     }
 
     /// <inheritdoc/>
-    public override void Encode(Tensor observations, Tensor inputs)
+    public override void Encode(Tensor covariates, Tensor observations)
     {
-        _encoderModel.Encode(observations, inputs);
+        _encoderModel.Encode(covariates, observations);
     }
 
     /// <inheritdoc/>
-    public override Tensor Decode(Tensor inputs)
+    public override Tensor Decode(Tensor observations)
     {
-        var conditionalIntensities = _encoderModel.Evaluate(inputs);
-        var likelihood = _likelihood.Likelihood(inputs, conditionalIntensities);
+        var conditionalIntensities = _encoderModel.Evaluate(observations);
+        var likelihood = _likelihood.Likelihood(observations, conditionalIntensities);
         return _decoderModel.Decode(likelihood);
     }
 
@@ -264,12 +267,12 @@ public class PointProcessModel : ModelBase, IModel
             minStateSpace: configuration.MinStateSpace,
             maxStateSpace: configuration.MaxStateSpace,
             stepsStateSpace: configuration.StepsStateSpace,
-            observationBandwidth: configuration.ObservationBandwidth,
+            covariateBandwidth: configuration.CovariateBandwidth,
             stateSpaceDimensions: configuration.StateSpaceDimensions,
             markDimensions: configuration.MarkDimensions,
-            markChannels: configuration.MarkChannels,
+            numChannels: configuration.NumChannels,
             markBandwidth: configuration.MarkBandwidth,
-            nUnits: configuration.NUnits,
+            numUnits: configuration.NumUnits,
             distanceThreshold: configuration.DistanceThreshold,
             ignoreNoSpikes: configuration.IgnoreNoSpikes,
             sigmaRandomWalk: configuration.SigmaRandomWalk,

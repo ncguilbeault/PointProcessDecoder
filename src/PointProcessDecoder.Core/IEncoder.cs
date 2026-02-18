@@ -30,9 +30,9 @@ public interface IEncoder : IModelComponent
     public IEnumerable<Tensor> Evaluate(params Tensor[] inputs);
 
     /// <summary>
-    /// Encodes the observations into a latent representation based on the joint distribution of the observations and the inputs.
+    /// Encodes the observations into a latent representation based on the joint distribution of the covariates and the observations.
     /// </summary>
+    /// <param name="covariates"></param>
     /// <param name="observations"></param>
-    /// <param name="input"></param>
-    public void Encode(Tensor observations, Tensor input);
+    public void Encode(Tensor covariates, Tensor observations);
 }

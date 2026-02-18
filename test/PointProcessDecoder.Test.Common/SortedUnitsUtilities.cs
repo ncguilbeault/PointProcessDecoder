@@ -12,8 +12,8 @@ namespace PointProcessDecoder.Test.Common;
 
 public static class SortedUnitsUtilities
 {
-    public static void BayesianStateSpaceSortedUnitsSimulatedData(
-        double[]? bandwidth = null,
+    public static void StateSpaceSortedUnitsSimulatedData(
+        double[]? covariateBandwidth = null,
         int dimensions = 1,
         long[]? evaluationSteps = null,
         int steps = 200,
@@ -29,7 +29,7 @@ public static class SortedUnitsUtilities
         double? sigma = null,
         double? distanceThreshold = null,
         string outputDirectory = "TestSortedUnits",
-        string modelDirectory = "BayesianStateSpaceSortedUnitsSimulatedData",
+        string modelDirectory = "StateSpaceSortedUnitsSimulatedData",
         ScalarType scalarType = ScalarType.Float32,
         Device? device = null,
         int seed = 0,
@@ -38,7 +38,7 @@ public static class SortedUnitsUtilities
         TransitionsType transitionsType = TransitionsType.Uniform
     )
     {
-        bandwidth ??= [5];
+        covariateBandwidth ??= [5];
         evaluationSteps ??= [50];
         min ??= [0];
         max ??= [100];
@@ -58,9 +58,9 @@ public static class SortedUnitsUtilities
             min,
             max,
             evaluationSteps,
-            bandwidth,
+            covariateBandwidth,
             dimensions,
-            nUnits: numNeurons,
+            numUnits: numNeurons,
             distanceThreshold: distanceThreshold,
             sigmaRandomWalk: sigma,
             device: device,
@@ -131,8 +131,8 @@ public static class SortedUnitsUtilities
         plotPrediction.Save(png: true);
     }
 
-    public static void BayesianStateSpaceSortedUnitsRealData(
-        double[]? bandwidth = null,
+    public static void StateSpaceSortedUnitsRealData(
+        double[]? covariateBandwidth = null,
         int dimensions = 2,
         long[]? evaluationSteps = null,
         double[]? minVals = null,
@@ -142,7 +142,7 @@ public static class SortedUnitsUtilities
         double? sigma = null,
         double? distanceThreshold = null,
         string outputDirectory = "TestSortedUnits",
-        string modelDirectory = "BayesianStateSpaceSortedUnitsRealData",
+        string modelDirectory = "StateSpaceSortedUnitsRealData",
         ScalarType scalarType = ScalarType.Float32,
         Device? device = null,
         int seed = 0,
@@ -153,7 +153,7 @@ public static class SortedUnitsUtilities
         string spikesFile = "../../../../data/spike_counts.bin"
     )
     {
-        bandwidth ??= [5, 5];
+        covariateBandwidth ??= [5, 5];
         evaluationSteps ??= [50, 50];
         minVals ??= [0, 0];
         maxVals ??= [120, 120];
@@ -188,9 +188,9 @@ public static class SortedUnitsUtilities
             minVals,
             maxVals,
             evaluationSteps,
-            bandwidth,
+            covariateBandwidth,
             dimensions,
-            nUnits: numNeurons,
+            numUnits: numNeurons,
             distanceThreshold: distanceThreshold,
             sigmaRandomWalk: sigma,
             device: device,

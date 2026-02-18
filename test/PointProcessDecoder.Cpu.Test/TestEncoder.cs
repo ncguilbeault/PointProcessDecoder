@@ -10,7 +10,7 @@ public class TestEncoder
     public void TestSortedSpikeEncoderDensity1D()
     {
         EncoderUtilities.SortedSpikeEncoder(
-            bandwidth: [5.0],
+            covariateBandwidth: [5.0],
             numDimensions: 1,
             evaluationSteps: [50],
             steps: 200,
@@ -27,7 +27,7 @@ public class TestEncoder
     public void TestSortedSpikeEncoderDensity2D()
     {
         EncoderUtilities.SortedSpikeEncoder(
-            bandwidth: [5.0, 5.0],
+            covariateBandwidth: [5.0, 5.0],
             numDimensions: 2,
             evaluationSteps: [50, 50],
             steps: 200,
@@ -47,7 +47,7 @@ public class TestEncoder
         EncoderUtilities.SortedSpikeEncoder(
             estimationMethod: Core.Estimation.EstimationMethod.KernelCompression,
             distanceThreshold: 1.5,
-            bandwidth: [5.0],
+            covariateBandwidth: [5.0],
             numDimensions: 1,
             evaluationSteps: [50],
             steps: 200,
@@ -66,7 +66,7 @@ public class TestEncoder
         EncoderUtilities.SortedSpikeEncoder(
             estimationMethod: Core.Estimation.EstimationMethod.KernelCompression,
             distanceThreshold: 1.5,
-            bandwidth: [5.0, 5.0],
+            covariateBandwidth: [5.0, 5.0],
             numDimensions: 2,
             evaluationSteps: [50, 50],
             steps: 200,
@@ -84,7 +84,7 @@ public class TestEncoder
     public void TestClusterlessMarkEncoderDensity1D()
     {
         EncoderUtilities.ClusterlessMarkEncoder(
-            observationBandwidth: [5.0],
+            covariateBandwidth: [5.0],
             numDimensions: 1,
             evaluationSteps: [50],
             steps: 200,
@@ -92,7 +92,7 @@ public class TestEncoder
             min: [0],
             max: [100],
             markDimensions: 4,
-            markChannels: 8,
+            numChannels: 8,
             markBandwidth: [1.0, 1.0, 1.0, 1.0],
             numNeurons: 40,
             placeFieldRadius: 8.0,
@@ -104,7 +104,7 @@ public class TestEncoder
     public void TestClusterlessMarkEncoderDensity2D()
     {
         EncoderUtilities.ClusterlessMarkEncoder(
-            observationBandwidth: [5.0, 5.0],
+            covariateBandwidth: [5.0, 5.0],
             numDimensions: 2,
             evaluationSteps: [50, 50],
             steps: 200,
@@ -112,7 +112,7 @@ public class TestEncoder
             min: [0, 0],
             max: [100, 100],
             markDimensions: 4,
-            markChannels: 8,
+            numChannels: 8,
             markBandwidth: [1.0, 1.0, 1.0, 1.0],
             numNeurons: 40,
             placeFieldRadius: 8.0,

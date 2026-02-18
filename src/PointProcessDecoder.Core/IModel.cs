@@ -28,16 +28,16 @@ public interface IModel : IModelComponent
     public IStateSpace StateSpace { get; }
 
     /// <summary>
-    /// Encodes the observations into a latent representation based on the joint distribution of the observations and the inputs.
+    /// Encodes the observations into a latent representation based on the joint distribution of the covariates and the observations.
     /// </summary>
+    /// <param name="covariates"></param>
     /// <param name="observations"></param>
-    /// <param name="data"></param>
-    public void Encode(Tensor observations, Tensor inputs);
+    public void Encode(Tensor covariates, Tensor observations);
 
     /// <summary>
-    /// Decodes the the latent representation from the inputs.
+    /// Decodes the the latent representation from the observations.
     /// </summary>
-    /// <param name="inputs"></param>
+    /// <param name="observations"></param>
     /// <returns></returns>
-    public Tensor Decode(Tensor inputs);
+    public Tensor Decode(Tensor observations);
 }

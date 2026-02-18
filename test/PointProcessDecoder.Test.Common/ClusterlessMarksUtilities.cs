@@ -13,8 +13,8 @@ namespace PointProcessDecoder.Test.Common;
 
 public static class ClusterlessMarksUtilities
 {
-    public static void BayesianStateSpaceClusterlessMarksSimulated(
-        double[]? observationBandwidth = null,
+    public static void StateSpaceClusterlessMarksSimulated(
+        double[]? covariateBandwidth = null,
         int dimensions = 1,
         long[]? evaluationSteps = null,
         int steps = 200,
@@ -26,14 +26,14 @@ public static class ClusterlessMarksUtilities
         double placeFieldRadius = 8.0,
         double firingThreshold = 0.2,
         int markDimensions = 4,
-        int markChannels = 8,
+        int numChannels = 8,
         double[]? markBandwidth = null,
         int nTraining = 1800,
         int nTesting = 200,
         double? sigma = null,
         double? distanceThreshold = null,
         string outputDirectory = "TestClusterlessMarks",
-        string modelDirectory = "BayesianStateSpaceClusterlessMarksSimulatedData",
+        string modelDirectory = "StateSpaceClusterlessMarksSimulatedData",
         ScalarType scalarType = ScalarType.Float32,
         Device? device = null,
         int seed = 0,
@@ -44,7 +44,7 @@ public static class ClusterlessMarksUtilities
         TransitionsType transitionsType = TransitionsType.Uniform
     )
     {
-        observationBandwidth ??= [5];
+        covariateBandwidth ??= [5];
         evaluationSteps ??= [50];
         min ??= [0];
         max ??= [100];
@@ -64,10 +64,10 @@ public static class ClusterlessMarksUtilities
             min,
             max,
             evaluationSteps,
-            observationBandwidth,
+            covariateBandwidth,
             dimensions,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             markBandwidth: markBandwidth,
             distanceThreshold: distanceThreshold,
             sigmaRandomWalk: sigma,
@@ -122,7 +122,7 @@ public static class ClusterlessMarksUtilities
             position,
             spikingData, 
             markDimensions, 
-            markChannels, 
+            numChannels, 
             scalarType: scalarType, 
             device: device,
             spikeScale: spikeScale,
@@ -150,8 +150,8 @@ public static class ClusterlessMarksUtilities
         plotPrediction.Save(png: true);
     }
 
-    public static void BayesianStateSpaceClusterlessMarksRealData(
-        double[]? observationBandwidth = null,
+    public static void StateSpaceClusterlessMarksRealData(
+        double[]? covariateBandwidth = null,
         int dimensions = 2,
         long[]? evaluationSteps = null,
         double[]? minVals = null,
@@ -159,12 +159,12 @@ public static class ClusterlessMarksUtilities
         double trainingFraction = 0.8,
         double? testFraction = null,
         int markDimensions = 4,
-        int markChannels = 28,
+        int numChannels = 28,
         double[]? markBandwidth = null,
         double? sigma = null,
         double? distanceThreshold = null,
         string outputDirectory = "TestClusterlessMarks",
-        string modelDirectory = "BayesianStateSpaceClusterlessMarksRealData",
+        string modelDirectory = "StateSpaceClusterlessMarksRealData",
         ScalarType scalarType = ScalarType.Float32,
         Device? device = null,
         string figureName = "Prediction",
@@ -174,7 +174,7 @@ public static class ClusterlessMarksUtilities
         string marksFile = "../../../../data/marks.bin"
     )
     {
-        observationBandwidth ??= [5, 5];
+        covariateBandwidth ??= [5, 5];
         evaluationSteps ??= [50, 50];
         minVals ??= [0, 0];
         maxVals ??= [120, 120];
@@ -192,7 +192,7 @@ public static class ClusterlessMarksUtilities
         );
 
         position = position.reshape(-1, 2);
-        marks = marks.reshape(position.shape[0], markDimensions, markChannels);
+        marks = marks.reshape(position.shape[0], markDimensions, numChannels);
 
         position = position[TensorIndex.Slice(0, 20000)];
         marks = marks[TensorIndex.Slice(0, 20000)];
@@ -212,10 +212,10 @@ public static class ClusterlessMarksUtilities
             minVals,
             maxVals,
             evaluationSteps,
-            observationBandwidth,
+            covariateBandwidth,
             dimensions,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             markBandwidth: markBandwidth,
             distanceThreshold: distanceThreshold,
             sigmaRandomWalk: sigma,

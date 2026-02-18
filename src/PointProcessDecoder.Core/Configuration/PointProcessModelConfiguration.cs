@@ -53,9 +53,9 @@ public class PointProcessModelConfiguration
     public long[] StepsStateSpace { get; set; } = [];
 
     /// <summary>
-    /// The observation bandwidth of the model.
+    /// The bandwidth used for estimating the covariate distribution of the model.
     /// </summary>
-    public double[] ObservationBandwidth { get; set; } = [];
+    public double[] CovariateBandwidth { get; set; } = [];
 
     /// <summary>
     /// The state space dimensions of the model.
@@ -63,37 +63,37 @@ public class PointProcessModelConfiguration
     public int StateSpaceDimensions { get; set; }
 
     /// <summary>
-    /// The mark dimensions of the model.
+    /// The dimensionality of the marks.
     /// </summary>
     public int? MarkDimensions { get; set; }
 
     /// <summary>
-    /// The mark channels of the model.
+    /// The number of different channels for recording marked events.
     /// </summary>
-    public int? MarkChannels { get; set; }
+    public int? NumChannels { get; set; }
 
     /// <summary>
-    /// The mark bandwidth of the model.
+    /// The bandwidth used for estimating the mark distribution.
     /// </summary>
     public double[]? MarkBandwidth { get; set; }
 
     /// <summary>
-    /// The number of units of the model.
+    /// The number of sorted units.
     /// </summary>
-    public int? NUnits { get; set; }
+    public int? NumUnits { get; set; }
 
     /// <summary>
-    /// The distance threshold of the model.
+    /// The distance threshold for determining whether kernel values are close enough to be merged into a single kernel.
     /// </summary>
     public double? DistanceThreshold { get; set; }
 
     /// <summary>
-    /// The ignore no spikes flag of the model.
+    /// Determines whether to ignore the contribution of no spikes in the likelihood computation.
     /// </summary>
     public bool IgnoreNoSpikes { get; set; }
 
     /// <summary>
-    /// The sigma random walk of the model.
+    /// The sigma of the random walk used for estimating the transitions.
     /// </summary>
     public double? SigmaRandomWalk { get; set; }
 

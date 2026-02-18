@@ -12,7 +12,7 @@ public static class EncoderUtilities
 {
     public static void SortedSpikeEncoder(
         EstimationMethod estimationMethod = EstimationMethod.KernelDensity,
-        double[]? bandwidth = null,
+        double[]? covariateBandwidth = null,
         int numDimensions = 1,
         long[]? evaluationSteps = null,
         int steps = 200,
@@ -30,7 +30,7 @@ public static class EncoderUtilities
         int heatmapPadding = 10
     )
     {
-        bandwidth ??= [5.0];
+        covariateBandwidth ??= [5.0];
         evaluationSteps ??= [50];
         min ??= [0.0];
         max ??= [100.0];
@@ -49,7 +49,7 @@ public static class EncoderUtilities
 
         var sortedSpikeEncoder = new SortedSpikes(
             estimationMethod, 
-            bandwidth,
+            covariateBandwidth,
             numNeurons,
             stateSpace,
             distanceThreshold: distanceThreshold,
@@ -107,7 +107,7 @@ public static class EncoderUtilities
 
     public static void ClusterlessMarkEncoder(
         EstimationMethod estimationMethod = EstimationMethod.KernelDensity,
-        double[]? observationBandwidth = null,
+        double[]? covariateBandwidth = null,
         int numDimensions = 1,
         long[]? evaluationSteps = null,
         int steps = 200,
@@ -116,7 +116,7 @@ public static class EncoderUtilities
         double[]? max = null,
         double? distanceThreshold = null,
         int markDimensions = 4,
-        int markChannels = 8,
+        int numChannels = 8,
         double[]? markBandwidth = null,
         double placeFieldRadius = 8.0,
         double firingThreshold = 0.2,
@@ -130,7 +130,7 @@ public static class EncoderUtilities
         int heatmapPadding = 10
     )
     {
-        observationBandwidth ??= [5.0];
+        covariateBandwidth ??= [5.0];
         evaluationSteps ??= [50];
         markBandwidth ??= [1.0, 1.0, 1.0, 1.0];
         min ??= [0.0];
@@ -150,9 +150,9 @@ public static class EncoderUtilities
 
         var encoder = new ClusterlessMarks(
             estimationMethod, 
-            observationBandwidth,
+            covariateBandwidth,
             markDimensions,
-            markChannels,
+            numChannels,
             markBandwidth,
             stateSpace,
             distanceThreshold: distanceThreshold,
@@ -199,7 +199,7 @@ public static class EncoderUtilities
             position,
             spikingData,
             markDimensions,
-            markChannels,
+            numChannels,
             spikeScale: spikeScale,
             noiseScale: noiseScale,
             scalarType: scalarType,
@@ -235,7 +235,7 @@ public static class EncoderUtilities
 
     public static void RunSortedSpikeEncoder1D(
         IEncoder encoder, 
-        Tensor observations, 
+        Tensor covariates, 
         Tensor spikes,
         string encoderDirectory,
         long evaluationSteps,
@@ -245,7 +245,7 @@ public static class EncoderUtilities
         string title = ""
     )
     {
-        encoder.Encode(observations, spikes);
+        encoder.Encode(covariates, spikes);
         var densities = encoder.Evaluate().First();
 
         for (int i = 0; i < densities.shape[0]; i++)
@@ -287,14 +287,14 @@ public static class EncoderUtilities
     public static void RunSortedSpikeEncoder2D(
         IEncoder encoder,
         long[] evaluationSteps,
-        Tensor observations, 
+        Tensor covariates, 
         Tensor spikes,
         string encoderDirectory,
         double[] densityHeatmapRange,
         string title = ""
     )
     {
-        encoder.Encode(observations, spikes);
+        encoder.Encode(covariates, spikes);
         var densities = encoder.Evaluate().First();
 
         for (int i = 0; i < densities.shape[0]; i++)
