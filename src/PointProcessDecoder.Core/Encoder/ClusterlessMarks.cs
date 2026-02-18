@@ -71,12 +71,12 @@ public class ClusterlessMarks : ModelComponent, IEncoder
     {
         if (markChannels < 1)
         {
-            throw new ArgumentException("The number of mark channels must be greater than 0.");
+            throw new ArgumentException("The number of mark channels must be greater than 0.", nameof(markChannels));
         }
 
         if (markDimensions < 1)
         {
-            throw new ArgumentException("The number of mark dimensions must be greater than 0.");
+            throw new ArgumentException("The number of mark dimensions must be greater than 0.", nameof(markDimensions));
         }
 
         _device = device ?? CPU;
@@ -142,9 +142,8 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 break;
 
             default:
-                throw new ArgumentException("Invalid estimation method.");
-        }
-        ;
+                throw new ArgumentException("Invalid estimation method.", nameof(estimationMethod));
+        };
     }
 
     /// <inheritdoc/>
@@ -152,12 +151,12 @@ public class ClusterlessMarks : ModelComponent, IEncoder
     {
         if (marks.ndim != 3)
         {
-            throw new ArgumentException("The marks tensor must have 3 dimensions (numSamples, markDimensions, markChannels).");
+            throw new ArgumentException("The marks tensor must have 3 dimensions (numSamples, markDimensions, markChannels).", nameof(marks));
         }
 
         if (observations.ndim != 2)
         {
-            throw new ArgumentException("The observations tensor must have 2 dimensions (numSamples, observationDimensions).");
+            throw new ArgumentException("The observations tensor must have 2 dimensions (numSamples, observationDimensions).", nameof(observations));
         }
 
         var marksShape = marks.shape;
@@ -171,22 +170,22 @@ public class ClusterlessMarks : ModelComponent, IEncoder
 
         if (markDimensions != _markDimensions)
         {
-            throw new ArgumentException(nameof(marks), "The number of mark dimensions must match the shape of the marks tensor on dimension 1.");
+            throw new ArgumentException("The number of mark dimensions must match the shape of the marks tensor on dimension 1.", nameof(marks));
         }
 
         if (markChannels != _markChannels)
         {
-            throw new ArgumentException(nameof(marks), "The number of mark channels must match the shape of the marks tensor on dimension 2.");
+            throw new ArgumentException("The number of mark channels must match the shape of the marks tensor on dimension 2.", nameof(marks));
         }
 
         if (observationDimensions != _stateSpace.Dimensions)
         {
-            throw new ArgumentException(nameof(observations), "The number of observation dimensions must match the dimensions of the state space.");
+            throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.", nameof(observations));
         }
 
         if (numObservationSamples != numMarkSamples && numObservationSamples != 1)
         {
-            throw new ArgumentException(nameof(observations), "The number of samples in the observations and marks tensors must match, unless observations has only one sample.");
+            throw new ArgumentException("The number of samples in the observations and marks tensors must match, unless observations has only one sample.", nameof(observations));
         }
 
         _observationEstimation.Fit(observations);
@@ -198,8 +197,6 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 .sum(dim: 0)
                 .to(_device);
             _samples = numMarkSamples;
-            // _observationSamples = tensor(numObservationSamples, device: _device);
-
         }
         else
         {
@@ -207,7 +204,6 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 .any(dim: 1)
                 .sum(dim: 0);
             _samples += numMarkSamples;
-            // _observationSamples += numObservationSamples;
         }
 
         _rates = _spikeCounts.log() - _samples.log();
