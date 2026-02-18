@@ -1,4 +1,4 @@
-using static TorchSharp.torch;
+﻿using static TorchSharp.torch;
 
 namespace PointProcessDecoder.Core;
 

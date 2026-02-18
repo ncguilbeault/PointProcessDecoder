@@ -1,4 +1,4 @@
-using static TorchSharp.torch;
+﻿using static TorchSharp.torch;
 
 using PointProcessDecoder.Core.Estimation;
 using PointProcessDecoder.Core.Transitions;
@@ -111,9 +111,9 @@ public class PointProcessModel : ModelBase, IModel
         _encoderModel = encoderType switch
         {
             EncoderType.ClusterlessMarks => new ClusterlessMarks(
-                estimationMethod: estimationMethod, 
+                estimationMethod: estimationMethod,
                 observationBandwidth: observationBandwidth,
-                markDimensions: markDimensions ?? 1, 
+                markDimensions: markDimensions ?? 1,
                 markChannels: markChannels ?? 1,
                 markBandwidth: markBandwidth ?? observationBandwidth,
                 stateSpace: _stateSpace,
@@ -123,7 +123,7 @@ public class PointProcessModel : ModelBase, IModel
                 scalarType: _scalarType
             ),
             EncoderType.SortedSpikes => new SortedSpikes(
-                estimationMethod: estimationMethod, 
+                estimationMethod: estimationMethod,
                 bandwidth: observationBandwidth,
                 nUnits: nUnits ?? 1,
                 stateSpace: _stateSpace,
@@ -198,15 +198,6 @@ public class PointProcessModel : ModelBase, IModel
     /// <inheritdoc/>
     public override void Encode(Tensor observations, Tensor inputs)
     {
-        if (observations.size(1) != _stateSpace.Dimensions)
-        {
-            throw new ArgumentException("The number of latent dimensions must match the shape of the observations.");
-        }
-        if (observations.size(0) != inputs.size(0))
-        {
-            throw new ArgumentException("The number of observations must match the number of inputs.");
-        }
-
         _encoderModel.Encode(observations, inputs);
     }
 
@@ -227,7 +218,7 @@ public class PointProcessModel : ModelBase, IModel
         };
 
         Directory.CreateDirectory(basePath);
-        
+
         using StreamWriter sw = new(Path.Combine(basePath, "configuration.json"));
         using JsonWriter writer = new JsonTextWriter(sw);
         serializer.Serialize(writer, _configuration);
@@ -239,7 +230,7 @@ public class PointProcessModel : ModelBase, IModel
     }
 
     /// <inheritdoc/>
-    public new static IModelComponent Load(string basePath, Device? device = null)
+    public static new IModelComponent Load(string basePath, Device? device = null)
     {
         // Check that the base path exists
         if (!Directory.Exists(basePath))
@@ -261,8 +252,8 @@ public class PointProcessModel : ModelBase, IModel
 
         using StreamReader sr = new(path);
         using JsonReader reader = new JsonTextReader(sr);
-        PointProcessModelConfiguration? configuration = serializer.Deserialize<PointProcessModelConfiguration>(reader) ?? throw new ArgumentException("The configuration file is empty.");
-        
+        var configuration = serializer.Deserialize<PointProcessModelConfiguration>(reader) ?? throw new ArgumentException("The configuration file is empty.");
+
         var model = new PointProcessModel(
             estimationMethod: configuration.EstimationMethod,
             transitionsType: configuration.TransitionsType,
