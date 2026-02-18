@@ -131,14 +131,37 @@ public class SortedSpikes : ModelComponent, IEncoder
     /// <inheritdoc/>
     public void Encode(Tensor observations, Tensor inputs)
     {
-        if (inputs.size(1) != _nUnits)
+        if (inputs.ndim != 2)
         {
-            throw new ArgumentException("The number of units in the input tensor must match the expected number of units.");
+            throw new ArgumentException(nameof(inputs), "Input tensor must be 2-dimensional with shape [numSamples, numUnits].");
         }
 
-        if (observations.size(1) != _stateSpace.Dimensions)
+        if (observations.ndim != 2)
         {
-            throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
+            throw new ArgumentException(nameof(observations), "Observation tensor must be 2-dimensional with shape [numSamples, observationDimensions].");
+        }
+
+        var inputsShape = inputs.shape;
+        var numInputSamples = inputsShape[0];
+        var numUnits = inputsShape[1];
+
+        var observationsShape = observations.shape;
+        var numObservationSamples = observationsShape[0];
+        var observationDimensions = observationsShape[1];
+
+        if (numUnits != _nUnits)
+        {
+            throw new ArgumentException(nameof(inputs), "The number of units in the input tensor must match the expected number of units.");
+        }
+
+        if (observationDimensions != _stateSpace.Dimensions)
+        {
+            throw new ArgumentException(nameof(observations), "The number of observation dimensions must match the dimensions of the state space.");
+        }
+
+        if (numObservationSamples != numInputSamples && numObservationSamples != 1)
+        {
+            throw new ArgumentException(nameof(observations), "The number of samples in the observations and inputs tensors must match, unless observations has only one sample.");
         }
 
         _observationEstimation.Fit(observations);
@@ -148,21 +171,35 @@ public class SortedSpikes : ModelComponent, IEncoder
             _spikeCounts = inputs.nan_to_num()
                 .sum(dim: 0)
                 .to(_device);              
-            _samples = tensor(observations.size(0), device: _device);
+            _samples = tensor(numInputSamples, device: _device);
         }
         else
         {
             _spikeCounts += inputs.nan_to_num()
                 .sum(dim: 0)
                 .to(_device);
-            _samples += observations.size(0);
+            _samples += numInputSamples;
         }
 
         _rates = _spikeCounts.log() - _samples.log();
 
         for (int i = 0; i < _nUnits; i++)
         {
-            _unitEstimation[i].Fit(observations.repeat_interleave(inputs[TensorIndex.Colon, i], dim: 0));
+            var unitSpikeCounts = _spikeCounts[i].item<long>();
+
+            if (unitSpikeCounts == 0)
+            {
+                continue;
+            }
+
+            if (numObservationSamples == 1 && numInputSamples > 1)
+            {
+                observations = observations.expand(unitSpikeCounts, -1);
+                _unitEstimation[i].Fit(observations);
+                continue;
+            }
+
+            _unitEstimation[i].Fit(observations.repeat_interleave(inputs[TensorIndex.Colon, i], dim: 0));            
         }
 
         _updateIntensities = true;

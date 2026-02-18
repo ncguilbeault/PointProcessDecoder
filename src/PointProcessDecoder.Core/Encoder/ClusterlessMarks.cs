@@ -1,4 +1,4 @@
-using PointProcessDecoder.Core.Estimation;
+﻿using PointProcessDecoder.Core.Estimation;
 using TorchSharp;
 using static TorchSharp.torch;
 
@@ -57,8 +57,8 @@ public class ClusterlessMarks : ModelComponent, IEncoder
     /// <param name="scalarType"></param>
     /// <exception cref="ArgumentException"></exception>
     public ClusterlessMarks(
-        EstimationMethod estimationMethod, 
-        double[] observationBandwidth, 
+        EstimationMethod estimationMethod,
+        double[] observationBandwidth,
         int markDimensions,
         int markChannels,
         double[] markBandwidth,
@@ -78,7 +78,7 @@ public class ClusterlessMarks : ModelComponent, IEncoder
         {
             throw new ArgumentException("The number of mark dimensions must be greater than 0.");
         }
-        
+
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
         _markDimensions = markDimensions;
@@ -96,8 +96,8 @@ public class ClusterlessMarks : ModelComponent, IEncoder
             case EstimationMethod.KernelDensity:
 
                 _observationEstimation = new KernelDensity(
-                    bandwidth: observationBandwidth, 
-                    dimensions: _stateSpace.Dimensions, 
+                    bandwidth: observationBandwidth,
+                    dimensions: _stateSpace.Dimensions,
                     kernelLimit: kernelLimit,
                     device: device,
                     scalarType: scalarType
@@ -106,7 +106,7 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 for (int i = 0; i < _markChannels; i++)
                 {
                     _markEstimation[i] = new KernelDensity(
-                        bandwidth: bandwidth, 
+                        bandwidth: bandwidth,
                         dimensions: jointDimensions,
                         kernelLimit: kernelLimit,
                         device: device,
@@ -119,8 +119,8 @@ public class ClusterlessMarks : ModelComponent, IEncoder
             case EstimationMethod.KernelCompression:
 
                 _observationEstimation = new KernelCompression(
-                    bandwidth: observationBandwidth, 
-                    dimensions: _stateSpace.Dimensions, 
+                    bandwidth: observationBandwidth,
+                    dimensions: _stateSpace.Dimensions,
                     distanceThreshold: distanceThreshold,
                     kernelLimit: kernelLimit,
                     device: device,
@@ -130,8 +130,8 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 for (int i = 0; i < _markChannels; i++)
                 {
                     _markEstimation[i] = new KernelCompression(
-                        bandwidth: bandwidth, 
-                        dimensions: jointDimensions, 
+                        bandwidth: bandwidth,
+                        dimensions: jointDimensions,
                         distanceThreshold: distanceThreshold,
                         kernelLimit: kernelLimit,
                         device: device,
@@ -143,25 +143,50 @@ public class ClusterlessMarks : ModelComponent, IEncoder
 
             default:
                 throw new ArgumentException("Invalid estimation method.");
-        };
+        }
+        ;
     }
 
     /// <inheritdoc/>
     public void Encode(Tensor observations, Tensor marks)
     {
-        if (marks.size(1) != _markDimensions)
+        if (marks.ndim != 3)
         {
-            throw new ArgumentException("The number of mark dimensions must match the shape of the marks tensor on dimension 1.");
+            throw new ArgumentException("The marks tensor must have 3 dimensions (numSamples, markDimensions, markChannels).");
         }
 
-        if (marks.size(2) != _markChannels)
+        if (observations.ndim != 2)
         {
-            throw new ArgumentException("The number of mark channels must match the shape of the marks tensor on dimension 2.");
+            throw new ArgumentException("The observations tensor must have 2 dimensions (numSamples, observationDimensions).");
         }
 
-        if (observations.size(1) != _stateSpace.Dimensions)
+        var marksShape = marks.shape;
+        var numMarkSamples = marksShape[0];
+        var markDimensions = marksShape[1];
+        var markChannels = marksShape[2];
+
+        var observationsShape = observations.shape;
+        var numObservationSamples = observationsShape[0];
+        var observationDimensions = observationsShape[1];
+
+        if (markDimensions != _markDimensions)
         {
-            throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.");
+            throw new ArgumentException(nameof(marks), "The number of mark dimensions must match the shape of the marks tensor on dimension 1.");
+        }
+
+        if (markChannels != _markChannels)
+        {
+            throw new ArgumentException(nameof(marks), "The number of mark channels must match the shape of the marks tensor on dimension 2.");
+        }
+
+        if (observationDimensions != _stateSpace.Dimensions)
+        {
+            throw new ArgumentException(nameof(observations), "The number of observation dimensions must match the dimensions of the state space.");
+        }
+
+        if (numObservationSamples != numMarkSamples && numObservationSamples != 1)
+        {
+            throw new ArgumentException(nameof(observations), "The number of samples in the observations and marks tensors must match, unless observations has only one sample.");
         }
 
         _observationEstimation.Fit(observations);
@@ -172,7 +197,8 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 .any(dim: 1)
                 .sum(dim: 0)
                 .to(_device);
-            _samples = tensor(observations.size(0), device: _device);
+            _samples = numMarkSamples;
+            // _observationSamples = tensor(numObservationSamples, device: _device);
 
         }
         else
@@ -180,11 +206,12 @@ public class ClusterlessMarks : ModelComponent, IEncoder
             _spikeCounts += (~marks.isnan())
                 .any(dim: 1)
                 .sum(dim: 0);
-            _samples += observations.size(0);
+            _samples += numMarkSamples;
+            // _observationSamples += numObservationSamples;
         }
 
         _rates = _spikeCounts.log() - _samples.log();
-        
+
         var mask = ~marks.isnan().all(dim: 1);
 
         for (int i = 0; i < _markChannels; i++)
@@ -194,9 +221,14 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 continue;
             }
 
+            if (numObservationSamples == 1)
+            {
+                observations = observations.expand(numMarkSamples, -1);
+            }
+
             _markEstimation[i].Fit(
                 concat([
-                    observations[mask[TensorIndex.Colon, i]], 
+                    observations[mask[TensorIndex.Colon, i]],
                     marks[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i]
                 ], dim: 1)
             );
