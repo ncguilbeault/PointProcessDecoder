@@ -21,9 +21,9 @@ public class TestSerialization
             minStateSpace: [0],
             maxStateSpace: [100],
             stepsStateSpace: [50],
-            observationBandwidth: [1],
+            covariateBandwidth: [1],
             stateSpaceDimensions: 1,
-            nUnits: 40,
+            numUnits: 40,
             device: CPU,
             scalarType: ScalarType.Float64
         );
@@ -52,9 +52,9 @@ public class TestSerialization
             minStateSpace: [0, 0],
             maxStateSpace: [100, 100],
             stepsStateSpace: [50, 50],
-            observationBandwidth: [1, 1],
+            covariateBandwidth: [1, 1],
             stateSpaceDimensions: 2,
-            nUnits: 40,
+            numUnits: 40,
             device: CPU,
             scalarType: ScalarType.Float64
         );
@@ -113,9 +113,9 @@ public class TestSerialization
             minStateSpace: [0],
             maxStateSpace: [100],
             stepsStateSpace: [50],
-            observationBandwidth: [1],
+            covariateBandwidth: [1],
             stateSpaceDimensions: 1,
-            nUnits: 40
+            numUnits: 40
         );
 
         model.Encode(position, spikingData);
@@ -172,9 +172,9 @@ public class TestSerialization
             minStateSpace: [0],
             maxStateSpace: [100],
             stepsStateSpace: [50],
-            observationBandwidth: [1],
+            covariateBandwidth: [1],
             stateSpaceDimensions: 1,
-            nUnits: 40,
+            numUnits: 40,
             distanceThreshold: 1.5,
             sigmaRandomWalk: 1
         );
@@ -241,10 +241,10 @@ public class TestSerialization
             minStateSpace: [0],
             maxStateSpace: [100],
             stepsStateSpace: [50],
-            observationBandwidth: [1],
+            covariateBandwidth: [1],
             stateSpaceDimensions: 1,
             markDimensions: 4,
-            markChannels: 8,
+            numChannels: 8,
             markBandwidth: [1, 1, 1, 1],
             sigmaRandomWalk: 1
         );
@@ -311,10 +311,10 @@ public class TestSerialization
             minStateSpace: [0],
             maxStateSpace: [100],
             stepsStateSpace: [50],
-            observationBandwidth: [1],
+            covariateBandwidth: [1],
             stateSpaceDimensions: 1,
             markDimensions: 4,
-            markChannels: 8,
+            numChannels: 8,
             markBandwidth: [1, 1, 1, 1],
             distanceThreshold: 1.5
         );
@@ -374,9 +374,9 @@ public class TestSerialization
             minStateSpace: [0],
             maxStateSpace: [100],
             stepsStateSpace: [50],
-            observationBandwidth: [1],
+            covariateBandwidth: [1],
             stateSpaceDimensions: 1,
-            nUnits: 40
+            numUnits: 40
         );
 
         modelFull.Encode(position, spikingData);
@@ -393,9 +393,9 @@ public class TestSerialization
             minStateSpace: [0],
             maxStateSpace: [100],
             stepsStateSpace: [50],
-            observationBandwidth: [1],
+            covariateBandwidth: [1],
             stateSpaceDimensions: 1,
-            nUnits: 40
+            numUnits: 40
         );
 
         var fractionFirstEncode = 0.5;

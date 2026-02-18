@@ -29,9 +29,9 @@ public class SortedSpikes : ModelComponent, IEncoder
 
     private Tensor _unitIntensities = empty(0);
     private bool _updateIntensities = true;
-    private readonly int _nUnits;
+    private readonly int _numUnits;
     private readonly IEstimation[] _unitEstimation;
-    private readonly IEstimation _observationEstimation;
+    private readonly IEstimation _covariateEstimation;
     private Tensor _spikeCounts = empty(0);
     private Tensor _samples = empty(0);
     private Tensor _rates = empty(0);
@@ -41,8 +41,8 @@ public class SortedSpikes : ModelComponent, IEncoder
     /// Initializes a new instance of the <see cref="SortedSpikes"/> class.
     /// </summary>
     /// <param name="estimationMethod"></param>
-    /// <param name="bandwidth"></param>
-    /// <param name="nUnits"></param>
+    /// <param name="covariateBandwidth"></param>
+    /// <param name="numUnits"></param>
     /// <param name="stateSpace"></param>
     /// <param name="distanceThreshold"></param>
     /// <param name="device"></param>
@@ -50,8 +50,8 @@ public class SortedSpikes : ModelComponent, IEncoder
     /// <exception cref="ArgumentException"></exception>
     public SortedSpikes(
         EstimationMethod estimationMethod, 
-        double[] bandwidth,
-        int nUnits,
+        double[] covariateBandwidth,
+        int numUnits,
         IStateSpace stateSpace,
         double? distanceThreshold = null,
         int? kernelLimit = null,
@@ -59,19 +59,19 @@ public class SortedSpikes : ModelComponent, IEncoder
         ScalarType? scalarType = null
     )
     {
-        if (nUnits < 1)
+        if (numUnits < 1)
         {
-            throw new ArgumentException("The number of units must be greater than 0.");
+            throw new ArgumentException("The number of units must be greater than 0.", nameof(numUnits));
         }
 
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
         _stateSpace = stateSpace;
-        _nUnits = nUnits;
+        _numUnits = numUnits;
         
-        _observationEstimation = GetEstimationMethod(
+        _covariateEstimation = GetEstimationMethod(
             estimationMethod: estimationMethod, 
-            bandwidth: bandwidth, 
+            bandwidth: covariateBandwidth, 
             dimensions: _stateSpace.Dimensions, 
             distanceThreshold: distanceThreshold,
             kernelLimit: kernelLimit,
@@ -79,13 +79,13 @@ public class SortedSpikes : ModelComponent, IEncoder
             scalarType: scalarType
         );
 
-        _unitEstimation = new IEstimation[_nUnits];
+        _unitEstimation = new IEstimation[_numUnits];
 
-        for (int i = 0; i < _nUnits; i++)
+        for (int i = 0; i < _numUnits; i++)
         {
             _unitEstimation[i] = GetEstimationMethod(
                 estimationMethod: estimationMethod, 
-                bandwidth: bandwidth, 
+                bandwidth: covariateBandwidth, 
                 dimensions: _stateSpace.Dimensions, 
                 distanceThreshold: distanceThreshold,
                 kernelLimit: kernelLimit,
@@ -94,7 +94,7 @@ public class SortedSpikes : ModelComponent, IEncoder
             );
         }
 
-        _estimations = [_observationEstimation, .. _unitEstimation];
+        _estimations = [_covariateEstimation, .. _unitEstimation];
     }
 
     private static IEstimation GetEstimationMethod(
@@ -129,61 +129,61 @@ public class SortedSpikes : ModelComponent, IEncoder
     }
 
     /// <inheritdoc/>
-    public void Encode(Tensor observations, Tensor inputs)
+    public void Encode(Tensor covariates, Tensor observations)
     {
-        if (inputs.ndim != 2)
+        if (covariates.ndim != 2)
         {
-            throw new ArgumentException(nameof(inputs), "Input tensor must be 2-dimensional with shape [numSamples, numUnits].");
+            throw new ArgumentException("The covariates tensor must be 2-dimensional with shape (numSamples, covariateDimensions).", nameof(covariates));
         }
 
         if (observations.ndim != 2)
         {
-            throw new ArgumentException(nameof(observations), "Observation tensor must be 2-dimensional with shape [numSamples, observationDimensions].");
+            throw new ArgumentException("The sorted spikes tensor must be 2-dimensional with shape (numSamples, numUnits).", nameof(observations));
         }
 
-        var inputsShape = inputs.shape;
-        var numInputSamples = inputsShape[0];
-        var numUnits = inputsShape[1];
+        var covariatesShape = covariates.shape;
+        var numCovariateSamples = covariatesShape[0];
+        var covariateDimensions = covariatesShape[1];
 
-        var observationsShape = observations.shape;
-        var numObservationSamples = observationsShape[0];
-        var observationDimensions = observationsShape[1];
+        var sortedSpikesShape = observations.shape;
+        var numSpikeSamples = sortedSpikesShape[0];
+        var numUnits = sortedSpikesShape[1];
 
-        if (numUnits != _nUnits)
+        if (numUnits != _numUnits)
         {
-            throw new ArgumentException(nameof(inputs), "The number of units in the input tensor must match the expected number of units.");
+            throw new ArgumentException("The number of units in the sorted spikes tensor must match the expected number of units.", nameof(observations));
         }
 
-        if (observationDimensions != _stateSpace.Dimensions)
+        if (covariateDimensions != _stateSpace.Dimensions)
         {
-            throw new ArgumentException(nameof(observations), "The number of observation dimensions must match the dimensions of the state space.");
+            throw new ArgumentException("The number of covariate dimensions must match the dimensions of the state space.", nameof(covariates));
         }
 
-        if (numObservationSamples != numInputSamples && numObservationSamples != 1)
+        if (numSpikeSamples != numCovariateSamples && numSpikeSamples != 1)
         {
-            throw new ArgumentException(nameof(observations), "The number of samples in the observations and inputs tensors must match, unless observations has only one sample.");
+            throw new ArgumentException("The number of samples in the sorted spikes tensor and covariates tensors must match, unless covariates has only one sample.", nameof(covariates));
         }
 
-        _observationEstimation.Fit(observations);
+        _covariateEstimation.Fit(covariates);
 
         if (_spikeCounts.numel() == 0)
         {
-            _spikeCounts = inputs.nan_to_num()
+            _spikeCounts = observations.nan_to_num()
                 .sum(dim: 0)
                 .to(_device);              
-            _samples = tensor(numInputSamples, device: _device);
+            _samples = tensor(numSpikeSamples, device: _device);
         }
         else
         {
-            _spikeCounts += inputs.nan_to_num()
+            _spikeCounts += observations.nan_to_num()
                 .sum(dim: 0)
                 .to(_device);
-            _samples += numInputSamples;
+            _samples += numSpikeSamples;
         }
 
         _rates = _spikeCounts.log() - _samples.log();
 
-        for (int i = 0; i < _nUnits; i++)
+        for (int i = 0; i < _numUnits; i++)
         {
             var unitSpikeCounts = _spikeCounts[i].item<long>();
 
@@ -192,14 +192,14 @@ public class SortedSpikes : ModelComponent, IEncoder
                 continue;
             }
 
-            if (numObservationSamples == 1 && numInputSamples > 1)
+            if (numCovariateSamples == 1 && numSpikeSamples > 1)
             {
-                observations = observations.expand(unitSpikeCounts, -1);
-                _unitEstimation[i].Fit(observations);
+                covariates = covariates.expand(unitSpikeCounts, -1);
+                _unitEstimation[i].Fit(covariates);
                 continue;
             }
 
-            _unitEstimation[i].Fit(observations.repeat_interleave(inputs[TensorIndex.Colon, i], dim: 0));            
+            _unitEstimation[i].Fit(covariates.repeat_interleave(observations[TensorIndex.Colon, i], dim: 0));            
         }
 
         _updateIntensities = true;
@@ -210,17 +210,17 @@ public class SortedSpikes : ModelComponent, IEncoder
     {
         using var _ = NewDisposeScope();
 
-        var observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
+        var covariateDensity = _covariateEstimation.Evaluate(_stateSpace.Points)
             .log()
             .nan_to_num();
 
         _unitIntensities = zeros(
-            [_nUnits, _stateSpace.Points.size(0)],
+            [_numUnits, _stateSpace.Points.size(0)],
             device: _device,
             dtype: _scalarType
         );
 
-        for (int i = 0; i < _nUnits; i++)
+        for (int i = 0; i < _numUnits; i++)
         {
             var unitDensity = _unitEstimation[i].Evaluate(_stateSpace.Points);
 
@@ -232,7 +232,7 @@ public class SortedSpikes : ModelComponent, IEncoder
             unitDensity = unitDensity.log()
                 .nan_to_num();
 
-            _unitIntensities[i] = _rates[i] + unitDensity - observationDensity;
+            _unitIntensities[i] = _rates[i] + unitDensity - covariateDensity;
         }
 
         _unitIntensities.MoveToOuterDisposeScope();
@@ -266,14 +266,14 @@ public class SortedSpikes : ModelComponent, IEncoder
         _rates.Save(Path.Combine(path, "rates.bin"));
         _unitIntensities.Save(Path.Combine(path, "unitIntensities.bin"));
 
-        var observationEstimationPath = Path.Combine(path, $"observationEstimation");
+        var covariateEstimationPath = Path.Combine(path, $"covariateEstimation");
 
-        if (!Directory.Exists(observationEstimationPath))
+        if (!Directory.Exists(covariateEstimationPath))
         {
-            Directory.CreateDirectory(observationEstimationPath);
+            Directory.CreateDirectory(covariateEstimationPath);
         }
 
-        _observationEstimation.Save(observationEstimationPath);
+        _covariateEstimation.Save(covariateEstimationPath);
 
         for (int i = 0; i < _unitEstimation.Length; i++)
         {
@@ -303,14 +303,14 @@ public class SortedSpikes : ModelComponent, IEncoder
         _rates = Tensor.Load(Path.Combine(path, "rates.bin")).to(_device);
         _unitIntensities = Tensor.Load(Path.Combine(path, "unitIntensities.bin")).to(_device);
 
-        var observationEstimationPath = Path.Combine(path, $"observationEstimation");
+        var covariateEstimationPath = Path.Combine(path, $"covariateEstimation");
 
-        if (!Directory.Exists(observationEstimationPath))
+        if (!Directory.Exists(covariateEstimationPath))
         {
-            throw new ArgumentException("The observation estimation directory does not exist.");
+            throw new ArgumentException("The covariate estimation directory does not exist within the specified base path.", nameof(basePath));
         }
 
-        _observationEstimation.Load(observationEstimationPath);
+        _covariateEstimation.Load(covariateEstimationPath);
 
         for (int i = 0; i < _unitEstimation.Length; i++)
         {
@@ -318,7 +318,7 @@ public class SortedSpikes : ModelComponent, IEncoder
 
             if (!Directory.Exists(unitEstimationPath))
             {
-                throw new ArgumentException("The unit estimation directory does not exist.");
+                throw new ArgumentException("The unit estimation directory does not exist within the specified base path.", nameof(basePath));
             }
 
             _unitEstimation[i].Load(unitEstimationPath);

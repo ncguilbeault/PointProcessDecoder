@@ -309,7 +309,7 @@ public static class Simulate
         Tensor positionData,
         Tensor spikes,
         int markDimensions,
-        int markChannels,
+        int numChannels,
         int? seed = null,
         ScalarType? scalarType = null,
         Device? device = null,
@@ -321,14 +321,14 @@ public static class Simulate
         device ??= _device;
         using var _ = NewDisposeScope();
         var generator = seed != null ? manual_seed(seed.Value) : null;
-        var marks = ones([positionData.shape[0], markDimensions, markChannels], device: device, dtype: scalarType.Value) * double.NaN;
+        var marks = ones([positionData.shape[0], markDimensions, numChannels], device: device, dtype: scalarType.Value) * double.NaN;
         var nUnits = spikes.shape[1];
         var spikeIndices = spikes.nonzero();
         var unitMarks = rand([nUnits, markDimensions], device: device, dtype: scalarType.Value, generator: generator) * spikeScale;
-        var neuronsPerChannel = (int)Math.Ceiling((double)nUnits / markChannels);
+        var neuronsPerChannel = (int)Math.Ceiling((double)nUnits / numChannels);
 
         // simulate marks for each channel
-        for (int i = 0; i < markChannels; i++)
+        for (int i = 0; i < numChannels; i++)
         {
             // we expect there to be more units than channels, and each unit should have a unique mark with some noise
             for (int j = 0; j < neuronsPerChannel; j++)

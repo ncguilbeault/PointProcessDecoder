@@ -24,16 +24,16 @@ public class ClusterlessMarks : ModelComponent, IEncoder
     public Tensor[] Intensities => [_channelIntensities, _markIntensities];
 
     /// <inheritdoc/>
-    public IEstimation[] Estimations => [_observationEstimation, .. _markEstimation];
+    public IEstimation[] Estimations => [_covariateEstimation, .. _markEstimation];
 
-    private readonly IEstimation _observationEstimation;
+    private readonly IEstimation _covariateEstimation;
     private readonly IEstimation[] _markEstimation;
 
     private readonly IStateSpace _stateSpace;
     private bool _updateIntensities = true;
     private Tensor _markIntensities = empty(0);
     private Tensor _channelIntensities = empty(0);
-    private Tensor _observationDensity = empty(0);
+    private Tensor _covariateDensity = empty(0);
     private readonly Tensor[] _channelEstimates = [];
 
     private Tensor _spikeCounts = empty(0);
@@ -41,15 +41,15 @@ public class ClusterlessMarks : ModelComponent, IEncoder
     private Tensor _rates = empty(0);
 
     private readonly int _markDimensions;
-    private readonly int _markChannels;
+    private readonly int _numChannels;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ClusterlessMarks"/> class.
     /// </summary>
     /// <param name="estimationMethod"></param>
-    /// <param name="observationBandwidth"></param>
+    /// <param name="covariateBandwidth"></param>
     /// <param name="markDimensions"></param>
-    /// <param name="markChannels"></param>
+    /// <param name="numChannels"></param>
     /// <param name="markBandwidth"></param>
     /// <param name="stateSpace"></param>
     /// <param name="distanceThreshold"></param>
@@ -58,9 +58,9 @@ public class ClusterlessMarks : ModelComponent, IEncoder
     /// <exception cref="ArgumentException"></exception>
     public ClusterlessMarks(
         EstimationMethod estimationMethod,
-        double[] observationBandwidth,
+        double[] covariateBandwidth,
         int markDimensions,
-        int markChannels,
+        int numChannels,
         double[] markBandwidth,
         IStateSpace stateSpace,
         double? distanceThreshold = null,
@@ -69,9 +69,9 @@ public class ClusterlessMarks : ModelComponent, IEncoder
         ScalarType? scalarType = null
     )
     {
-        if (markChannels < 1)
+        if (numChannels < 1)
         {
-            throw new ArgumentException("The number of mark channels must be greater than 0.", nameof(markChannels));
+            throw new ArgumentException("The number of mark channels must be greater than 0.", nameof(numChannels));
         }
 
         if (markDimensions < 1)
@@ -82,28 +82,28 @@ public class ClusterlessMarks : ModelComponent, IEncoder
         _device = device ?? CPU;
         _scalarType = scalarType ?? ScalarType.Float32;
         _markDimensions = markDimensions;
-        _markChannels = markChannels;
+        _numChannels = numChannels;
         _stateSpace = stateSpace;
 
-        _markEstimation = new IEstimation[_markChannels];
-        _channelEstimates = new Tensor[_markChannels];
+        _markEstimation = new IEstimation[_numChannels];
+        _channelEstimates = new Tensor[_numChannels];
 
-        var bandwidth = observationBandwidth.Concat(markBandwidth).ToArray();
+        var bandwidth = covariateBandwidth.Concat(markBandwidth).ToArray();
         var jointDimensions = _stateSpace.Dimensions + _markDimensions;
 
         switch (estimationMethod)
         {
             case EstimationMethod.KernelDensity:
 
-                _observationEstimation = new KernelDensity(
-                    bandwidth: observationBandwidth,
+                _covariateEstimation = new KernelDensity(
+                    bandwidth: covariateBandwidth,
                     dimensions: _stateSpace.Dimensions,
                     kernelLimit: kernelLimit,
                     device: device,
                     scalarType: scalarType
                 );
 
-                for (int i = 0; i < _markChannels; i++)
+                for (int i = 0; i < _numChannels; i++)
                 {
                     _markEstimation[i] = new KernelDensity(
                         bandwidth: bandwidth,
@@ -118,8 +118,8 @@ public class ClusterlessMarks : ModelComponent, IEncoder
 
             case EstimationMethod.KernelCompression:
 
-                _observationEstimation = new KernelCompression(
-                    bandwidth: observationBandwidth,
+                _covariateEstimation = new KernelCompression(
+                    bandwidth: covariateBandwidth,
                     dimensions: _stateSpace.Dimensions,
                     distanceThreshold: distanceThreshold,
                     kernelLimit: kernelLimit,
@@ -127,7 +127,7 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                     scalarType: scalarType
                 );
 
-                for (int i = 0; i < _markChannels; i++)
+                for (int i = 0; i < _numChannels; i++)
                 {
                     _markEstimation[i] = new KernelCompression(
                         bandwidth: bandwidth,
@@ -147,52 +147,52 @@ public class ClusterlessMarks : ModelComponent, IEncoder
     }
 
     /// <inheritdoc/>
-    public void Encode(Tensor observations, Tensor marks)
+    public void Encode(Tensor covariates, Tensor observations)
     {
-        if (marks.ndim != 3)
+        if (observations.ndim != 3)
         {
-            throw new ArgumentException("The marks tensor must have 3 dimensions (numSamples, markDimensions, markChannels).", nameof(marks));
+            throw new ArgumentException("The marks tensor must have 3 dimensions (numSamples, markDimensions, numChannels).", nameof(observations));
         }
 
-        if (observations.ndim != 2)
+        if (covariates.ndim != 2)
         {
-            throw new ArgumentException("The observations tensor must have 2 dimensions (numSamples, observationDimensions).", nameof(observations));
+            throw new ArgumentException("The covariates tensor must have 2 dimensions (numSamples, covariateDimensions).", nameof(observations));
         }
 
-        var marksShape = marks.shape;
+        var marksShape = observations.shape;
         var numMarkSamples = marksShape[0];
         var markDimensions = marksShape[1];
-        var markChannels = marksShape[2];
+        var numChannels = marksShape[2];
 
-        var observationsShape = observations.shape;
-        var numObservationSamples = observationsShape[0];
-        var observationDimensions = observationsShape[1];
+        var covariatesShape = covariates.shape;
+        var numCovariateSamples = covariatesShape[0];
+        var covariateDimensions = covariatesShape[1];
 
         if (markDimensions != _markDimensions)
         {
-            throw new ArgumentException("The number of mark dimensions must match the shape of the marks tensor on dimension 1.", nameof(marks));
+            throw new ArgumentException("The number of mark dimensions must match the shape of the marks tensor on dimension 1.", nameof(observations));
         }
 
-        if (markChannels != _markChannels)
+        if (numChannels != _numChannels)
         {
-            throw new ArgumentException("The number of mark channels must match the shape of the marks tensor on dimension 2.", nameof(marks));
+            throw new ArgumentException("The number of mark channels must match the shape of the marks tensor on dimension 2.", nameof(observations));
         }
 
-        if (observationDimensions != _stateSpace.Dimensions)
+        if (covariateDimensions != _stateSpace.Dimensions)
         {
-            throw new ArgumentException("The number of observation dimensions must match the dimensions of the state space.", nameof(observations));
+            throw new ArgumentException("The number of covariate dimensions must match the dimensions of the state space.", nameof(covariates));
         }
 
-        if (numObservationSamples != numMarkSamples && numObservationSamples != 1)
+        if (numCovariateSamples != numMarkSamples && numCovariateSamples != 1)
         {
-            throw new ArgumentException("The number of samples in the observations and marks tensors must match, unless observations has only one sample.", nameof(observations));
+            throw new ArgumentException("The number of samples in the covariates and marks tensors must match, unless covariates has only one sample.", nameof(covariates));
         }
 
-        _observationEstimation.Fit(observations);
+        _covariateEstimation.Fit(covariates);
 
         if (_spikeCounts.numel() == 0)
         {
-            _spikeCounts = (~marks.isnan())
+            _spikeCounts = (~observations.isnan())
                 .any(dim: 1)
                 .sum(dim: 0)
                 .to(_device);
@@ -200,7 +200,7 @@ public class ClusterlessMarks : ModelComponent, IEncoder
         }
         else
         {
-            _spikeCounts += (~marks.isnan())
+            _spikeCounts += (~observations.isnan())
                 .any(dim: 1)
                 .sum(dim: 0);
             _samples += numMarkSamples;
@@ -208,24 +208,24 @@ public class ClusterlessMarks : ModelComponent, IEncoder
 
         _rates = _spikeCounts.log() - _samples.log();
 
-        var mask = ~marks.isnan().all(dim: 1);
+        var mask = ~observations.isnan().all(dim: 1);
 
-        for (int i = 0; i < _markChannels; i++)
+        for (int i = 0; i < _numChannels; i++)
         {
             if ((~mask[TensorIndex.Colon, i].any()).item<bool>())
             {
                 continue;
             }
 
-            if (numObservationSamples == 1)
+            if (numCovariateSamples == 1)
             {
-                observations = observations.expand(numMarkSamples, -1);
+                covariates = covariates.expand(numMarkSamples, -1);
             }
 
             _markEstimation[i].Fit(
                 concat([
-                    observations[mask[TensorIndex.Colon, i]],
-                    marks[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i]
+                    covariates[mask[TensorIndex.Colon, i]],
+                    observations[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i]
                 ], dim: 1)
             );
         }
@@ -234,19 +234,21 @@ public class ClusterlessMarks : ModelComponent, IEncoder
         Evaluate();
     }
 
-    private void EvaluateMarkIntensities(Tensor inputs)
+    private void EvaluateMarkIntensities(Tensor observations)
     {
         using var _ = NewDisposeScope();
 
+        var numSamples = observations.size(0);
+
         _markIntensities = zeros(
-            [_markChannels, inputs.size(0), _stateSpace.Points.size(0)],
+            [_numChannels, numSamples, _stateSpace.Points.size(0)],
             device: _device,
             dtype: _scalarType
         );
 
-        var mask = ~inputs.isnan().all(dim: 1);
+        var mask = ~observations.isnan().all(dim: 1);
 
-        for (int i = 0; i < _markChannels; i++)
+        for (int i = 0; i < _numChannels; i++)
         {
             if ((~mask[TensorIndex.Colon, i].any()).item<bool>())
             {
@@ -254,7 +256,7 @@ public class ClusterlessMarks : ModelComponent, IEncoder
             }
 
             var markKernelEstimate = _markEstimation[i].Estimate(
-                inputs[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i],
+                observations[TensorIndex.Tensor(mask[TensorIndex.Colon, i]), TensorIndex.Colon, i],
                 _stateSpace.Dimensions
             );
 
@@ -269,7 +271,7 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 .log()
                 .nan_to_num();
 
-            _markIntensities[i, TensorIndex.Tensor(mask[TensorIndex.Colon, i])] = _rates[i] + markDensity - _observationDensity;
+            _markIntensities[i, TensorIndex.Tensor(mask[TensorIndex.Colon, i])] = _rates[i] + markDensity - _covariateDensity;
         }
 
         _markIntensities.MoveToOuterDisposeScope();
@@ -279,18 +281,18 @@ public class ClusterlessMarks : ModelComponent, IEncoder
     {
         using var _ = NewDisposeScope();
 
-        _observationDensity = _observationEstimation.Evaluate(_stateSpace.Points)
+        _covariateDensity = _covariateEstimation.Evaluate(_stateSpace.Points)
             .log()
             .nan_to_num()
             .MoveToOuterDisposeScope();
 
         _channelIntensities = zeros(
-            [_markChannels, _stateSpace.Points.size(0)],
+            [_numChannels, _stateSpace.Points.size(0)],
             device: _device,
             dtype: _scalarType
         );
 
-        for (int i = 0; i < _markChannels; i++)
+        for (int i = 0; i < _numChannels; i++)
         {
             _channelEstimates[i] = _markEstimation[i].Estimate(_stateSpace.Points, 0, _stateSpace.Dimensions)
                 .MoveToOuterDisposeScope();
@@ -304,7 +306,7 @@ public class ClusterlessMarks : ModelComponent, IEncoder
                 .log()
                 .nan_to_num();
 
-            _channelIntensities[i] = _rates[i] + channelDensity - _observationDensity;
+            _channelIntensities[i] = _rates[i] + channelDensity - _covariateDensity;
         }
 
         _channelIntensities.MoveToOuterDisposeScope();
@@ -340,19 +342,19 @@ public class ClusterlessMarks : ModelComponent, IEncoder
         _spikeCounts.Save(Path.Combine(path, "spikeCounts.bin"));
         _samples.Save(Path.Combine(path, "samples.bin"));
         _rates.Save(Path.Combine(path, "rates.bin"));
-        _observationDensity.Save(Path.Combine(path, "observationDensity.bin"));
+        _covariateDensity.Save(Path.Combine(path, "covariateDensity.bin"));
         _channelIntensities.Save(Path.Combine(path, "channelIntensities.bin"));
 
-        var observationEstimationPath = Path.Combine(path, $"observationEstimation");
+        var covariateEstimationPath = Path.Combine(path, $"covariateEstimation");
 
-        if (!Directory.Exists(observationEstimationPath))
+        if (!Directory.Exists(covariateEstimationPath))
         {
-            Directory.CreateDirectory(observationEstimationPath);
+            Directory.CreateDirectory(covariateEstimationPath);
         }
 
-        _observationEstimation.Save(observationEstimationPath);
+        _covariateEstimation.Save(covariateEstimationPath);
 
-        for (int i = 0; i < _markChannels; i++)
+        for (int i = 0; i < _numChannels; i++)
         {
             var channelEstimationPath = Path.Combine(path, $"channelEstimation{i}");
 
@@ -386,36 +388,35 @@ public class ClusterlessMarks : ModelComponent, IEncoder
         _spikeCounts = Tensor.Load(Path.Combine(path, "spikeCounts.bin")).to(_device);
         _samples = Tensor.Load(Path.Combine(path, "samples.bin")).to(_device);
         _rates = Tensor.Load(Path.Combine(path, "rates.bin")).to(_device);
-        _observationDensity = Tensor.Load(Path.Combine(path, "observationDensity.bin")).to(_device);
+        _covariateDensity = Tensor.Load(Path.Combine(path, "covariateDensity.bin")).to(_device);
         _channelIntensities = Tensor.Load(Path.Combine(path, "channelIntensities.bin")).to(_device);
 
-        var observationEstimationPath = Path.Combine(path, $"observationEstimation");
+        var covariateEstimationPath = Path.Combine(path, $"covariateEstimation");
 
-        if (!Directory.Exists(observationEstimationPath))
+        if (!Directory.Exists(covariateEstimationPath))
         {
-            throw new ArgumentException("The observation estimation directory does not exist.");
+            throw new ArgumentException("The covariate estimation directory does not exist within the specified base path.", nameof(basePath));
         }
 
-        _observationEstimation.Load(observationEstimationPath);
+        _covariateEstimation.Load(covariateEstimationPath);
 
-        for (int i = 0; i < _markChannels; i++)
+        for (int i = 0; i < _numChannels; i++)
         {
             var channelEstimationPath = Path.Combine(path, $"channelEstimation{i}");
 
             if (!Directory.Exists(channelEstimationPath))
             {
-                throw new ArgumentException("The channel estimation directory does not exist.");
+                throw new ArgumentException("The channel estimation directory does not exist within the specified base path.", nameof(basePath));
             }
 
             var markEstimationPath = Path.Combine(path, $"markEstimation{i}");
 
             if (!Directory.Exists(markEstimationPath))
             {
-                throw new ArgumentException("The mark estimation directory does not exist.");
+                throw new ArgumentException("The mark estimation directory does not exist within the specified base path.", nameof(basePath));
             }
 
             _markEstimation[i].Load(markEstimationPath);
-
             _channelEstimates[i] = Tensor.Load(Path.Combine(path, $"channelEstimates{i}.bin")).to(_device);
         }
 

@@ -22,7 +22,7 @@ public class TestClassifier
         var max = 100;
         var stayProbability = 0.33;
         var dimensions = 1;
-        var nUnits = 40;
+        var numUnits = 40;
         var sigma = 25;
         var device = CPU;
         var scalarType = ScalarType.Float32;
@@ -43,7 +43,7 @@ public class TestClassifier
             [bandwidth],
             dimensions,
             sigmaRandomWalk: sigma,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: stayProbability,
             device: device,
             scalarType: scalarType
@@ -70,7 +70,7 @@ public class TestClassifier
         var placeFieldCenters = Simulation.Simulate.PlaceFieldCenters(
             min, 
             max, 
-            nUnits,
+            numUnits,
             scalarType,
             device
         );
@@ -203,7 +203,7 @@ public class TestClassifier
             [bandwidth],
             dimensions,
             sigmaRandomWalk: sigma,
-            nUnits: nUnits,
+            numUnits: numUnits,
             device: device,
             scalarType: scalarType
         );
@@ -238,7 +238,7 @@ public class TestClassifier
         var stayProbability = 0.99;
         var scale = 0.1;
         var dimensions = 2;
-        var nUnits = 40;
+        var numUnits = 40;
         var sigma = 25;
         var device = CPU;
         var scalarType = ScalarType.Float32;
@@ -259,7 +259,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: sigma,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: stayProbability,
             device: device,
             scalarType: scalarType
@@ -288,7 +288,7 @@ public class TestClassifier
             max[0],
             min[1],
             max[1], 
-            nUnits,
+            numUnits,
             seed,
             scalarType,
             device
@@ -420,7 +420,7 @@ public class TestClassifier
         var stayProbability = 0.99;
         var scale = 0.1;
         var dimensions = 2;
-        var nUnits = 40;
+        var numUnits = 40;
         var device = CPU;
         var scalarType = ScalarType.Float32;
         var estimationMethod = Core.Estimation.EstimationMethod.KernelDensity;
@@ -450,7 +450,7 @@ public class TestClassifier
             max[0],
             min[1],
             max[1], 
-            nUnits,
+            numUnits,
             seed,
             scalarType,
             device
@@ -521,7 +521,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: 0.1,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: stayProbability,
             device: device,
             scalarType: scalarType
@@ -554,7 +554,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: 1.0,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: stayProbability,
             device: device,
             scalarType: scalarType
@@ -587,7 +587,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: 10.0,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: stayProbability,
             device: device,
             scalarType: scalarType
@@ -618,7 +618,7 @@ public class TestClassifier
         var sigma = 25;
         var scale = 0.1;
         var dimensions = 2;
-        var nUnits = 40;
+        var numUnits = 40;
         var device = CPU;
         var scalarType = ScalarType.Float32;
         var estimationMethod = Core.Estimation.EstimationMethod.KernelDensity;
@@ -648,7 +648,7 @@ public class TestClassifier
             max[0],
             min[1],
             max[1], 
-            nUnits,
+            numUnits,
             seed,
             scalarType,
             device
@@ -719,7 +719,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: sigma,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: 0.5,
             device: device,
             scalarType: scalarType
@@ -752,7 +752,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: sigma,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: 0.9,
             device: device,
             scalarType: scalarType
@@ -785,7 +785,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: sigma,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: 0.999999,
             device: device,
             scalarType: scalarType
@@ -818,7 +818,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: sigma,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: 1.0,
             device: device,
             scalarType: scalarType
@@ -837,7 +837,7 @@ public class TestClassifier
             bandwidth,
             dimensions,
             sigmaRandomWalk: sigma,
-            nUnits: nUnits,
+            numUnits: numUnits,
             stayProbability: 0,
             device: device,
             scalarType: scalarType
@@ -921,14 +921,14 @@ public class TestClassifier
     [TestMethod]
     public void TestClusterless()
     {
-        var bandwidth = new double[] { 5, 5 };
+        var covariateBandwidth = new double[] { 5, 5 };
         var evaluationSteps = new long[] { 50, 50 };
         var min = new double[] { 0, 0 };
         var max = new double[] { 100, 100 };
         var stayProbability = 0.99;
         var scale = 0.1;
         var dimensions = 2;
-        var nUnits = 40;
+        var numUnits = 40;
         var sigma = 25;
         var device = CPU;
         var scalarType = ScalarType.Float32;
@@ -959,7 +959,7 @@ public class TestClassifier
             max[0],
             min[1],
             max[1], 
-            nUnits,
+            numUnits,
             seed,
             scalarType,
             device
@@ -975,7 +975,7 @@ public class TestClassifier
         );
 
         var markDimensions = 4;
-        var markChannels = 8;
+        var numChannels = 8;
         var spikeScale = 5.0;
         var noiseScale = 0.5;
     
@@ -983,7 +983,7 @@ public class TestClassifier
             position, 
             spikes: spikingData,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             seed: seed,
             device: device,
             scalarType: scalarType,
@@ -1001,10 +1001,10 @@ public class TestClassifier
             minStateSpace: min,
             maxStateSpace: max,
             stepsStateSpace: evaluationSteps,
-            observationBandwidth: bandwidth,
+            covariateBandwidth: covariateBandwidth,
             stateSpaceDimensions: dimensions,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             markBandwidth: [1,1,1,1],
             distanceThreshold: 1.5,
             sigmaRandomWalk: sigma,
@@ -1039,7 +1039,7 @@ public class TestClassifier
             fragmentedPosition, 
             fragmentedSpikes,
             markDimensions: markDimensions,
-            markChannels: markChannels,
+            numChannels: numChannels,
             seed: seed,
             device: device,
             scalarType: scalarType,
