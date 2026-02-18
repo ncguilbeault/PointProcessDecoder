@@ -1,10 +1,10 @@
 # PointProcessDecoder
 
-This repo contains a C# implementation of the Bayesian state-space point process neural decoder inspired by the [replay_trajectory_classification model](https://github.com/Eden-Kramer-Lab/replay_trajectory_classification). The code uses the [TorchSharp library](https://github.com/dotnet/TorchSharp), a .NET/C# wrapper around the torch library. It provides a flexible framework for performing neural decoding of observations from spike-train or clusterless mark data based on point processes and Bayesian state-space models.
+This repo contains a C# implementation of the state-space point process neural decoder inspired by the [replay_trajectory_classification model](https://github.com/Eden-Kramer-Lab/replay_trajectory_classification). The code uses the [TorchSharp library](https://github.com/dotnet/TorchSharp), a .NET/C# wrapper around the torch library. It provides a flexible framework for performing neural decoding of observations from spike-train or clusterless mark data based on point processes and state-space models.
 
 ## Overview
 
-The goal of this software is to perform neural decoding. In particular, this package provides a framework to encode latent states based on neural activity and subsequently perform decoding. Sorted spike data are modelled as point processes while spike-thresholded clusterless marks data are modelled as marked point processes. Neural data sources are modelled as poisson emissions within the Bayesian state-space model.
+The goal of this software is to perform neural decoding. In particular, this package provides a framework to encode latent states based on neural activity and subsequently perform decoding. Sorted spike data are modelled as point processes while clusterless spike events are modelled as marked point processes. Neural data sources are modelled as Poisson emissions within the state-space model.
 
 ## Demos
 
@@ -49,7 +49,7 @@ Currently, the software supports the `StateSpaceDecoder` and the `HybridStateSpa
 
 #### State-Space Decoder
 
-The `StateSpaceDecoder` implements a Bayesian state-space decoding model. The Bayesian state-space decoder postulates that, given the initial conditions $p(x_0)$, the posterior probability $p(x_t | O_{1:t})$ at each time step $t$ can be calculated iteratively using:
+The `StateSpaceDecoder` implements a state-space decoding model. The state-space decoder postulates that, given the initial conditions $p(x_0)$, the posterior probability $p(x_t | O_{1:t})$ at each time step $t$ can be calculated iteratively using:
 
 $$
 p(x_t | O_{1:t}) \propto \int p(O_t | x_t) p(x_t | x_{t-1}) p(x_{t-1} | O_{1:t-1}) dx_{t-1}
@@ -63,13 +63,13 @@ For the transitions, $p(x_t | x_{t-1})$, we can specify how the latent variable 
 
 #### Hybrid State-Space Classifier
 
-The hybrid state-space classifier is similar to the decoder but extends it in one particular way. The Bayesian classifier computes the following posterior probability $p(x_t, I_t | O_{1:t})$ which includes both a prediction of the latent variable $x$ and of the state variable $I$ at time $t$. Currently, the `HybridStateSpaceClassifier` has 3 discrete states which refer to the dynamics of the latent variable, and are interpreted as stationary, continuous, and fragmented.  
+The hybrid state-space classifier is similar to the decoder but extends it in one particular way. The classifier computes the following posterior probability $p(x_t, I_t | O_{1:t})$ which includes both a prediction of the latent variable $x$ and of the state variable $I$ at time $t$. Currently, the `HybridStateSpaceClassifier` has 3 discrete states which refer to the dynamics of the latent variable, and are interpreted as stationary, continuous, and fragmented.  
 
 $$
 p(x_t, I_t | O_{1:t}) \propto p(O_t | x_t, I_t) \sum_{I_{k-1}} \int p(x_t | x_{t-1}, I_t, I_{t-1}) Pr(I_t | I_{t-1}) p(x_{t-1}, I_{t-1} | O_{1:t-1}) dx_{t-1}
 $$
 
-In addition to supplying the initial conditions $p(x_0, I_0)$, we also supply the discrete transitions $Pr(I_t | I_{t-1})$ and the continuous transitions $p(x_t | x_{t-1}, I_t, I_{t-1})$. For the initial conditions, again we use the `DiscreteUniform` class and set all points in our state-space as equally probable. Next, the discrete transitions are set by passing in the `stayProbability` parameter, which sets the value along the diagonal of the discrete transitions matrix $Pr(I_t | I_{t-1})$, and remaining values being set to (1 - `stayProbability`) / 2. The continuous transitions matrix, $p(x_t | x_{t-1}, I_t, I_{t-1})$, describes the evolution of the latent variable as it relates to each discrete state. When the discrete state is fragmented, the continuous dynamics are uniform across the state-space. When the state is continuous, the dynamics evolve according to a random walk. When the discrete state is stationary, the dynamics remain fixed on the previous time step.
+In addition to supplying the initial conditions $p(x_0, I_0)$, we also supply the discrete transitions $Pr(I_t | I_{t-1})$ and the continuous transitions $p(x_t | x_{t-1}, I_t, I_{t-1})$. For the initial conditions, again we use the `DiscreteUniform` class and set all points in our state-space as equally probable. Next, the discrete transitions are set by passing in the `stayProbability` parameter, which sets the value along the diagonal of the discrete transitions matrix $Pr(I_t | I_{t-1})$, and remaining values being set to (1 - `stayProbability`) / 2. The continuous transitions matrix, $p(x_t | x_{t-1}, I_t, I_{t-1})$, describes the evolution of the latent variable as it relates to each discrete state. When the latent dynamics are in the fragmented state, the continuous dynamics are uniform across the state-space, meaning every point in the state-space is equally probable. When the state is continuous, the dynamics evolve according to a random walk. For the stationary state, the position within the state-space remains unchanged over time.
 
 ### Likelihood
 
@@ -83,7 +83,7 @@ $$
 p(O_t | x_t) = p( \Delta N ^{1:U} _{t} | x_t) \propto \prod ^U _{i=1} [ \lambda _i (t | x_t) \Delta _t] ^{\Delta N ^i _{t}} exp[ - \lambda _i (t | x_t) \Delta _t]
 $$
 
-Here, $N^i_{t}$ represents whether unit $i$ has produced a spike/event at time $t$ within the $\Delta_t$ time window. For purposes of this software, $\Delta_t = 1$. The conditional intensity, $\lambda_i(t | x_t)$, represents the instantaneous rate of events of unit $i$ given the observations of the latent variable $x$ at time $t$.
+Here, $N^i_{t}$ represents whether unit $i$ has produced a spike/event at time $t$ within the $\Delta_t$ time window. For the purposes of this software, $\Delta_t = 1$. The conditional intensity, $\lambda_i(t | x_t)$, represents the instantaneous rate of events of unit $i$ given the observations of the latent variable $x$ at time $t$.
 
 #### Clusterless Likelihood
 
@@ -93,7 +93,7 @@ $$
 p(O_t | x_t) = p( \Delta N ^{1:C} _t, \vec{m} ^c _{t,j}) \propto \prod ^C _{c=1} \prod ^{\Delta N ^C _t} _{j=1} [ \lambda _c (t, \vec{m} ^c _{t,j} | x_t) \Delta _t ] exp [ - \Lambda _c (t | x_t) \Delta _t]
 $$
 
-Here, $N_{t}^{1:C}$ represents whether a mark was detected on channel $c$, and $\vec{m}^c_{t,j}$ represents the marks $\vec{m}$ detected on channel $c$ at time $t$ with marks detected through times $j$. The `Clusterless` likelihood is comprised of two seperate conditional intensity functions. The conditional intensity $\lambda_c(t, \vec{m}^c_{t,j} | x_t)$ represents the firing rate of unique sets of marks $\vec{m}$ on channel $c$, whereas $\Lambda_c(t | x_t)$ represents the rate at which all events occur on channel $c$.
+Here, $N_{t}^{1:C}$ represents whether a mark was detected on channel $c$, and $\vec{m}^c_{t,j}$ represents the marks $\vec{m}$ detected on channel $c$ at time $t$ with marks detected through times $j$. The `Clusterless` likelihood consists of two separate conditional intensity functions. The conditional intensity $\lambda_c(t, \vec{m}^c_{t,j} | x_t)$ represents the firing rate of unique sets of marks $\vec{m}$ on channel $c$, whereas $\Lambda_c(t | x_t)$ represents the rate at which all events occur on channel $c$.
 
 ### Encoder
 
@@ -107,7 +107,7 @@ $$
 \lambda_i(t | x_t) = \mu_i \frac{p_i(x_t)}{\pi(x)}
 $$
 
-Where $\mu$ is the mean firing rate, $p(x_t)$ is the distribution of latent observations only when spikes are observed for unit $i$, and $\pi(x)$ is the full distribution of the latent observation. When using the `SortedSpikes` encoder, the user must specify the `nUnits` parameter to allocates the appropriate number of unit estimators at runtime. 
+Where $\mu$ is the mean firing rate, $p(x_t)$ is the distribution of latent observations only when spikes are observed for unit $i$, and $\pi(x)$ is the full distribution of the latent observation. When using the `SortedSpikes` encoder, the user must specify the `numUnits` parameter to allocates the appropriate number of unit estimators at runtime. 
 
 #### Clusterless Marks Encoder
 
@@ -125,7 +125,7 @@ $$
 \Lambda_c(t | x_t) = \mu_c \frac{p_c(x_t)}{\pi(x)}
 $$
 
-Where $p_c(x_t)$ represents the marginal distribution over the latent state across all events observed on recording channel $c$. When using the `ClusterlessMarks` encoder, users must specify the `markDimensions` and `markChannels` parameters which define the number of mark features associated with each spike event and the number of recording channels, respectively.
+Where $p_c(x_t)$ represents the marginal distribution over the latent state across all events observed on recording channel $c$. When using the `ClusterlessMarks` encoder, users must specify the `markDimensions` and `numChannels` parameters which define the number of mark features associated with each spike event and the number of recording channels, respectively.
 
 ### Density Estimation
 
@@ -139,21 +139,21 @@ $$
 p(x) = \frac{1}{N} \sum ^{N} _{i=1} \frac{1}{ \sqrt{ (2 \pi) ^d \prod ^d _{j=1} h _j }} exp \left( -\frac{1}{2} \left( \frac{X _i - x}{h _d} \right) ^T \left( \frac{X _i - x}{h _d} \right) \right)
 $$
 
-The probability distribution $p(x)$ can be calculated by taking a given set of points $X_i = {X_1, \dots, X_N}$ with dimensionality $D$ and evaluating them over a normal distribution associated with the datapoints $x$ observed during the encoding procedure. The kernel bandwidth parameter, $h$, describes the variance of the gaussian at dimension $d$. The `KernelDensity` method is more accurate compared to the `KernelCompression` method, but requires more memory and computation time as the number of observations increases.
+The probability distribution $p(x)$ can be calculated by taking a given set of points $X_i = {X_1, \dots, X_N}$ with dimensionality $D$ and evaluating them over a normal distribution associated with the datapoints $x$ observed during the encoding procedure. The kernel bandwidth parameter, $h$, describes the variance of the Gaussian at dimension $d$. The `KernelDensity` method is more accurate compared to the `KernelCompression` method, but requires more memory and computation time as the number of observations increases.
 
 #### Kernel Compression
 
-At the cost of a small amount of accuracy, the `KernelCompression` estimation method is faster than the `KernelDensity` method with greater observations and requires less memory. It works by computing a gaussian mixture model to represent $p(x)$ with fewer kernels. Thus, the distribution, $p(x)$, takes the following form:
+At the cost of a small amount of accuracy, the `KernelCompression` estimation method is faster than the `KernelDensity` method with greater observations and requires less memory. It works by computing a Gaussian mixture model to represent $p(x)$ with fewer kernels. Thus, the distribution, $p(x)$, takes the following form:
 
 $$
 p(x) = \sum^C_{i=1}w_i\phi_i(x)
 $$
 
-Where each kernel component $i$ contributes a probability density, $\phi$, with some weight $w$. Again, the density, $\phi$, is taken as a gaussian kernel of the same form above.
+Where each kernel component $i$ contributes a probability density, $\phi$, with some weight $w$. Again, the density, $\phi$, is taken as a Gaussian kernel of the same form above.
 
 #### Kernel Merging Procedure
 
-The `KernelCompression` algorithm uses a kernel merging procedure to determine whether the observed data point should lead to the creation of a new kernel component or whether the data point should be used to update the paremeters of the closest existing kernel. First, the mahalanobis distance is calculated between existing kernels and the new data point. The distance is evaluated against the user specified `distanceThreshold` parameter, such that if the distance to the closest kernel is greater than the `distanceThreshold`, then the data point is used to create a new kernel. If the distance is less than this, the closest kernel is updated using a moment matching method. The new weight of the component is updated as follows:
+The `KernelCompression` algorithm uses a kernel merging procedure to determine whether the observed data point should lead to the creation of a new kernel component or whether the data point should be used to update the parameters of the closest existing kernel. First, the Mahalanobis distance is calculated between existing kernels and the new data point. The distance is evaluated against the user specified `distanceThreshold` parameter, such that if the distance to the closest kernel is greater than the `distanceThreshold`, then the data point is used to create a new kernel. If the distance is less than this, the closest kernel is updated using a moment matching method. The new weight of the component is updated as follows:
 
 $$
 w = w_1 + w_2
@@ -173,7 +173,7 @@ $$
 
 #### Bandwidth Selection
 
-Users of the package must specify the bandwidth parameters used for density estimation. For the distribution, $\pi(x)$, users set the `observationBandwidth` parameter, where a unique bandwidth can be set for each dimension. Again, the length of this array must be equal to the number of `stateSpaceDimensions` defined above. For both the `SortedSpikeEncoder` and `ClusterlessMarkEncoder`, the `observationBandwidth` parameter is used to compute the distributions $p_i(x_t)$ and $p_c(x_t)$, respectively. The `ClusterlessMarkEncoder` also takes the `markBandwidth` parameter which is used for calculating the distribution, $p_c(x_t,\vec{m}^c_{t,j})$. A unique bandwidth can be specified for each mark feature so long as the length of the array is equal to the `markDimensions` parameter.
+Users of the package must specify the bandwidth parameters used for density estimation. For the distribution, $\pi(x)$, users set the `covariateBandwidth` parameter, where a unique bandwidth can be set for each dimension. Again, the length of this array must be equal to the number of `stateSpaceDimensions` defined above. For both the `SortedSpikeEncoder` and `ClusterlessMarkEncoder`, the `covariateBandwidth` parameter is used to compute the distributions $p_i(x_t)$ and $p_c(x_t)$, respectively. The `ClusterlessMarkEncoder` also takes the `markBandwidth` parameter which is used for calculating the distribution, $p_c(x_t,\vec{m}^c_{t,j})$. A unique bandwidth can be specified for each mark feature so long as the length of the array is equal to the `markDimensions` parameter.
 
 ## Steps to Build
 
@@ -183,7 +183,7 @@ Download [the .NET SDK](https://dotnet.microsoft.com/download) if you haven't al
 2. Clone the repository:
 
 ```bash
-git clone https://github.com/ncguilbeault/PointProcessDecoder.cs
+git clone https://github.com/ncguilbeault/PointProcessDecoder.git
 cd PointProcessDecoder
 ```
 
