@@ -189,20 +189,19 @@ public class ClusterlessMarks : ModelComponent, IEncoder
         }
 
         _covariateEstimation.Fit(covariates);
+        var spikeCounts = (~observations.isnan())
+            .any(dim: 1)
+            .sum(dim: 0)
+            .to(_device);
 
         if (_spikeCounts.numel() == 0)
         {
-            _spikeCounts = (~observations.isnan())
-                .any(dim: 1)
-                .sum(dim: 0)
-                .to(_device);
+            _spikeCounts = spikeCounts;
             _samples = numMarkSamples;
         }
         else
         {
-            _spikeCounts += (~observations.isnan())
-                .any(dim: 1)
-                .sum(dim: 0);
+            _spikeCounts += spikeCounts;
             _samples += numMarkSamples;
         }
 
