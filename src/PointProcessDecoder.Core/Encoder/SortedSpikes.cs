@@ -159,25 +159,25 @@ public class SortedSpikes : ModelComponent, IEncoder
             throw new ArgumentException("The number of covariate dimensions must match the dimensions of the state space.", nameof(covariates));
         }
 
-        if (numSpikeSamples != numCovariateSamples && numSpikeSamples != 1)
+        if (numSpikeSamples != numCovariateSamples && numCovariateSamples != 1)
         {
             throw new ArgumentException("The number of samples in the sorted spikes tensor and covariates tensors must match, unless covariates has only one sample.", nameof(covariates));
         }
 
         _covariateEstimation.Fit(covariates);
 
+        var spikeCounts = observations.nan_to_num()
+            .sum(dim: 0)
+            .to(_device);
+
         if (_spikeCounts.numel() == 0)
         {
-            _spikeCounts = observations.nan_to_num()
-                .sum(dim: 0)
-                .to(_device);              
+            _spikeCounts = spikeCounts;              
             _samples = tensor(numSpikeSamples, device: _device);
         }
         else
         {
-            _spikeCounts += observations.nan_to_num()
-                .sum(dim: 0)
-                .to(_device);
+            _spikeCounts += spikeCounts;
             _samples += numSpikeSamples;
         }
 
@@ -185,21 +185,16 @@ public class SortedSpikes : ModelComponent, IEncoder
 
         for (int i = 0; i < _numUnits; i++)
         {
-            var unitSpikeCounts = _spikeCounts[i].item<long>();
+            var unitSpikeCounts = spikeCounts[i].item<long>();
 
             if (unitSpikeCounts == 0)
             {
                 continue;
             }
 
-            if (numCovariateSamples == 1 && numSpikeSamples > 1)
-            {
-                covariates = covariates.expand(unitSpikeCounts, -1);
-                _unitEstimation[i].Fit(covariates);
-                continue;
-            }
+            var expandedCovariates = numCovariateSamples == 1 ? covariates.expand(unitSpikeCounts, -1) : covariates.repeat_interleave(observations[TensorIndex.Colon, i], dim: 0); 
 
-            _unitEstimation[i].Fit(covariates.repeat_interleave(observations[TensorIndex.Colon, i], dim: 0));            
+            _unitEstimation[i].Fit(expandedCovariates);
         }
 
         _updateIntensities = true;
